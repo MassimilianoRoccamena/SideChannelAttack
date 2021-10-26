@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 
 from core.data.path import root_data_dir
+from core.data.load import AdvancedLoader
 
 class WindowClassificationDataset(Dataset):
     def __init__(self, voltages, frequencies, window, stride=None):

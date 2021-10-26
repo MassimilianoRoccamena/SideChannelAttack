@@ -1,7 +1,7 @@
 from core.data.path import FileIdentifier, file_path
 from core.data.load import BasicLoader
 
-FILE_ID = FileIdentifier('2021-09-21', '1_00', '50', '125', '12', '0', '63', '1k')
+FILE_ID = FileIdentifier('1_00', '50', '63')
 FPATH = file_path(FILE_ID)
 
 loader = BasicLoader(FPATH)
@@ -21,7 +21,10 @@ def test_load_some_projected(trace_idx, sample_idx):
     print(f'traces have shape {traces.shape}')
     print(f'texts have shape {texts.shape}')
 
-if __name__ == "__main__":
+def test_load():
     test_load_all()
     test_load_some([0, 3, 99, 888, 999])
     test_load_some_projected([50, 500], [i for i in range(100, 10100)])
+
+if __name__ == "__main__":
+    test_load()

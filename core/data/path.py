@@ -40,29 +40,36 @@ def key_name(bid, value):
 
 # main batch file naming
 
+DEFAULT_DATE = '2021-09-21'
+DEFAULT_SRATE = '125'
+DEFAULT_SBITS = '12'
+DEFAULT_KID = '0'
+DEFAULT_NTRACE = '1k'
+
 class FileIdentifier:
     '''
     Identification values of a batch file of power traces
     '''
-    def __init__(self, date, volt, freq, srate, sbits, kid, kvalue, ntrace):
+    def __init__(self, volt, freq, kvalue, date=DEFAULT_DATE, srate=DEFAULT_SRATE,
+                                            sbits=DEFAULT_SBITS, kid=DEFAULT_KID, ntrace=DEFAULT_NTRACE):
         '''
         Create identifier of the file
-        date: date of the measurements
         volt: voltage used by the device
         freq: frequency used by the device
+        kvalue: value of the given key byte
+        date: date of the measurements
         srate: sampling rate used for the measurements
         sbit: bits resolution of the sampling
         kid: key byte leanking in the trace
-        kvalue: value of the given key byte
         nsample: number of traces in the batch
         '''
-        self.date = date
         self.volt = volt
         self.freq = freq
+        self.kvalue = kvalue
+        self.date = date
         self.srate = srate
         self.sbits = sbits
         self.kid = kid
-        self.kvalue = kvalue
         self.ntrace = ntrace
 
 def parent_path(file_id):
