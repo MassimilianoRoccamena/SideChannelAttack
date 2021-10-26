@@ -1,23 +1,15 @@
 from torch.utils.data import Dataset
 
+from core.data.params import TRACE_LENGTH
 from core.data.path import root_data_dir
 from core.data.load import AdvancedLoader
 
 class WindowClassificationDataset(Dataset):
-    def __init__(self, voltages, frequencies, window, stride=None):
+    def __init__(self, voltages, frequencies, slicer):
         super().__init__()
         self.voltages = voltages
         self.frequencies = frequencies
-        self.window = window
-        if stride is None:
-            self.stride = window
-        else:
-            self.stride = stride
-
-        self.search_items()
-
-    def search_items(self):
-        pass
+        self.slicer = slicer
 
     def __len__(self):
         pass
