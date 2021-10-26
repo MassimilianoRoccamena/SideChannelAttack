@@ -1,6 +1,10 @@
 import numpy as np
 
+from core.data.path import file_path
+
 HEAD_SIZE=26
+
+NO_FILE_MSG = "no file path has been specified"
 
 class BasicLoader:
     '''
@@ -21,6 +25,16 @@ class BasicLoader:
         '''
         self.file_path = fpath
 
+        if self.file_path is None:
+            self.ntraces = None
+            self.nsamples = None
+            self.sample_type
+            self.text_len = None
+            self.sample_dtype = None
+            self.row_len = None
+            self.key = None
+            return
+
         with open(self.file_path,'rb') as infile:
             self.ntraces = int.from_bytes(infile.read(4), byteorder='little', signed=False)
             self.nsamples = int.from_bytes(infile.read(4), byteorder='little', signed=False)
@@ -35,12 +49,15 @@ class BasicLoader:
                 assert(False)
             
             self.row_len = self.text_len + self.nsamples*self.sample_dtype.itemsize
-            self.key = np.frombuffer(buffer= infile.read(16), dtype='uint8');
+            self.key = np.frombuffer(buffer=infile.read(16), dtype='uint8');
     
     def load_all(self):
         '''
         Get the whole full traces and plain texts from the batch file
         '''
+        if self.file_path is None:
+            raise ValueError(NO_FILE_MSG)
+
         with open(self.file_path,'rb') as infile:
             infile.seek(HEAD_SIZE, 0)
             
@@ -56,8 +73,11 @@ class BasicLoader:
     def load_some(self, trace_idx):
         '''
         Get some full traces and plain texts from the batch file
-        trace_idx: trace index or list of traces indices of the batch
+        trace_idx: list of traces indices of the file
         '''
+        if self.file_path is None:
+            raise ValueError(NO_FILE_MSG)
+
         idx = np.array(trace_idx)
         assert np.all(idx < self.ntraces)
         assert np.all(idx.dtype == 'int')
@@ -79,9 +99,12 @@ class BasicLoader:
     def load_some_projected(self, trace_idx, time_idx):
         '''
         Load some temporal projected traces from the batch file
-        trace_idx: trace index or list of traces indices of the batch
-        time_idx: temporal index or list of temporal indices of the traces
+        trace_idx: list of traces indices of the batch
+        time_idx: list of temporal indices of the traces
         '''
+        if self.file_path is None:
+            raise ValueError(NO_FILE_MSG)
+
         tr_idx = np.array(trace_idx).reshape((len(trace_idx),1))
         tm_idx = np.array(time_idx)
         
@@ -104,16 +127,12 @@ class BasicLoader:
         
         return traces, texts
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-from core.data.path import file_path
-
 class AdvancedLoader(BasicLoader):
     '''
     Advanced loader of power measurements from a batch file given its identifier
     '''
 
-    def __init__(self, file_id):
+    def __init__(self, file_id=None):
         self.set_file_id(file_id)
 
     def set_file_id(self, file_id):

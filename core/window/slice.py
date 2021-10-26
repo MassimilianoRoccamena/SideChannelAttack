@@ -8,7 +8,8 @@ class TraceSlicer:
     Abstract slicer of a trace into fixed size subwindows
     '''
 
-    def __init__(self, nwindows):
+    def __init__(self, window_size, nwindows):
+        self.window_size = window_size
         self.nwindows = nwindows
 
     def validate_index(self, idx):
@@ -17,7 +18,7 @@ class TraceSlicer:
         idx: window index
         '''
         if idx < 0 or idx > self.nwindows:
-            raise Exception("invalid trace window index")
+            raise IndexError("invalid trace window index")
 
     def window_bounds(self, idx):
         '''
@@ -25,6 +26,9 @@ class TraceSlicer:
         idx: window index
         '''
         raise NotImplementedError
+
+    def __len__(self):
+        return self.nwindows
 
     def __getitem__(self, idx):
         return self.window_bounds(idx)
@@ -34,13 +38,12 @@ class StridedSlicer(TraceSlicer):
     Trace windows slicer with stride and shuffling
     '''
 
-    def __init__(self, window, stride, shuffle):
-        self.window = window
+    def __init__(self, window_size, stride, shuffle):
         self.stride = stride
-
-        max_idx = TRACE_LENGTH - window + 1
+        max_idx = TRACE_LENGTH - window_size + 1
         nwindows = ceil((max_idx+1) / stride) + 1
-        super().__init__(nwindows)
+
+        super().__init__(window_size, nwindows)
 
         self.shuffle = shuffle
         self.shuffle_indices()
@@ -62,23 +65,23 @@ class StridedSlicer(TraceSlicer):
             idx = self.shuffle_idx[idx]
 
         start = idx * self.stride
-        if (start+self.window-1 >= TRACE_LENGTH):
-            start = TRACE_LENGTH - self.window
+        if (start+self.window_size-1 >= TRACE_LENGTH):
+            start = TRACE_LENGTH - self.window_size
 
-        return start, start+self.window-1
+        return start, start+self.window_size-1
 
 class SequentialSlicer(StridedSlicer):
     '''
     Slicer of a trace into sequential windows
     '''
 
-    def __init__(self, window):
-        super().__init__(window, 1, False)
+    def __init__(self, window_size):
+        super().__init__(window_size, 1, False)
 
 class RandomSlicer(StridedSlicer):
     '''
     Slicer of a trace into random windows
     '''
 
-    def __init__(self, window):
-        super().__init__(window, 1, True)
+    def __init__(self, window_size):
+        super().__init__(window_size, 1, True)
