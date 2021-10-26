@@ -18,6 +18,9 @@ root_data_dir = LOCAL_DATA_DIR
 # basic prefix/suffix naming
 
 def cat_pref_suff(pref, suff):
+    '''
+    Concatenate a prefix and a suffix in a word
+    '''
     return f'{pref}{suff}'
 
 def volt_name(value):
@@ -35,29 +38,51 @@ def sbits_name(value):
 def key_name(bid, value):
     return f"{cat_pref_suff(KEY_PREFIX, bid)}-{value}"
 
-# main batch file of traces naming
-
-def parent_path(volt, freq):
-    return os.path.join(root_data_dir,
-                        f'{cat_pref_suff(volt,VOLT_SUFFIX)}',
-                        f'{cat_pref_suff(freq,FREQ_SUFFIX)}')
-
-def file_name(date, freq, srate, sbits, kid, kvalue, nsamples):
-    low = f'{date}_{freq_name(freq)}_{srate_name(srate)}'
-    high = f'{sbits_name(sbits)}_{key_name(kid,kvalue)}_{nsamples}'
-    return f'{low}_{high}.{BATCH_EXTENSION}'
+# main batch file naming
 
 class FileIdentifier:
-    def __init__(self, volt, freq, srate, sbits, kid, kvalue, nsample):
+    '''
+    Identification values of a batch file of power traces
+    '''
+    def __init__(self, date, volt, freq, srate, sbits, kid, kvalue, ntrace):
+        '''
+        Create identifier of the file
+        date: date of the measurements
+        volt: voltage used by the device
+        freq: frequency used by the device
+        srate: sampling rate used for the measurements
+        sbit: bits resolution of the sampling
+        kid: key byte leanking in the trace
+        kvalue: value of the given key byte
+        nsample: number of traces in the batch
+        '''
+        self.date = date
         self.volt = volt
         self.freq = freq
         self.srate = srate
         self.sbits = sbits
         self.kid = kid
         self.kvalue = kvalue
-        self.nsample = nsample
+        self.ntrace = ntrace
+
+def parent_path(file_id):
+    '''
+    Build path up to parent directory of the file
+    '''
+    return os.path.join(root_data_dir,
+                        f'{cat_pref_suff(file_id.volt,VOLT_SUFFIX)}',
+                        f'{cat_pref_suff(file_id.freq,FREQ_SUFFIX)}')
+
+def file_name(file_id):
+    '''
+    Compute name of the file with extension
+    '''
+    low = f'{file_id.date}_{freq_name(file_id.freq)}_{srate_name(file_id.srate)}'
+    high = f'{sbits_name(file_id.sbits)}_{key_name(file_id.kid,file_id.kvalue)}_{file_id.ntrace}'
+    return f'{low}_{high}.{BATCH_EXTENSION}'
 
 def file_path(file_id):
-    return os.path.join(parent_path(file_id.volt, file_id.freq),
-                        file_name(file_id.date, file_id.freq, file_id.srate, file_id.sbits,
-                                    file_id.kid, file_id.kvalue, file_id.nsample))
+    '''
+    Compute path of the file
+    '''
+    return os.path.join(parent_path(file_id), file_name(file_id))

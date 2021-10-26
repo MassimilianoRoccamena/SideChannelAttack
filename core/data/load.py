@@ -8,12 +8,16 @@ class BasicLoader:
     '''
 
     def __init__(self, fpath):
+        '''
+        Build new file loader
+        fpath: file path
+        '''
         self.set_file_path(fpath)
 
     def set_file_path(self, fpath):
         '''
         Set the binary .dat file path of a batch of key encrypted traces
-        fpath: file path of the batch
+        fpath: file path
         '''
         self.file_path = fpath
 
@@ -35,7 +39,7 @@ class BasicLoader:
     
     def load_all(self):
         '''
-        Get the whole full traces and plain texts from the batch
+        Get the whole full traces and plain texts from the batch file
         '''
         with open(self.file_path,'rb') as infile:
             infile.seek(HEAD_SIZE, 0)
@@ -51,7 +55,7 @@ class BasicLoader:
 
     def load_some(self, trace_idx):
         '''
-        Get some full traces and plain texts from the batch
+        Get some full traces and plain texts from the batch file
         trace_idx: trace index or list of traces indices of the batch
         '''
         idx = np.array(trace_idx)
@@ -74,7 +78,7 @@ class BasicLoader:
     
     def load_some_projected(self, trace_idx, time_idx):
         '''
-        Load some temporal projected traces from the batch
+        Load some temporal projected traces from the batch file
         trace_idx: trace index or list of traces indices of the batch
         time_idx: temporal index or list of temporal indices of the traces
         '''
@@ -99,3 +103,19 @@ class BasicLoader:
                 texts[i,:] = np.frombuffer(buffer=infile.read(self.text_len* texts.itemsize), dtype=texts.dtype)
         
         return traces, texts
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+from core.data.path import file_path
+
+class AdvancedLoader(BasicLoader):
+    '''
+    Advanced loader of power measurements from a batch file given its identifier
+    '''
+
+    def __init__(self, file_id):
+        self.set_file_id(file_id)
+
+    def set_file_id(self, file_id):
+        self.file_id = file_id
+        self.set_file_path(file_path(file_id))

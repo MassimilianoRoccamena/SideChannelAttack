@@ -1,7 +1,8 @@
-from core.data.path import file_path
-from core.data.load.basic import BasicLoader
+from core.data.path import FileIdentifier, file_path
+from core.data.load import BasicLoader
 
-FPATH = file_path('2021-09-21', '1_00', '50', '125', '12', '0', '63', '1k')
+FILE_ID = FileIdentifier('2021-09-21', '1_00', '50', '125', '12', '0', '63', '1k')
+FPATH = file_path(FILE_ID)
 
 loader = BasicLoader(FPATH)
 
