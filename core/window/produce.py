@@ -16,12 +16,6 @@ class WindowLoader(AdvancedLoader):
         time_idx = np.arange(start, end+1)
         return self.load_some_projected(trace_idx, time_idx)
 
-    def load_some_multi_sliced(self, trace_idx, window_idx):
-        time_idx = np.zeros(self.slicer.nwindows)
-        start, end = self.slicer[window_idx]
-        time_idx = np.arange(start, end+1)
-        return self.load_some_projected(trace_idx, time_idx)
-
 class WindowProducer(WindowLoader):
     def __init__(self, slicer, buffer_size):
         super().__init__(slicer)

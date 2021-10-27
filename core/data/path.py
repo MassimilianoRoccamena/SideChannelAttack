@@ -44,14 +44,14 @@ DEFAULT_DATE = '2021-09-21'
 DEFAULT_SRATE = '125'
 DEFAULT_SBITS = '12'
 DEFAULT_KID = '0'
-DEFAULT_NTRACE = '1k'
+DEFAULT_NTRACES = '1k'
 
 class FileIdentifier:
     '''
     Identification values of a batch file of power traces
     '''
     def __init__(self, volt, freq, kvalue, date=DEFAULT_DATE, srate=DEFAULT_SRATE,
-                                            sbits=DEFAULT_SBITS, kid=DEFAULT_KID, ntrace=DEFAULT_NTRACE):
+                                            sbits=DEFAULT_SBITS, kid=DEFAULT_KID, ntraces=DEFAULT_NTRACES):
         '''
         Create identifier of the file
         volt: voltage used by the device
@@ -70,7 +70,7 @@ class FileIdentifier:
         self.srate = srate
         self.sbits = sbits
         self.kid = kid
-        self.ntrace = ntrace
+        self.ntraces = ntraces
 
 def parent_path(file_id):
     '''
@@ -85,7 +85,7 @@ def file_name(file_id):
     Compute name of the file with extension
     '''
     low = f'{file_id.date}_{freq_name(file_id.freq)}_{srate_name(file_id.srate)}'
-    high = f'{sbits_name(file_id.sbits)}_{key_name(file_id.kid,file_id.kvalue)}_{file_id.ntrace}'
+    high = f'{sbits_name(file_id.sbits)}_{key_name(file_id.kid,file_id.kvalue)}_{file_id.ntraces}'
     return f'{low}_{high}.{BATCH_EXTENSION}'
 
 def file_path(file_id):

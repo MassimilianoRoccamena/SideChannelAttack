@@ -8,8 +8,13 @@ class TraceSlicer:
     Abstract slicer of a trace into fixed size subwindows
     '''
 
-    def __init__(self, window_size, nwindows):
-        self.window_size = window_size
+    def __init__(self, wsize, nwindows):
+        '''
+        Create new slicer of windows
+        wsize: window size
+        nwindows: number of windows in a trace
+        '''
+        self.window_size = wsize
         self.nwindows = nwindows
 
     def validate_index(self, idx):
@@ -38,12 +43,12 @@ class StridedSlicer(TraceSlicer):
     Trace windows slicer with stride and shuffling
     '''
 
-    def __init__(self, window_size, stride, shuffle):
+    def __init__(self, wsize, stride, shuffle):
         self.stride = stride
-        max_idx = TRACE_LENGTH - window_size + 1
+        max_idx = TRACE_LENGTH - wsize + 1
         nwindows = ceil((max_idx+1) / stride) + 1
 
-        super().__init__(window_size, nwindows)
+        super().__init__(wsize, nwindows)
 
         self.shuffle = shuffle
         self.shuffle_indices()
@@ -75,13 +80,13 @@ class SequentialSlicer(StridedSlicer):
     Slicer of a trace into sequential windows
     '''
 
-    def __init__(self, window_size):
-        super().__init__(window_size, 1, False)
+    def __init__(self, wsize):
+        super().__init__(wsize, 1, False)
 
 class RandomSlicer(StridedSlicer):
     '''
     Slicer of a trace into random windows
     '''
 
-    def __init__(self, window_size):
-        super().__init__(window_size, 1, True)
+    def __init__(self, wsize):
+        super().__init__(wsize, 1, True)

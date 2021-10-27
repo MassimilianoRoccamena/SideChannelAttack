@@ -2,13 +2,13 @@ import numpy as np
 
 from core.data.path import file_path
 
-HEAD_SIZE=26
+HEAD_SIZE = 26
 
 NO_FILE_MSG = "no file path has been specified"
 
 class BasicLoader:
     '''
-    Basic loader of power measurements from a batch file of same key encryption traces
+    Basic loader of power measurements from a batch file containing same key encryption traces
     '''
 
     def __init__(self, fpath):
