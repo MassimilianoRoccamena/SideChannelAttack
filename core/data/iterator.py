@@ -1,11 +1,6 @@
 import numpy as np
 
-from core.data.path import FileIdentifier
-
-class TraceIdentifier:
-    def __init__(self, file_id, trace_idx):
-        self.file_id = file_id
-        self.trace_idx = trace_idx
+from core.data.identifier import FileIdentifier, TraceIdentifier
 
 class BasicTraceIterator:
     def __init__(self, nfiles, ntraces):
@@ -63,10 +58,16 @@ class AdvancedTraceIterator(BasicTraceIterator):
         if self.shuffle:
             file_idx = self.files_idx[self.file_idx]
             trace_idx = self.traces_idx[self.trace_idx]
-            trace_id = TraceIdentifier(FileIdentifier(file_idx[0],file_idx[1],file_idx[2]), trace_idx)
-
-            self.file_idx += 1
+            trace_id = TraceIdentifier(FileIdentifier(self.voltages[file_idx[0]],
+                                                        self.frequencies[file_idx[1]],
+                                                        self.kvalues[file_idx[2]],
+                                                        trace_idx))
         else:
             raise NotImplementedError
+
+        self.file_idx += 1
+        if self.file_idx == self.nfiles:
+            self.file_idx = 0
+            self.trace_idx += 1
 
         return trace_id

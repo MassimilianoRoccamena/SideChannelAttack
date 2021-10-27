@@ -3,7 +3,7 @@ import numpy as np
 
 from core.data.params import TRACE_SIZE
 
-class TraceSlicer:
+class BasicTraceSlicer:
     '''
     Abstract slicer of a trace into fixed size subwindows
     '''
@@ -24,7 +24,7 @@ class TraceSlicer:
         idx: window index
         '''
         if idx < 0 or idx >= self.nwindows:
-            raise IndexError(TraceSlicer.INVALID_INDEX_MSG)
+            raise IndexError(BasicTraceSlicer.INVALID_INDEX_MSG)
 
     def window_bounds(self, idx):
         '''
@@ -39,7 +39,7 @@ class TraceSlicer:
     def __getitem__(self, idx):
         return self.window_bounds(idx)
 
-class StridedTraceSlicer(TraceSlicer):
+class StridedTraceSlicer(BasicTraceSlicer):
     '''
     Trace windows slicer with stride and shuffling
     '''

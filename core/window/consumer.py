@@ -1,9 +1,9 @@
 from copy import copy
 import numpy as np
 
-from core.data.load import AdvancedDataLoader
+from core.data.loader import AdvancedFileLoader
 
-class WindowLoader(AdvancedDataLoader):
+class WindowLoader(AdvancedFileLoader):
     '''
     Loader of traces windows from a batch file given its identifier
     '''

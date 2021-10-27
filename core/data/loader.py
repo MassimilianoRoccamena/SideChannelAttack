@@ -2,7 +2,7 @@ import numpy as np
 
 from core.data.path import file_path
 
-class BasicDataLoader:
+class BasicFileLoader:
     '''
     Basic loader of power measurements from a batch file containing same key encryption traces
     '''
@@ -57,10 +57,10 @@ class BasicDataLoader:
         Get the whole full traces and plain texts from the batch file
         '''
         if self.file_path is None:
-            raise ValueError(BasicDataLoader.NO_FILE_MSG)
+            raise ValueError(BasicFileLoader.NO_FILE_MSG)
 
         with open(self.file_path,'rb') as infile:
-            infile.seek(BasicDataLoader.HEAD_SIZE, 0)
+            infile.seek(BasicFileLoader.HEAD_SIZE, 0)
             
             texts = np.zeros((self.ntraces, self.text_len), dtype= 'uint8');
             traces = np.zeros((self.ntraces, self.trace_size), dtype= self.channel_dtype);
@@ -77,7 +77,7 @@ class BasicDataLoader:
         idx: list of traces indices of the file
         '''
         if np.all(idx < 0) or np.all(idx >= self.ntraces):
-            raise IndexError(BasicDataLoader.INVALID_TRACE_IDX_MSG)
+            raise IndexError(BasicFileLoader.INVALID_TRACE_IDX_MSG)
 
     def load_some(self, trace_idx):
         '''
@@ -85,7 +85,7 @@ class BasicDataLoader:
         trace_idx: list of trace indices of a file
         '''
         if self.file_path is None:
-            raise ValueError(BasicDataLoader.NO_FILE_MSG)
+            raise ValueError(BasicFileLoader.NO_FILE_MSG)
 
         idx = np.array(trace_idx)
         self.validate_trace_indices(idx)
@@ -98,7 +98,7 @@ class BasicDataLoader:
             j = 0
 
             for i in idx:
-                infile.seek(BasicDataLoader.HEAD_SIZE + self.row_len*i, 0)
+                infile.seek(BasicFileLoader.HEAD_SIZE + self.row_len*i, 0)
                 traces[j,:] = np.frombuffer(buffer=infile.read(self.trace_size* self.channel_dtype.itemsize), dtype= self.channel_dtype)
                 texts[j,:] = np.frombuffer(buffer=infile.read(self.text_len* texts.itemsize), dtype=texts.dtype)
                 j = j + 1
@@ -111,7 +111,7 @@ class BasicDataLoader:
         idx: list of temporal indices of a trace
         '''
         if np.all(idx < 0) or np.all(idx >= self.trace_size):
-            raise IndexError(BasicDataLoader.INVALID_TRACE_IDX_MSG)
+            raise IndexError(BasicFileLoader.INVALID_TRACE_IDX_MSG)
     
     def load_some_projected(self, trace_idx, time_idx):
         '''
@@ -120,7 +120,7 @@ class BasicDataLoader:
         time_idx: list of temporal indices of a trace
         '''
         if self.file_path is None:
-            raise ValueError(BasicDataLoader.NO_FILE_MSG)
+            raise ValueError(BasicFileLoader.NO_FILE_MSG)
 
         tr_idx = np.array(trace_idx).reshape((len(trace_idx),1))
         self.validate_trace_indices(tr_idx)
@@ -135,19 +135,19 @@ class BasicDataLoader:
             traces = np.zeros((trace_len, time_len), dtype= self.channel_dtype)
             texts = np.zeros((trace_len, self.text_len), dtype= 'uint8')
             
-            pos = BasicDataLoader.HEAD_SIZE + tr_idx*self.row_len + tm_idx*self.channel_dtype.itemsize
+            pos = BasicFileLoader.HEAD_SIZE + tr_idx*self.row_len + tm_idx*self.channel_dtype.itemsize
             
             for i in range(pos.shape[0]):
                 for j in range(pos.shape[1]):
                     infile.seek(pos[i][j], 0)
                     traces[i,j] =  np.frombuffer(buffer=infile.read(self.channel_dtype.itemsize), dtype= self.channel_dtype)
                 
-                infile.seek(BasicDataLoader.HEAD_SIZE+ self.row_len* trace_idx[i] + self.trace_size* self.channel_dtype.itemsize , 0)
+                infile.seek(BasicFileLoader.HEAD_SIZE+ self.row_len* trace_idx[i] + self.trace_size* self.channel_dtype.itemsize , 0)
                 texts[i,:] = np.frombuffer(buffer=infile.read(self.text_len* texts.itemsize), dtype=texts.dtype)
         
         return traces, texts
 
-class AdvancedDataLoader(BasicDataLoader):
+class AdvancedFileLoader(BasicFileLoader):
     '''
     Advanced loader of power measurements from a batch file given its identifier
     '''

@@ -1,7 +1,5 @@
 import os
 
-from core.data.params import PathReference
-
 # global vars/constants
 
 VOLT_PREFIX = "VCC-"        # <-- changed convention
@@ -52,27 +50,6 @@ def key_name(bid, value):
     return f"{cat2(KEY_PREFIX, bid)}-{value}"
 
 # traces file path naming
-
-class FileIdentifier:
-    '''
-    Identification values of a batch file of power traces
-    '''
-    def __init__(self, volt, freq, kvalue):
-        '''
-        Create identifier of the file
-        volt: voltage used by the device
-        freq: frequency used by the device
-        kvalue: value of the given key byte
-        '''
-        self.volt = volt
-        self.freq = freq
-        self.kvalue = kvalue
-        self.date = PathReference.date
-        self.mode = PathReference.mode
-        self.srate = PathReference.srate
-        self.sbits = PathReference.nbits
-        self.kid = PathReference.kid
-        self.ntraces = PathReference.ntraces
 
 def parent_path(file_id):
     '''
