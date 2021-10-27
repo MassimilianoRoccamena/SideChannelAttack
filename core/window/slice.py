@@ -1,12 +1,13 @@
 from math import ceil
 import numpy as np
 
-from core.data.params import TRACE_LENGTH
+from core.data.params import TRACE_SIZE
 
 class TraceSlicer:
     '''
     Abstract slicer of a trace into fixed size subwindows
     '''
+    INVALID_INDEX_MSG = "invalid trace window index"
 
     def __init__(self, wsize, nwindows):
         '''
@@ -22,8 +23,8 @@ class TraceSlicer:
         Check consistency of a window index
         idx: window index
         '''
-        if idx < 0 or idx > self.nwindows:
-            raise IndexError("invalid trace window index")
+        if idx < 0 or idx >= self.nwindows:
+            raise IndexError(TraceSlicer.INVALID_INDEX_MSG)
 
     def window_bounds(self, idx):
         '''
@@ -38,14 +39,14 @@ class TraceSlicer:
     def __getitem__(self, idx):
         return self.window_bounds(idx)
 
-class StridedSlicer(TraceSlicer):
+class StridedTraceSlicer(TraceSlicer):
     '''
     Trace windows slicer with stride and shuffling
     '''
 
     def __init__(self, wsize, stride, shuffle):
         self.stride = stride
-        max_idx = TRACE_LENGTH - wsize + 1
+        max_idx = TRACE_SIZE - wsize + 1
         nwindows = ceil((max_idx+1) / stride) + 1
 
         super().__init__(wsize, nwindows)
@@ -57,8 +58,8 @@ class StridedSlicer(TraceSlicer):
         '''
         Shuffle indices of trace windows
         '''
-        if self.shuffle is True:
-            self.shuffle_idx = np.random.randint(self.nwindows, size=self.nwindows)
+        if self.shuffle:
+            self.windows_idx = np.random.randint(self.nwindows, size=self.nwindows)
 
     def window_bounds(self, idx):
         if idx < 0:
@@ -66,16 +67,16 @@ class StridedSlicer(TraceSlicer):
 
         self.validate_index(idx)
 
-        if self.shuffle is True:
-            idx = self.shuffle_idx[idx]
+        if self.shuffle:
+            idx = self.windows_idx[idx]
 
         start = idx * self.stride
-        if (start+self.window_size-1 >= TRACE_LENGTH):
-            start = TRACE_LENGTH - self.window_size
+        if (start+self.window_size-1 >= TRACE_SIZE):
+            start = TRACE_SIZE - self.window_size
 
         return start, start+self.window_size-1
 
-class SequentialSlicer(StridedSlicer):
+class SequentialTraceSlicer(StridedTraceSlicer):
     '''
     Slicer of a trace into sequential windows
     '''
@@ -83,7 +84,7 @@ class SequentialSlicer(StridedSlicer):
     def __init__(self, wsize):
         super().__init__(wsize, 1, False)
 
-class RandomSlicer(StridedSlicer):
+class RandomTraceSlicer(StridedTraceSlicer):
     '''
     Slicer of a trace into random windows
     '''
