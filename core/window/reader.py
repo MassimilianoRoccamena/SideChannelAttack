@@ -57,6 +57,8 @@ class WindowReader(WindowLoader):
         if reader_index < 0 or reader_index >= len(self):
             raise IndexError(WindowReader.INVALID_INDEX_MSG)
 
+    # -----------------------------------------------------------------------------------------
+
     def translate_reader_index(self, reader_index):
         '''
         Translate a reader index into informations for loading the window from the file,

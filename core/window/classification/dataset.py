@@ -10,4 +10,6 @@ class WindowClassificationDataset(WindowReader, Dataset):
         return super().__len__()
 
     def __getitem__(self, index):
-        raise NotImplementedError
+        x = super().__getitem__(index)
+        y = self.file_id.frequency
+        return x, y
