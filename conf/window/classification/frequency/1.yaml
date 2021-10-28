@@ -1,0 +1,68 @@
+exp_name: 'Window frequency classification'
+
+load_checkpoint: null
+test_only: False
+
+seed: 0
+seed_workers: True
+force_determinism: False
+
+loggers:
+  neptune:
+    enable: True
+    experiment_id: null
+    experiment_name: ${exp_name}
+    project_name: '${env:NEPTUNE_API_USER}/example-project'
+    upload_source_files: ['*.py', '*.c']
+    tags: ['example-tag']
+    offline_mode: False
+  tensorboard:
+    enable: False
+
+trainer:
+  gpus: 1
+  max_epochs: 20
+  check_val_every_n_epoch: 1
+
+early_stopping:
+  params:
+    monitor: 'validation/acc'
+    patience: 5
+    mode: 'max'
+
+dataloader:
+  params:
+    batch_size: 8
+    num_workers: 10
+
+optimizer:
+  classname: SGD
+  params:
+    lr: 0.01
+    momentum: 0.9
+    weight_decay: 1e-4
+
+criterion:
+  classname: CrossEntropyLoss
+  params:
+
+scheduler:
+  classname: StepLR
+  params:
+    step_size: 2
+    gamma: 0.9
+
+dataset:
+  classname: DatasetClassname
+  params:
+    ...
+
+network:
+  classname: NetworkClassname
+  params:
+    ...
+
+trainable:
+  classname: TrainableClassname
+  params:
+    ...

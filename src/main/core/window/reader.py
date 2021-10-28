@@ -1,7 +1,7 @@
 import numpy as np
 
-from core.base.identifier import FileIdentifier
-from core.base.loader import AdvancedFileLoader
+from src.main.base.data.path import FileIdentifier
+from src.main.base.data.loader import AdvancedFileLoader
 
 class WindowLoader(AdvancedFileLoader):
     '''
@@ -33,7 +33,7 @@ class WindowReader(WindowLoader):
     Loader of trace windows with an indexing strategy which makes easier loading data from file
     and tracking target values in memory.
     '''
-    INVALID_INDEX_MSG = "invalid reader index"
+    INVALID_INDEX_MSG = 'invalid reader index'
 
     def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
         '''

@@ -1,12 +1,12 @@
 from math import ceil
 
-from core.base.params import TRACE_SIZE
+from src.main.base.data.params import TRACE_SIZE
 
-class BasicTraceSlicer:
+class AbstractTraceSlicer:
     '''
     Abstract slicer of a trace into fixed size subwindows.
     '''
-    INVALID_INDEX_MSG = "invalid trace window index"
+    INVALID_INDEX_MSG = 'invalid trace window index'
 
     def __init__(self, window_size, num_windows):
         '''
@@ -23,7 +23,7 @@ class BasicTraceSlicer:
         window_index: window index of a trace
         '''
         if window_index < 0 or window_index >= self.num_windows:
-            raise IndexError(BasicTraceSlicer.INVALID_INDEX_MSG)
+            raise IndexError(AbstractTraceSlicer.INVALID_INDEX_MSG)
 
     # -----------------------------------------------------------------------------------------
 
@@ -40,7 +40,7 @@ class BasicTraceSlicer:
     def __getitem__(self, index):
         return self.slice(index)
 
-class AdvancedTraceSlicer(BasicTraceSlicer):
+class AdvancedTraceSlicer(AbstractTraceSlicer):
     '''
     Trace windows slicer with striding.
     '''

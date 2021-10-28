@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.base.path import file_path
+from src.main.base.data.path import file_path
 
 class BasicFileLoader:
     '''
@@ -8,9 +8,9 @@ class BasicFileLoader:
     '''
     HEAD_SIZE = 26
 
-    NO_FILE_MSG = "no file path has been specified"
-    INVALID_TRACE_INDICES_MSG = "invalid trace indices"
-    INVALID_TIME_INDICES_MSG = "invalid temporal indices"
+    NO_FILE_MSG = 'no file path has been specified'
+    INVALID_TRACE_INDICES_MSG = 'invalid trace indices'
+    INVALID_TIME_INDICES_MSG = 'invalid temporal indices'
 
     def __init__(self, file_path):
         '''
