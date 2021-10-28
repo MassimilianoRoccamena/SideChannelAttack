@@ -20,8 +20,3 @@ class FileIdentifier:
         self.sbits = PathReference.nbits
         self.kid = PathReference.kid
         self.ntraces = PathReference.ntraces
-
-class TraceIdentifier:
-    def __init__(self, file_id, trace_idx):
-        self.file_id = file_id
-        self.trace_idx = trace_idx

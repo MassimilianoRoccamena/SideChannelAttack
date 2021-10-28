@@ -39,27 +39,17 @@ class BasicTraceSlicer:
     def __getitem__(self, idx):
         return self.window_bounds(idx)
 
-class StridedTraceSlicer(BasicTraceSlicer):
+class AdvancedTraceSlicer(BasicTraceSlicer):
     '''
-    Trace windows slicer with stride and shuffling
+    Advanced trace windows slicer with stride
     '''
 
-    def __init__(self, wsize, stride, shuffle):
+    def __init__(self, wsize, stride):
         self.stride = stride
         max_idx = TRACE_SIZE - wsize + 1
         nwindows = ceil((max_idx+1) / stride) + 1
 
         super().__init__(wsize, nwindows)
-
-        self.shuffle = shuffle
-        self.shuffle_indices()
-
-    def shuffle_indices(self):
-        '''
-        Shuffle indices of trace windows
-        '''
-        if self.shuffle:
-            self.windows_idx = np.random.randint(self.nwindows, size=self.nwindows)
 
     def window_bounds(self, idx):
         if idx < 0:
@@ -67,27 +57,8 @@ class StridedTraceSlicer(BasicTraceSlicer):
 
         self.validate_index(idx)
 
-        if self.shuffle:
-            idx = self.windows_idx[idx]
-
         start = idx * self.stride
         if (start+self.window_size-1 >= TRACE_SIZE):
             start = TRACE_SIZE - self.window_size
 
         return start, start+self.window_size-1
-
-class SequentialTraceSlicer(StridedTraceSlicer):
-    '''
-    Slicer of a trace into sequential windows
-    '''
-
-    def __init__(self, wsize):
-        super().__init__(wsize, 1, False)
-
-class RandomTraceSlicer(StridedTraceSlicer):
-    '''
-    Slicer of a trace into random windows
-    '''
-
-    def __init__(self, wsize):
-        super().__init__(wsize, 1, True)

@@ -4,7 +4,7 @@ from core.data.path import file_path
 
 class BasicFileLoader:
     '''
-    Basic loader of power measurements from a batch file containing same key encryption traces
+    Basic loader of power traces from a batch file with same key byte
     '''
     HEAD_SIZE = 26
 
@@ -14,7 +14,7 @@ class BasicFileLoader:
 
     def __init__(self, fpath):
         '''
-        Build new file loader
+        Create new traces batch file loader
         fpath: file path
         '''
         self.set_file_path(fpath)
@@ -149,7 +149,7 @@ class BasicFileLoader:
 
 class AdvancedFileLoader(BasicFileLoader):
     '''
-    Advanced loader of power measurements from a batch file given its identifier
+    Advanced loader of power traces from a batch file given its identifier
     '''
 
     def __init__(self, file_id=None):
