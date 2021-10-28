@@ -21,33 +21,33 @@ root_data_dir = LOCAL_DATA_DIR
 
 def cat2(s0, s1):
     '''
-    Concatenate 2 strings
+    Concatenate 2 strings.
     '''
     return f'{s0}{s1}'
     
 def cat3(s0, s1, s3):
     '''
-    Concatenate 3 strings
+    Concatenate 3 strings.
     '''
     return f'{s0}{s1}{s3}'
 
 
-def volt_name(value):
+def voltage_name(value):
     #return cat2(value, VOLT_SUFFIX)        # <-- changed convention
     return cat2(VOLT_PREFIX, value)
 
-def freq_name(value):
+def frequency_name(value):
     #return cat2(value, FREQ_SUFFIX)        # <-- changed convention
     return cat3(FREQ_PREFIX, value, FREQ_SUFFIX)
 
-def srate_name(value):
+def sampling_rate_name(value):
     return cat2(value, SRATE_SUFFIX)
 
-def sbits_name(value):
+def sampling_bits_name(value):
     return cat2(value, SBITS_SUFFIX)
 
-def key_name(bid, value):
-    return f"{cat2(KEY_PREFIX, bid)}-{value}"
+def key_name(key_id, key_value):
+    return f"{cat2(KEY_PREFIX, key_id)}-{key_value}"
 
 # traces file path naming
 
@@ -56,6 +56,7 @@ def parent_path(file_id):
     Build path up to parent directory of the file.
     Used in the past because of previous file path had full path
     function of (volt, freq) instead of only the file name.
+    file_id: identifier of the file
     '''
     # <-- changed convention
 
@@ -67,21 +68,23 @@ def parent_path(file_id):
 
 def file_name(file_id):
     '''
-    Compute name of the file with extension
+    Compute name of the file with extension.
+    file_id: identifier of the file
     '''
     # <-- changed convention
 
     #s0 = f'{file_id.date}_{freq_name(file_id.freq)}_{srate_name(file_id.srate)}'
     #s1 = f'{sbits_name(file_id.sbits)}_{key_name(file_id.kid,file_id.kvalue)}_{file_id.ntraces}'
 
-    s0 = f'{file_id.date}_{file_id.mode}_{volt_name(file_id.volt)}'
-    s1 = f'{freq_name(file_id.freq)}_{srate_name(file_id.srate)}_{sbits_name(file_id.sbits)}'
-    s2 = f'{key_name(file_id.kid,file_id.kvalue)}_{file_id.ntraces}'
+    s0 = f'{file_id.date}_{file_id.mode}_{voltage_name(file_id.voltage)}_{frequency_name(file_id.frequency)}'
+    s1 = f'{sampling_rate_name(file_id.sampling_rate)}_{sampling_bits_name(file_id.sampling_bits)}'
+    s2 = f'{key_name(file_id.key_id,file_id.key_value)}_{file_id.num_traces}'
 
     return f'{s0}_{s1}_{s2}.{FILE_EXTENSION}'
 
 def file_path(file_id):
     '''
-    Compute path of the file
+    Compute path of the file.
+    file_id: identifier of the file
     '''
     return os.path.join(parent_path(file_id), file_name(file_id))

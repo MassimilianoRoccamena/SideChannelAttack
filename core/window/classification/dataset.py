@@ -1,13 +1,13 @@
 from torch.utils.data import Dataset
 
-class WindowClassificationDataset(Dataset):
-    def __init__(self, volt, freq):
-        super().__init__()
-        self.voltages = volt
-        self.frequencies = freq
+from core.window.reader import WindowReader
+
+class WindowClassificationDataset(WindowReader, Dataset):
+    def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
+        super().__init__(slicer, voltages, frequencies, key_values, num_traces)
 
     def __len__(self):
-        pass
+        return super().__len__()
 
-    def __getitem__(self, idx):
-        pass
+    def __getitem__(self, index):
+        raise NotImplementedError

@@ -2,21 +2,21 @@ from core.data.params import PathReference
 
 class FileIdentifier:
     '''
-    Identification values of a batch file of power traces
+    Identification values of a batch file of power traces.
     '''
-    def __init__(self, volt, freq, kvalue):
+    def __init__(self, voltage, frequency, key_value):
         '''
-        Create identifier of the file
-        volt: voltage used by the device
-        freq: frequency used by the device
-        kvalue: value of the given key byte
+        Create identifier of the file.
+        voltage: voltage used by the device
+        frequency: frequency used by the device
+        key_value: value of the given key byte
         '''
-        self.volt = volt
-        self.freq = freq
-        self.kvalue = kvalue
+        self.voltage = voltage
+        self.frequency = frequency
+        self.key_value = key_value
         self.date = PathReference.date
         self.mode = PathReference.mode
-        self.srate = PathReference.srate
-        self.sbits = PathReference.nbits
-        self.kid = PathReference.kid
-        self.ntraces = PathReference.ntraces
+        self.sampling_rate = PathReference.sampling_rate
+        self.sampling_bits = PathReference.sampling_bits
+        self.key_id = PathReference.key_id
+        self.num_traces = PathReference.num_traces

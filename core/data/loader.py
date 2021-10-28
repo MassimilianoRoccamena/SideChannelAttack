@@ -4,30 +4,30 @@ from core.data.path import file_path
 
 class BasicFileLoader:
     '''
-    Basic loader of power traces from a batch file with same key byte
+    Loader of power traces from a (same key traces) batch file.
     '''
     HEAD_SIZE = 26
 
     NO_FILE_MSG = "no file path has been specified"
-    INVALID_TRACE_IDX_MSG = "invalid trace indices"
-    INVALID_TIME_IDX_MSG = "invalid temporal indices"
+    INVALID_TRACE_INDICES_MSG = "invalid trace indices"
+    INVALID_TIME_INDICES_MSG = "invalid temporal indices"
 
-    def __init__(self, fpath):
+    def __init__(self, file_path):
         '''
         Create new traces batch file loader
-        fpath: file path
+        file_path: file path
         '''
-        self.set_file_path(fpath)
+        self.set_file_path(file_path)
 
-    def set_file_path(self, fpath):
+    def set_file_path(self, file_path):
         '''
-        Set the binary .dat file path of a batch of key encrypted traces
-        fpath: file path
+        Set the data file path of a batch of key encrypted traces.
+        file_path: file path
         '''
-        self.file_path = fpath
+        self.file_path = file_path
 
         if self.file_path is None:
-            self.ntraces = None
+            self.num_traces = None
             self.trace_size = None
             self.channel_type = None
             self.text_len = None
@@ -37,7 +37,7 @@ class BasicFileLoader:
             return
 
         with open(self.file_path,'rb') as infile:
-            self.ntraces = int.from_bytes(infile.read(4), byteorder='little', signed=False)
+            self.num_traces = int.from_bytes(infile.read(4), byteorder='little', signed=False)
             self.trace_size = int.from_bytes(infile.read(4), byteorder='little', signed=False)
             self.channel_type = infile.read(1).decode("ascii")
             self.text_len = int.from_bytes(infile.read(1), byteorder='little', signed=False)
@@ -54,7 +54,7 @@ class BasicFileLoader:
     
     def load_all(self):
         '''
-        Get the whole full traces and plain texts from the batch file
+        Get the whole full traces and plain texts from the batch file.
         '''
         if self.file_path is None:
             raise ValueError(BasicFileLoader.NO_FILE_MSG)
@@ -62,32 +62,32 @@ class BasicFileLoader:
         with open(self.file_path,'rb') as infile:
             infile.seek(BasicFileLoader.HEAD_SIZE, 0)
             
-            texts = np.zeros((self.ntraces, self.text_len), dtype= 'uint8');
-            traces = np.zeros((self.ntraces, self.trace_size), dtype= self.channel_dtype);
+            texts = np.zeros((self.num_traces, self.text_len), dtype= 'uint8');
+            traces = np.zeros((self.num_traces, self.trace_size), dtype= self.channel_dtype);
             
-            for i in np.arange(0, self.ntraces):
+            for i in np.arange(0, self.num_traces):
                 traces[i,:] = np.frombuffer(buffer=infile.read(self.trace_size* self.channel_dtype.itemsize), dtype= self.channel_dtype)
                 texts[i,:] = np.frombuffer(buffer=infile.read(self.text_len* texts.itemsize), dtype=texts.dtype)
             
         return traces, texts
 
-    def validate_trace_indices(self, idx):
+    def validate_trace_indices(self, indices):
         '''
-        Check consistency of some trace indices
-        idx: list of traces indices of the file
+        Check consistency of some trace indices.
+        indices: list of trace indices of the file
         '''
-        if np.all(idx < 0) or np.all(idx >= self.ntraces):
-            raise IndexError(BasicFileLoader.INVALID_TRACE_IDX_MSG)
+        if np.all(indices < 0) or np.all(indices >= self.num_traces):
+            raise IndexError(BasicFileLoader.INVALID_TRACE_INDICES_MSG)
 
-    def load_some(self, trace_idx):
+    def load_some(self, trace_indices):
         '''
-        Get some full traces and plain texts from the batch file
-        trace_idx: list of trace indices of a file
+        Get some full traces and plain texts from the batch file.
+        trace_indices: list of trace indices of a file
         '''
         if self.file_path is None:
             raise ValueError(BasicFileLoader.NO_FILE_MSG)
 
-        idx = np.array(trace_idx)
+        idx = np.array(trace_indices)
         self.validate_trace_indices(idx)
 
         n = len(idx)
@@ -105,56 +105,63 @@ class BasicFileLoader:
 
         return traces, texts
 
-    def validate_time_indices(self, idx):
+    def validate_time_indices(self, indices):
         '''
-        Check consistency of some time indices
-        idx: list of temporal indices of a trace
+        Check consistency of some time indices.
+        indices: list of temporal indices of a trace
         '''
-        if np.all(idx < 0) or np.all(idx >= self.trace_size):
-            raise IndexError(BasicFileLoader.INVALID_TRACE_IDX_MSG)
+        if np.all(indices < 0) or np.all(indices >= self.trace_size):
+            raise IndexError(BasicFileLoader.INVALID_TRACE_INDICES_MSG)
     
-    def load_some_projected(self, trace_idx, time_idx):
+    def load_some_projected(self, trace_indices, time_indices):
         '''
-        Load some temporal projected traces from the batch file
-        trace_idx: list of trace indices of a file
-        time_idx: list of temporal indices of a trace
+        Load some temporal projected traces from the batch file.
+        trace_indices: list of trace indices of a file
+        time_indices: list of temporal indices of a trace
         '''
         if self.file_path is None:
             raise ValueError(BasicFileLoader.NO_FILE_MSG)
 
-        tr_idx = np.array(trace_idx).reshape((len(trace_idx),1))
-        self.validate_trace_indices(tr_idx)
+        trace_idx = np.array(trace_indices).reshape((len(trace_indices),1))
+        self.validate_trace_indices(trace_idx)
 
-        tm_idx = np.array(time_idx)
-        self.validate_time_indices(tm_idx)
+        time_idx = np.array(time_indices)
+        self.validate_time_indices(time_idx)
         
-        trace_len = len(trace_idx)
-        time_len = len(time_idx)
+        trace_len = len(trace_indices)
+        time_len = len(time_indices)
         
         with open(self.file_path,'rb') as infile:
             traces = np.zeros((trace_len, time_len), dtype= self.channel_dtype)
             texts = np.zeros((trace_len, self.text_len), dtype= 'uint8')
             
-            pos = BasicFileLoader.HEAD_SIZE + tr_idx*self.row_len + tm_idx*self.channel_dtype.itemsize
+            pos = BasicFileLoader.HEAD_SIZE + trace_idx*self.row_len + time_idx*self.channel_dtype.itemsize
             
             for i in range(pos.shape[0]):
                 for j in range(pos.shape[1]):
                     infile.seek(pos[i][j], 0)
                     traces[i,j] =  np.frombuffer(buffer=infile.read(self.channel_dtype.itemsize), dtype= self.channel_dtype)
                 
-                infile.seek(BasicFileLoader.HEAD_SIZE+ self.row_len* trace_idx[i] + self.trace_size* self.channel_dtype.itemsize , 0)
+                infile.seek(BasicFileLoader.HEAD_SIZE+ self.row_len* trace_indices[i] + self.trace_size* self.channel_dtype.itemsize , 0)
                 texts[i,:] = np.frombuffer(buffer=infile.read(self.text_len* texts.itemsize), dtype=texts.dtype)
         
         return traces, texts
 
 class AdvancedFileLoader(BasicFileLoader):
     '''
-    Advanced loader of power traces from a batch file given its identifier
+    Loader of power traces from a batch file given its identifier.
     '''
 
     def __init__(self, file_id=None):
         self.set_file_id(file_id)
 
     def set_file_id(self, file_id):
+        '''
+        Set the data file identifier, then build the path.
+        file_id: file identifier
+        '''
         self.file_id = file_id
-        self.set_file_path(file_path(file_id))
+        if file_id is None:
+            self.set_file_path(None)
+        else:
+            self.set_file_path(file_path(file_id))
