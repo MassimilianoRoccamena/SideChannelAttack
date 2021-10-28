@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.data.path import file_path
+from core.base.path import file_path
 
 class BasicFileLoader:
     '''
@@ -51,8 +51,26 @@ class BasicFileLoader:
             
             self.row_len = self.text_len + self.trace_size*self.channel_dtype.itemsize
             self.key = np.frombuffer(buffer=infile.read(16), dtype='uint8');
+
+    def validate_trace_indices(self, trace_indices):
+        '''
+        Check consistency of some trace indices.
+        trace_indices: list of trace indices of the file
+        '''
+        if np.all(trace_indices < 0) or np.all(trace_indices >= self.num_traces):
+            raise IndexError(BasicFileLoader.INVALID_TRACE_INDICES_MSG)
+
+    def validate_time_indices(self, time_indices):
+        '''
+        Check consistency of some time indices.
+        time_indices: list of temporal indices of a trace
+        '''
+        if np.all(time_indices < 0) or np.all(time_indices >= self.trace_size):
+            raise IndexError(BasicFileLoader.INVALID_TRACE_INDICES_MSG)
+
+    # -----------------------------------------------------------------------------------------
     
-    def load_all(self):
+    def load_all_traces(self):
         '''
         Get the whole full traces and plain texts from the batch file.
         '''
@@ -71,15 +89,7 @@ class BasicFileLoader:
             
         return traces, texts
 
-    def validate_trace_indices(self, indices):
-        '''
-        Check consistency of some trace indices.
-        indices: list of trace indices of the file
-        '''
-        if np.all(indices < 0) or np.all(indices >= self.num_traces):
-            raise IndexError(BasicFileLoader.INVALID_TRACE_INDICES_MSG)
-
-    def load_some(self, trace_indices):
+    def load_some_traces(self, trace_indices):
         '''
         Get some full traces and plain texts from the batch file.
         trace_indices: list of trace indices of a file
@@ -104,16 +114,8 @@ class BasicFileLoader:
                 j = j + 1
 
         return traces, texts
-
-    def validate_time_indices(self, indices):
-        '''
-        Check consistency of some time indices.
-        indices: list of temporal indices of a trace
-        '''
-        if np.all(indices < 0) or np.all(indices >= self.trace_size):
-            raise IndexError(BasicFileLoader.INVALID_TRACE_INDICES_MSG)
     
-    def load_some_projected(self, trace_indices, time_indices):
+    def load_some_projected_traces(self, trace_indices, time_indices):
         '''
         Load some temporal projected traces from the batch file.
         trace_indices: list of trace indices of a file

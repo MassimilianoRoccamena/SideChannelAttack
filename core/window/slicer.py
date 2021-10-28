@@ -1,6 +1,6 @@
 from math import ceil
 
-from core.data.params import TRACE_SIZE
+from core.base.params import TRACE_SIZE
 
 class BasicTraceSlicer:
     '''
@@ -17,18 +17,20 @@ class BasicTraceSlicer:
         self.window_size = window_size
         self.num_windows = num_windows
 
-    def validate_window_index(self, index):
+    def validate_window_index(self, window_index):
         '''
         Check consistency of a window index.
-        indedx: window index
+        window_index: window index of a trace
         '''
-        if index < 0 or index >= self.num_windows:
+        if window_index < 0 or window_index >= self.num_windows:
             raise IndexError(BasicTraceSlicer.INVALID_INDEX_MSG)
 
-    def window_bounds(self, index):
+    # -----------------------------------------------------------------------------------------
+
+    def slice(self, window_index):
         '''
         Compute start, end indices of a given trace window.
-        index: window index
+        window_index: window index of a trace
         '''
         raise NotImplementedError
 
@@ -36,7 +38,7 @@ class BasicTraceSlicer:
         return self.num_windows
 
     def __getitem__(self, index):
-        return self.window_bounds(index)
+        return self.slice(index)
 
 class AdvancedTraceSlicer(BasicTraceSlicer):
     '''
@@ -55,13 +57,13 @@ class AdvancedTraceSlicer(BasicTraceSlicer):
 
         super().__init__(window_size, nwindows)
 
-    def window_bounds(self, index):
-        if index < 0:
-            index = self.num_windows - index
+    def slice(self, window_index):
+        if window_index < 0:
+            window_index = self.num_windows - window_index
 
-        self.validate_window_index(index)
+        self.validate_window_index(window_index)
 
-        start = index * self.stride
+        start = window_index * self.stride
         if (start+self.window_size-1 >= TRACE_SIZE):
             start = TRACE_SIZE - self.window_size
 

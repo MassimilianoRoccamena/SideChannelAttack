@@ -1,4 +1,4 @@
-from core.data.params import PathReference
+from core.base.params import PathReference
 
 class FileIdentifier:
     '''
