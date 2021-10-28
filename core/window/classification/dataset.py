@@ -11,5 +11,6 @@ class WindowClassificationDataset(WindowReader, Dataset):
 
     def __getitem__(self, index):
         x = super().__getitem__(index)
-        y = self.file_id.frequency
-        return x, y
+        l0 = self.voltages.index(self.file_id.voltage)
+        l1 = self.frequencies.index(self.file_id.frequency)
+        return x, (l0, l1)

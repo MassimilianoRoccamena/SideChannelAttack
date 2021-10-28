@@ -26,7 +26,7 @@ class WindowLoader(AdvancedFileLoader):
         '''
         start, end = self.slicer[window_index]
         time_idx = np.arange(start, end+1)
-        return self.load_some_projected_traces(trace_indices, time_idx)
+        return self.load_some_projected_traces(trace_indices, time_idx)[0][0]
 
 class WindowReader(WindowLoader):
     '''
@@ -68,7 +68,7 @@ class WindowReader(WindowLoader):
         self.validate_reader_index(reader_index)
 
         def subindex_group(idx, count, size, min):
-            groups = [[min + x*size, min + (x+1)*size - 1] for x in range(count)]
+            groups = [[min + x*size, min + (x+1)*size] for x in range(count)]
             for i, group in enumerate(groups):
                 if idx < group[1]:
                     return i, group
@@ -100,8 +100,6 @@ class WindowReader(WindowLoader):
         window_idx, group = subindex_group(reader_index, len(self.slicer), size, group[0])
         self.window_index = window_idx
 
-    # -----------------------------------------------------------------------------------------
-
     def read_window(self, reader_index):
         '''
         Read a new trace window from a reader index.
@@ -109,7 +107,7 @@ class WindowReader(WindowLoader):
         '''
         self.translate_reader_index(reader_index)
         self.set_file_id(self.file_id)
-        return self.load_window_of_some_traces([self.trace_index], [self.window_index])
+        return self.load_window_of_some_traces([self.trace_index], self.window_index)
 
     def __len__(self):
         return self.num_files * self.num_traces * len(self.slicer)

@@ -72,7 +72,7 @@ class BasicFileLoader:
     
     def load_all_traces(self):
         '''
-        Get the whole full traces and plain texts from the batch file.
+        Get the whole full traces (and their plain texts) from the batch file.
         '''
         if self.file_path is None:
             raise ValueError(BasicFileLoader.NO_FILE_MSG)
@@ -91,7 +91,7 @@ class BasicFileLoader:
 
     def load_some_traces(self, trace_indices):
         '''
-        Get some full traces and plain texts from the batch file.
+        Get some full traces (and their plain texts) from the batch file.
         trace_indices: list of trace indices of a file
         '''
         if self.file_path is None:
@@ -117,7 +117,7 @@ class BasicFileLoader:
     
     def load_some_projected_traces(self, trace_indices, time_indices):
         '''
-        Load some temporal projected traces from the batch file.
+        Load some temporal projected traces (and their plain texts) from the batch file.
         trace_indices: list of trace indices of a file
         time_indices: list of temporal indices of a trace
         '''
