@@ -1,5 +1,5 @@
-from src.main.core.window.slicer import AdvancedTraceSlicer
-from src.main.core.window.classification.dataset import MixedWindowClassification
+from main.core.window.slicer import AdvancedTraceSlicer
+from main.core.window.classification.dataset import MixedWindowClassification
 
 def print_window_classification_item():
     slicer = AdvancedTraceSlicer(1000, 50)

@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 
-from src.main.core.window.reader import WindowReader
+from main.core.window.reader import WindowReader
 
 class AbstractWindowClassification(WindowReader, Dataset):
     '''

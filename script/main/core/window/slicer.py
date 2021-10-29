@@ -1,6 +1,6 @@
 from math import ceil
 
-from src.main.base.data.params import TRACE_SIZE
+from main.base.data.params import TRACE_SIZE
 
 class AbstractTraceSlicer:
     '''

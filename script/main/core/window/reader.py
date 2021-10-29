@@ -1,7 +1,7 @@
 import numpy as np
 
-from src.main.base.data.path import FileIdentifier
-from src.main.base.data.loader import AdvancedFileLoader
+from main.base.data.path import FileIdentifier
+from main.base.data.loader import AdvancedFileLoader
 
 class WindowLoader(AdvancedFileLoader):
     '''

@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.main.base.data.path import file_path
+from main.base.data.path import file_path
 
 class BasicFileLoader:
     '''

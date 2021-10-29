@@ -1,5 +1,5 @@
-from src.main.base.data.path import FileIdentifier, file_path
-from src.main.base.data.loader import BasicFileLoader
+from main.base.data.path import FileIdentifier, file_path
+from main.base.data.loader import BasicFileLoader
 
 FILE_ID = FileIdentifier('1.00', '52.000', '32')
 FPATH = file_path(FILE_ID)

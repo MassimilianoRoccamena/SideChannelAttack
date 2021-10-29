@@ -1,6 +1,6 @@
 import os
 
-from src.main.base.data.params import PathReference
+from main.base.data.params import PathReference
 
 # global vars/constants
 
