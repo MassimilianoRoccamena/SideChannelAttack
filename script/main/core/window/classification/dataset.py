@@ -38,7 +38,7 @@ class VoltageWindowClassification(AbstractWindowClassification):
         y = reader.voltages.index(reader.file_id.voltage)
         return x, y
 
-class FrequencyClassification(AbstractWindowClassification):
+class FrequencyWindowClassification(AbstractWindowClassification):
     '''
     Dataset composed of power trace windows labelled with frequency
     '''

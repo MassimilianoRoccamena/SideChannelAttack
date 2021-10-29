@@ -8,10 +8,11 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
-import training # what is this?
-from src.main.base.training.args import parse_args
-from src.main.base.training.misc import fetch_config, flatten_config, get_source_files
-from src.main.base.training.logs import LoggerCollection, HyperParamsLogger
+# import training
+import main.base.training.trainable.classification as trainable
+from main.base.training.args import parse_args
+from main.base.training.misc import fetch_config, flatten_config, get_source_files
+from main.base.training.logs import LoggerCollection, HyperParamsLogger
 
 def do_training():
     cfg = parse_args()
@@ -26,7 +27,7 @@ def do_training():
     elif fetch_config(cfg, "seed", None) is not None:
         seed_everything(cfg.seed, workers=cfg.get('seed_workers', True))
 
-    trainable_class = getattr(training, cfg.trainable.classname)
+    trainable_class = getattr(trainable, cfg.trainable.classname)
     trainable = trainable_class(cfg)
 
     dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")

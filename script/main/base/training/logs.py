@@ -9,7 +9,6 @@ from typing import Optional
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
-
 class LoggerCollection(LoggerCollection_):
 
     @property
@@ -34,7 +33,6 @@ class LoggerCollection(LoggerCollection_):
 
         if close:
             plt.close(fig)
-
 
 class HyperParamsLogger(Callback):
 

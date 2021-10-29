@@ -1,11 +1,8 @@
-from main.core.window.slicer import AdvancedTraceSlicer
-from main.core.window.reader import WindowReader
-from main.core.window.classification.dataset import MixedWindowClassification
+from main.core.window.classification.target import get_mixed_labels_dataset
 
 def print_window_classification_item():
-    slicer = AdvancedTraceSlicer(1000, 50)
-    reader = WindowReader(slicer, ['1.00'], ['52.000'], ['32','a3'], 500)
-    dataset = MixedWindowClassification(reader)
+    dataset = get_mixed_labels_dataset()
+    reader = dataset.reader
 
     reader_idx = 1400000
     window, label = dataset[reader_idx]

@@ -3,14 +3,12 @@ import numpy as np
 
 from omegaconf import OmegaConf
 
-from src.main.base.training.misc import withrepr
-
+from main.base.training.misc import withrepr
 
 # Adds the ${eval:expression} resolver to omegaconf's parsing
 # This enables runtime evaluation of python expressions in configs
 # E.g., ${eval:"${params.val1} if ${params.cond} else ${params.val2}"}
 OmegaConf.register_new_resolver("eval", lambda x: eval(x))
-
 
 # Adds the ${runtime_eval:expression} resolver to omegaconf's parsing
 # This extends the previous by encapsulating the expression into a function
@@ -18,7 +16,6 @@ OmegaConf.register_new_resolver("eval", lambda x: eval(x))
 # generate random values each time the option is evaluated
 # E.g., ${runtime_eval: np.random.randint(0,100)}
 OmegaConf.register_new_resolver("runtime_eval", lambda x: withrepr(x)(lambda: eval(x)))
-
 
 def parse_args():
     # Retrieve the base config path
