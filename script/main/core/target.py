@@ -1,1 +1,0 @@
-from main.core.window.target import *

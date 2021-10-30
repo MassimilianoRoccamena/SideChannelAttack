@@ -40,7 +40,7 @@ class AbstractTraceSlicer:
     def __getitem__(self, index):
         return self.slice(index)
 
-class AdvancedTraceSlicer(AbstractTraceSlicer):
+class StridedTraceSlicer(AbstractTraceSlicer):
     '''
     Trace windows slicer with striding.
     '''

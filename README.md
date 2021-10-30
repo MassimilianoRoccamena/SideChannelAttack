@@ -6,11 +6,14 @@ You can launch the app by running one of the executable scripts, specifying the 
 bash run.sh $script_id $passed_args
 ```
 
-Executable dentifiers are:
+Main executable identifiers are:
 
-- ***main***
-  - goal functionalities
+- ***training***
+  - train a deep model
+
+Other executables identifiers are:
+
 - ***mining***
-  - fetch and visualize info
+  - fetch and visualize info of main
 - ***testing***
-  - tests for main
+  - run tests of main

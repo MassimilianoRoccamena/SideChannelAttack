@@ -1,0 +1,92 @@
+# I
+
+seed: 314159
+seed_workers: True
+force_determinism: False
+
+load_checkpoint: null
+test_only: False
+
+core:
+- window
+- classification
+
+dataset:
+  target:
+  - frequency
+  params:
+    slicer:
+      classname: AdvancedTraceSlicer
+      params:
+        window_size: 1000
+        stride: 50
+
+    voltages:
+      - '1.00'
+    frequencies:
+    - '52.000'
+    key_values:
+    - '32'
+    - 'a3'
+    num_traces: 500
+
+module:
+  classname: Model
+  params:
+    ...
+
+loss:
+  classname: CrossEntropyLoss
+  params:
+    ...
+
+trainable:
+  classname: Trainable
+  params:
+
+# II
+
+trainer:
+  gpus: 1
+  max_epochs: 20
+  check_val_every_n_epoch: 1
+
+early_stopping:
+  params:
+    monitor: 'validation/acc'
+    patience: 5
+    mode: 'max'
+
+dataloader:
+  params:
+    batch_size: 8
+    num_workers: 10
+    shuffle: True
+
+optimizer:
+  classname: SGD
+  params:
+    lr: 0.01
+    momentum: 0.9
+    weight_decay: 1e-4
+
+scheduler:
+  classname: StepLR
+  params:
+    step_size: 2
+    gamma: 0.9
+
+# III
+
+loggers:
+  tensorboard:
+    enable: True
+
+  neptune:
+    enable: False
+    offline_mode: False
+    project_name: '${env:NEPTUNE_API_USER}/SideChannelAttack'
+    upload_source_files:
+    - '*.py'
+    - '*.c'
+    - '*.yaml'

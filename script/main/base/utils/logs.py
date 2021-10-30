@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
 class LoggerCollection(LoggerCollection_):
-
     @property
     def name(self) -> str:
         # return '_'.join([str(logger.name) for logger in self._logger_iterable])
@@ -35,7 +34,6 @@ class LoggerCollection(LoggerCollection_):
             plt.close(fig)
 
 class HyperParamsLogger(Callback):
-
     def __init__(self, cfg):
         self.cfg = cfg
 

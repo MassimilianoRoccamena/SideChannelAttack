@@ -1,13 +1,23 @@
 from torch.utils.data import Dataset
 
+from main.core.window.reader import WindowReader
+
 class AbstractWindowClassification(Dataset):
     '''
     Abstract dataset which reads power trace windows with some labels
     '''
 
-    def __init__(self, reader):
+    def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
+        '''
+        Create new window classification dataset.
+        slicer: window slicing strategy
+        voltages: desired voltages
+        frequencies: desired frequencies
+        key_values: desired key values
+        num_traces: number of traces in each file
+        '''
         super().__init__()
-        self.reader = reader
+        self.reader = WindowReader(slicer, voltages, frequencies, key_values, num_traces)
 
     def __len__(self):
         return len(self.reader.slicer)

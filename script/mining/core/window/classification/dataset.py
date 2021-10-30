@@ -1,7 +1,17 @@
-from main.core.window.classification.target import get_mixed_labels_dataset
+from main.core.window.slicer import StridedTraceSlicer
+from main.core.window.classification.dataset import MixedWindowClassification
+
+WINDOW_SIZE = 1000
+STRIDE = 50
+
+VOLTAGES = ['1.00']
+FREQUENCIES = ['52.000']
+KEY_VALUES = ['32','a3']
+NUM_TRACES = 500
 
 def print_window_classification_item():
-    dataset = get_mixed_labels_dataset()
+    slicer = StridedTraceSlicer(WINDOW_SIZE, STRIDE)
+    dataset = MixedWindowClassification(slicer, VOLTAGES, FREQUENCIES, KEY_VALUES, NUM_TRACES)
     reader = dataset.reader
 
     reader_idx = 1400000

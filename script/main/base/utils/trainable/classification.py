@@ -2,12 +2,11 @@ import torch
 import torch.nn.functional as F
 
 import numpy as np
-from main.base.training.trainable.base import TrainableBase
-from main.base.training.metrics import accuracy, Timer
+from main.base.utils.trainable.base import TrainableBase
+from main.base.utils.metrics import accuracy, Timer
 from sklearn.metrics import confusion_matrix
 
 class TrainableClassification(TrainableBase):
-
     def training_step(self, train_batch, batch_idx):
         xyz = train_batch['xyz']
         target = train_batch['target']

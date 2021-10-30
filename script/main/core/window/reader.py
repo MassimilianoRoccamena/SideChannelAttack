@@ -30,7 +30,7 @@ class WindowLoader(AdvancedFileLoader):
 
 class WindowReader(WindowLoader):
     '''
-    Loader of trace windows with an indexing strategy which makes easier loading data from file
+    Loader of trace windows with an indexing strategy which makes easier loading data from file.
     and tracking target values in memory.
     '''
     INVALID_INDEX_MSG = 'invalid reader index'
@@ -38,6 +38,11 @@ class WindowReader(WindowLoader):
     def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
         '''
         Create new reader of trace windows.
+        slicer: window slicing strategy
+        voltages: desired voltages
+        frequencies: desired frequencies
+        key_values: desired key values
+        num_traces: number of traces in each file
         '''
         super().__init__(slicer)
         self.voltages = voltages

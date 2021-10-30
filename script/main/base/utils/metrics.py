@@ -3,13 +3,12 @@ import datetime
 from collections import deque, defaultdict
 
 import torch
-from utils.distributed import is_dist_avail_and_initialized
+from main.base.training.distributed import is_dist_avail_and_initialized
 
 import itertools
 import numpy as np
 from textwrap import wrap
 from matplotlib import pyplot as plt
-
 
 class Timer(object):
     """
@@ -21,6 +20,7 @@ class Timer(object):
             time.sleep(3)
         print("Code took {}s to execute".format(timer.time))
     """
+    
     def __init__(self):
         self.start = None
         self.stop = None
@@ -42,9 +42,7 @@ class Timer(object):
     def __exit__(self, *args, **kwargs):
         self.stop = time.time()
 
-
 def confusion_matrix_fig(cm, labels, normalize=False):
-
     if normalize:
         cm = cm.astype('float') * 10 / cm.sum(axis=1)[:, np.newaxis]
         cm = np.nan_to_num(cm, copy=True)
@@ -72,14 +70,16 @@ def confusion_matrix_fig(cm, labels, normalize=False):
 
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         ax.text(j, i, format(cm[i, j], 'd') if cm[i, j] != 0 else '.',
-                horizontalalignment="center", fontsize=6,
-                verticalalignment='center', color="black")
+                horizontalalignment='center', fontsize=6,
+                verticalalignment='center', color='black')
 
     return fig
 
-
 def accuracy(output, target, topk=(1,)):
-    """Computes the accuracy over the k top predictions for the specified values of k"""
+    '''
+    Computes the accuracy over the k top predictions for the specified values of k.
+    '''
+
     with torch.no_grad():
         maxk = max(topk)
         batch_size = target.size(0)

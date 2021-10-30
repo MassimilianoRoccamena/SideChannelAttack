@@ -3,7 +3,7 @@ import numpy as np
 
 from omegaconf import OmegaConf
 
-from main.base.training.misc import withrepr
+from main.base.utils.misc import withrepr
 
 # Adds the ${eval:expression} resolver to omegaconf's parsing
 # This enables runtime evaluation of python expressions in configs

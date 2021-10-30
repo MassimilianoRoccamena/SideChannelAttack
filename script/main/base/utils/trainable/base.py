@@ -12,17 +12,15 @@ from torch.utils.data import DataLoader, Subset
 import pytorch_lightning as pl
 from pytorch_lightning.trainer.states import TrainerStatus, RunningStage
 
-from main.base.training.scheduler import get_lr_scheduler
-from main.base.training.metrics import confusion_matrix_fig
-from main.base.training.transforms import compose_transforms
-from main.base.training.misc import get_criterion, get_optimizer, is_iterable, fetch_config
-from main.core.target import *
+from main.base.utils.scheduler import get_lr_scheduler
+from main.base.utils.metrics import confusion_matrix_fig
+from main.base.utils.transforms import compose_transforms
+from main.base.utils.misc import get_criterion, get_optimizer, is_iterable, fetch_config
+from main.core.target import * # get_dataset and get_model
 
 class TrainableBase(pl.LightningModule):
-
     def __init__(self, cfg):
         super().__init__()
-
         self.cfg = cfg
         self.network = self.configure_network()
         self.criterion = self.configure_criterion()
@@ -31,8 +29,7 @@ class TrainableBase(pl.LightningModule):
     @functools.lru_cache()
     def steps_per_epoch(self) -> int:
         if self.trainer.max_steps:
-            raise RuntimeError("Training by number of total steps. "
-                               "Cannot determine epoch length")
+            raise RuntimeError('Training by number of total steps. Cannot determine epoch length')
 
         limit_batches = self.trainer.limit_train_batches
         batches = len(self.train_dataloader())

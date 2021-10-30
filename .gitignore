@@ -116,3 +116,4 @@ dmypy.json
 # Local development 
 #  in case of server unavailability
 .data/
+.log/
