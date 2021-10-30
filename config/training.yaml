@@ -7,13 +7,12 @@ force_determinism: False
 load_checkpoint: null
 test_only: False
 
-core:
+problem:
 - window
 - classification
 
-dataset:
-  target:
-  - frequency
+data:
+  label: frequency
   params:
     slicer:
       classname: StridedTraceSlicer
@@ -22,7 +21,7 @@ dataset:
         stride: 50
 
     voltages:
-      - '1.00'
+    - '1.00'
     frequencies:
     - '52.000'
     key_values:
@@ -30,19 +29,19 @@ dataset:
     - 'a3'
     num_traces: 500
 
-module:
-  classname: Model
+model:
+  classname: ModelA
   params:
     ...
 
-loss:
-  classname: CrossEntropyLoss
-  params:
-    ...
+#loss:
+#  classname: CrossEntropyLoss
+#  params:
+#    ...
 
-trainable:
-  classname: Trainable
-  params:
+#lightning:
+#  classname: Trainable
+#  params:
 
 # II
 
@@ -80,7 +79,7 @@ scheduler:
 
 loggers:
   tensorboard:
-    enable: True
+    enable: False
 
   neptune:
     enable: False
