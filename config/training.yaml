@@ -16,7 +16,7 @@ dataset:
   - frequency
   params:
     slicer:
-      classname: AdvancedTraceSlicer
+      classname: StridedTraceSlicer
       params:
         window_size: 1000
         stride: 50
