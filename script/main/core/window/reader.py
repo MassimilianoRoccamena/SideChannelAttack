@@ -16,8 +16,6 @@ class WindowLoader(AdvancedFileLoader):
         super().__init__()
         self.slicer = slicer
 
-    # -----------------------------------------------------------------------------------------
-
     def load_window_of_some_traces(self, trace_indices, window_index):
         '''
         Load a window from some traces of a batch file.
@@ -61,8 +59,6 @@ class WindowReader(WindowLoader):
         '''
         if reader_index < 0 or reader_index >= len(self):
             raise IndexError(WindowReader.INVALID_INDEX_MSG)
-
-    # -----------------------------------------------------------------------------------------
 
     def translate_reader_index(self, reader_index):
         '''

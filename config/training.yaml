@@ -4,8 +4,6 @@ seed: 314159
 seed_workers: True
 force_determinism: False
 
-load_checkpoint:
-
 core:
 - window
 - classification
@@ -30,6 +28,7 @@ dataset:
 
 model:
   classname: ModelA
+  checkpoint:
   params:
 
 #loss:

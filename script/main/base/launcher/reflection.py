@@ -1,12 +1,12 @@
 import importlib
 
-ROOT_PACKAGE_NAME = 'main.core'
+from main.base.launcher.params import ROOT_PACKAGE
 
 def package_name(nodes):
     output = nodes[0]
     for node in nodes[1:]:
         output = f"{output}.{node}"
-    return f"{ROOT_PACKAGE_NAME}.{output}"
+    return f"{ROOT_PACKAGE}.{output}"
 
 def module_name(package, module):
     return f"{package}.{module}"
