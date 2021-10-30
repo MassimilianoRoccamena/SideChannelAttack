@@ -1,5 +1,6 @@
 import os
 
+from main.base.util.string import cat2, cat3
 from main.base.data.params import PathReference
 
 # global vars/constants
@@ -20,19 +21,6 @@ AIRLAB_DATA_DIR = ''
 root_data_dir = LOCAL_DATA_DIR
 
 # basic naming manipulation
-
-def cat2(s0, s1):
-    '''
-    Concatenate 2 strings.
-    '''
-    return f'{s0}{s1}'
-    
-def cat3(s0, s1, s3):
-    '''
-    Concatenate 3 strings.
-    '''
-    return f'{s0}{s1}{s3}'
-
 
 def voltage_name(value):
     #return cat2(value, VOLT_SUFFIX)        # <-- changed convention

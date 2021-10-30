@@ -13,8 +13,5 @@ def module_name(package, module):
 
 def get_class(package, module, class_name):
     parent_name = module_name(package, module)
-    print(parent_name)
-    print(class_name)
     module = importlib.import_module(parent_name)
-    print(dir(module))
     return getattr(module, class_name)

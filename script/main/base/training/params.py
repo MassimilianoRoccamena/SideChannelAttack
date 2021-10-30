@@ -1,0 +1,4 @@
+EXPERIMENTS_PATH = ".log"
+
+DATA_MODULE_NAME = "dataset"
+MODEL_MODULE_NAME = "model"
