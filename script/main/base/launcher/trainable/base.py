@@ -18,7 +18,7 @@ from main.base.utils.transforms import compose_transforms
 from main.base.utils.misc import get_criterion, get_optimizer, is_iterable, fetch_config
 from main.core.target import * # get_dataset and get_model
 
-from main.base.training.reflection import get_class
+from main.base.launcher.reflection import get_class
 
 class LightningModel(pl.LightningModule):
     def __init__(self, cfg):

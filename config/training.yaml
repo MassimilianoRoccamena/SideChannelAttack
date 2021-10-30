@@ -5,13 +5,12 @@ seed_workers: True
 force_determinism: False
 
 load_checkpoint: null
-test_only: False
 
-problem:
+core:
 - window
 - classification
 
-data:
+dataset:
   label: frequency
   params:
     slicer:
@@ -58,7 +57,7 @@ early_stopping:
 
 dataloader:
   params:
-    batch_size: 8
+    batch_size: 32
     num_workers: 10
     shuffle: True
 

@@ -13,5 +13,9 @@ def module_name(package, module):
 
 def get_class(package, module, class_name):
     parent_name = module_name(package, module)
+
     module = importlib.import_module(parent_name)
+    if module is None:
+        raise ValueError(f'module {parent_name} not found')
+
     return getattr(module, class_name)
