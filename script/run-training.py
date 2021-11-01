@@ -1,6 +1,6 @@
 # launch the training of a network
 
-from main.base.launcher.training import launch_training
+from main.base.app.run.training import run_training
 
 if __name__ == '__main__':
-    launch_training()
+    run_training()

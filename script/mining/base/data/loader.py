@@ -2,9 +2,9 @@ from main.base.data.path import FileIdentifier, file_path
 from main.base.data.loader import BasicFileLoader
 
 FILE_ID = FileIdentifier('1.00', '52.000', '32')
-FPATH = file_path(FILE_ID)
+FILE_PATH = file_path(FILE_ID)
 
-loader = BasicFileLoader(FPATH)
+loader = BasicFileLoader(FILE_PATH)
 
 def load_all_shapes():
     traces, texts = loader.load_all_traces()

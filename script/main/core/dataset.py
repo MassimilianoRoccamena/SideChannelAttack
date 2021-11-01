@@ -1,10 +1,10 @@
 from torch.utils.data import Dataset
 
-from main.base.launcher.config import ConfigParseable
+from main.base.app.config import ConfigObject
 
-class ConfigDataset(ConfigParseable, Dataset):
+class ConfigDataset(ConfigObject, Dataset):
     ''''
-    Abstract configurable core dataset
+    Abstract configurable dataset
     '''
 
     pass

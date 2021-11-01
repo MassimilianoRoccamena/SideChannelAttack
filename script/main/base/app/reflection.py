@@ -1,6 +1,6 @@
 import importlib
 
-from main.base.launcher.params import ROOT_PACKAGE
+from main.base.app.params import ROOT_PACKAGE
 
 def get_package_name(path_nodes):
     output = path_nodes[0]

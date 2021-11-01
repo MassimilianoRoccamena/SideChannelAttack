@@ -1,10 +1,10 @@
 from torch.nn import Module
 
-from main.base.launcher.config import ConfigParseable
+from main.base.app.config import ConfigObject
 
-class ConfigModel(ConfigParseable, Module):
+class ConfigModel(ConfigObject, Module):
     ''''
-    Abstract configurable core model
+    Abstract configurable model
     '''
 
     pass

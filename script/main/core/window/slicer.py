@@ -1,9 +1,9 @@
 from math import ceil
 
-from main.base.launcher.config import ConfigParseable
+from main.base.app.config import ConfigObject
 from main.base.data.params import TRACE_SIZE
 
-class TraceSlicer(ConfigParseable):
+class TraceSlicer(ConfigObject):
     '''
     Abstract configurable slicer of traces into windows.
     '''
@@ -20,7 +20,7 @@ class TraceSlicer(ConfigParseable):
         self.num_windows = num_windows
 
     @classmethod
-    def parse_args(cls, config, core_nodes):
+    def config_args(cls, config, core_nodes):
         return [ config.window_size ]
 
     def validate_window_index(self, window_index):
@@ -46,7 +46,7 @@ class TraceSlicer(ConfigParseable):
 
 class StridedSlicer(TraceSlicer):
     '''
-    Trace windows slicer with striding.
+    Trace window slicer with striding.
     '''
 
     def __init__(self, window_size, stride):
@@ -62,9 +62,9 @@ class StridedSlicer(TraceSlicer):
         super().__init__(window_size, nwindows)
 
     @classmethod
-    def parse_args(cls, config, core_nodes):
+    def config_args(cls, config, core_nodes):
         new_args =  [ config.stride ]
-        return cls.super_args(config, core_nodes) + new_args
+        return cls.super_config_args(config, core_nodes) + new_args
 
     def slice(self, window_index):
         if window_index < 0:

@@ -6,7 +6,8 @@ class BasicFileLoader:
     '''
     Loader of power traces from a (same key traces) batch file.
     '''
-    HEAD_SIZE = 26
+    
+    HEADER_SIZE = 26
 
     NO_FILE_MSG = 'no file path has been specified'
     INVALID_TRACE_INDICES_MSG = 'invalid trace indices'
@@ -78,7 +79,7 @@ class BasicFileLoader:
             raise ValueError(BasicFileLoader.NO_FILE_MSG)
 
         with open(self.file_path,'rb') as infile:
-            infile.seek(BasicFileLoader.HEAD_SIZE, 0)
+            infile.seek(BasicFileLoader.HEADER_SIZE, 0)
             
             texts = np.zeros((self.num_traces, self.text_len), dtype= 'uint8');
             traces = np.zeros((self.num_traces, self.trace_size), dtype= self.channel_dtype);
@@ -108,7 +109,7 @@ class BasicFileLoader:
             j = 0
 
             for i in idx:
-                infile.seek(BasicFileLoader.HEAD_SIZE + self.row_len*i, 0)
+                infile.seek(BasicFileLoader.HEADER_SIZE + self.row_len*i, 0)
                 traces[j,:] = np.frombuffer(buffer=infile.read(self.trace_size* self.channel_dtype.itemsize), dtype= self.channel_dtype)
                 texts[j,:] = np.frombuffer(buffer=infile.read(self.text_len* texts.itemsize), dtype=texts.dtype)
                 j = j + 1
@@ -137,14 +138,14 @@ class BasicFileLoader:
             traces = np.zeros((trace_len, time_len), dtype= self.channel_dtype)
             texts = np.zeros((trace_len, self.text_len), dtype= 'uint8')
             
-            pos = BasicFileLoader.HEAD_SIZE + trace_idx*self.row_len + time_idx*self.channel_dtype.itemsize
+            pos = BasicFileLoader.HEADER_SIZE + trace_idx*self.row_len + time_idx*self.channel_dtype.itemsize
             
             for i in range(pos.shape[0]):
                 for j in range(pos.shape[1]):
                     infile.seek(pos[i][j], 0)
                     traces[i,j] =  np.frombuffer(buffer=infile.read(self.channel_dtype.itemsize), dtype= self.channel_dtype)
                 
-                infile.seek(BasicFileLoader.HEAD_SIZE+ self.row_len* trace_indices[i] + self.trace_size* self.channel_dtype.itemsize , 0)
+                infile.seek(BasicFileLoader.HEADER_SIZE+ self.row_len* trace_indices[i] + self.trace_size* self.channel_dtype.itemsize , 0)
                 texts[i,:] = np.frombuffer(buffer=infile.read(self.text_len* texts.itemsize), dtype=texts.dtype)
         
         return traces, texts

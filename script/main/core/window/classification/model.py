@@ -12,7 +12,7 @@ class A(ConfigModel):
         pass
 
     @classmethod
-    def parse_args(cls, config, core_nodes):
+    def config_args(cls, config, core_nodes):
         return []
 
     def forward(self, x):

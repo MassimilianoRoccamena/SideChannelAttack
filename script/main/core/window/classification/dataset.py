@@ -1,4 +1,4 @@
-from main.base.launcher.config import parse_object
+from main.base.app.config import config_object
 from main.core.dataset import ConfigDataset
 from main.core.window.reader import WindowReader
 
@@ -21,8 +21,8 @@ class WindowClassification(ConfigDataset):
         self.reader = WindowReader(slicer, voltages, frequencies, key_values, num_traces)
 
     @classmethod
-    def parse_args(cls, config, core_nodes):
-        slicer = parse_object(config.slicer, core_nodes[:1],
+    def config_args(cls, config, core_nodes):
+        slicer = config_object(config.slicer, core_nodes[:1],
                                 WindowClassification.SLICER_MODULE)
 
         return [ slicer, config.voltages, config.frequencies,
