@@ -1,25 +1,14 @@
-from main.base.launcher.config import ConfigParser
+from main.base.launcher.config import parse_object
 from main.core.dataset import ConfigDataset
 from main.core.window.reader import WindowReader
 
-class AbstractWindowClassification(ConfigDataset):
+class WindowClassification(ConfigDataset):
     '''
     Abstract dataset which reads power trace windows with some labels
     '''
+    SLICER_MODULE = 'slicer'
 
-    class Parser(ConfigParser):
-        '''
-        Parser from config of an abstact dataset of trace windows
-        '''
-
-        def constr_args(self, config):
-            return [ config.slicer,
-                     config.voltages,
-                     config.frequencies,
-                     config.key_values,
-                     config.num_traces ]
-
-    def __init__(self, parser, slicer, voltages, frequencies, key_values, num_traces):
+    def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
         '''
         Create new window classification dataset.
         slicer: window slicing strategy
@@ -28,8 +17,16 @@ class AbstractWindowClassification(ConfigDataset):
         key_values: desired key values
         num_traces: number of traces in each file
         '''
-        super().__init__(parser)
+        super().__init__()
         self.reader = WindowReader(slicer, voltages, frequencies, key_values, num_traces)
+
+    @classmethod
+    def parse_args(cls, config, core_nodes):
+        slicer = parse_object(config.slicer, core_nodes[:1],
+                                WindowClassification.SLICER_MODULE)
+
+        return [ slicer, config.voltages, config.frequencies,
+                 config.key_values, config.num_traces ]
 
     def __len__(self):
         return len(self.reader.slicer)
@@ -37,23 +34,10 @@ class AbstractWindowClassification(ConfigDataset):
     def __getitem__(self, index):
         raise NotImplementedError
 
-class MixedWindowClassification(AbstractWindowClassification):
+class MultiClassification(WindowClassification):
     '''
-    Dataset composed of power trace windows labelled with voltage and frequency
+    Dataset composed of power trace windows with multiple labels
     '''
-
-    class Parser(AbstractWindowClassification.Parser):
-        '''
-        Abstract parser from config of a mixed classification dataset
-        '''
-
-        def __init__(self):
-            super().__init__(MixedWindowClassification)
-
-    def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
-        super().__init__( MixedWindowClassification.Parser(),
-                          slicer, voltages, frequencies,
-                          key_values, num_traces )
 
     def __getitem__(self, index):
         reader = self.reader
@@ -62,23 +46,10 @@ class MixedWindowClassification(AbstractWindowClassification):
         y1 = reader.frequencies.index(reader.file_id.frequency)
         return x, (y0, y1)
 
-class VoltageWindowClassification(AbstractWindowClassification):
+class VoltageClassification(WindowClassification):
     '''
     Dataset composed of power trace windows labelled with voltage
     '''
-
-    class Parser(AbstractWindowClassification.Parser):
-        '''
-        Abstract parser from config of a voltage classification dataset
-        '''
-        
-        def __init__(self):
-            super().__init__(VoltageWindowClassification)
-
-    def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
-        super().__init__( VoltageWindowClassification.Parser(),
-                          slicer, voltages, frequencies,
-                          key_values, num_traces )
 
     def __getitem__(self, index):
         reader = self.reader
@@ -86,23 +57,10 @@ class VoltageWindowClassification(AbstractWindowClassification):
         y = reader.voltages.index(reader.file_id.voltage)
         return x, y
 
-class FrequencyWindowClassification(AbstractWindowClassification):
+class FrequencyClassification(WindowClassification):
     '''
     Dataset composed of power trace windows labelled with frequency
     '''
-
-    class Parser(AbstractWindowClassification.Parser):
-        '''
-        Abstract parser from config of a frequency classification dataset
-        '''
-        
-        def __init__(self):
-            super().__init__(FrequencyWindowClassification)
-
-    def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
-        super().__init__( FrequencyWindowClassification.Parser(),
-                          slicer, voltages, frequencies,
-                          key_values, num_traces )
 
     def __getitem__(self, index):
         reader = self.reader

@@ -1,18 +1,14 @@
 # I
 
-seed: 314159
-seed_workers: True
-force_determinism: False
-
 core:
 - window
 - classification
+- frequency
 
 dataset:
-  label: frequency
   params:
     slicer:
-      classname: StridedTraceSlicer
+      name: StridedSlicer
       params:
         window_size: 1000
         stride: 50
@@ -27,9 +23,9 @@ dataset:
     num_traces: 500
 
 model:
-  classname: ModelA
-  checkpoint:
+  name: A
   params:
+    checkpoint:
 
 #loss:
 #  classname: CrossEntropyLoss
@@ -41,6 +37,10 @@ model:
 #  params:
 
 # II
+
+seed: 314159
+seed_workers: True
+force_determinism: False
 
 trainer:
   gpus: 1
@@ -60,14 +60,14 @@ dataloader:
     shuffle: True
 
 optimizer:
-  classname: SGD
+  name: SGD
   params:
     lr: 0.01
     momentum: 0.9
     weight_decay: 1e-4
 
 scheduler:
-  classname: StepLR
+  name: StepLR
   params:
     step_size: 2
     gamma: 0.9

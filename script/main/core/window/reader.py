@@ -28,7 +28,7 @@ class WindowLoader(AdvancedFileLoader):
 
 class WindowReader(WindowLoader):
     '''
-    Loader of trace windows with an indexing strategy which makes easier loading data from file.
+    Reader of trace windows with an indexing strategy which makes easier loading data from file
     and tracking target values in memory.
     '''
     INVALID_INDEX_MSG = 'invalid reader index'

@@ -1,60 +1,23 @@
-import os
-import torch
-from datetime import datetime
-
-from main.base.util.string import upper1
-from main.base.launcher.params import LOG_DIR
 from main.base.launcher.params import DATASET_MODULE
 from main.base.launcher.params import MODEL_MODULE
 from main.base.launcher.config import load_training_config
-from main.base.launcher.reflection import package_name, get_class
-
-def parse_window_slicer(cfg):
-    pass
-
-def parse_classification_dataset(cfg):
-    core_nodes = cfg.core
-    package = package_name(core_nodes)
-
-    label = cfg.dataset.label
-    class_label = upper1(label)
-
-    class_prefix = core_nodes[-2]
-    is_window = class_prefix == 'window'
-    class_prefix = upper1(core_nodes[-2])
-    class_suffix = upper1(core_nodes[-1])
-
-    # window case
-    if is_window:
-        parse_window_slicer(cfg.dataset.params.slicer)
-
-    class_name = f"{class_label}{class_prefix}{class_suffix}"
-    
-    return get_class(package, DATASET_MODULE, class_name)
-
-def parse_model(cfg):
-    core_nodes = cfg.core
-    package = package_name(core_nodes)
-
-    class_name = cfg.model.classname
-
-    return get_class(package, MODEL_MODULE, class_name)
+from main.base.launcher.config import parse_object, parse_core_object
 
 def launch_training():
-    cfg = load_training_config()
-    core_nodes = cfg.core
+    config = load_training_config()
+    core_nodes = config.core
 
-    # dataset
-    learning_type = core_nodes[-1]
+    config_dataset = config.dataset
+    if config_dataset is None:
+        raise ValueError('dataset configuration not found')
 
-    if learning_type == "classification":
-        dataset = parse_classification_dataset(cfg)
-        if dataset is None:
-            raise ValueError('invalid dataset specified')
-    else:
-        raise ValueError('learning type not found')
+    dataset = parse_core_object(config_dataset, core_nodes, DATASET_MODULE)
+    assert not dataset is None
 
-    # model
-    model = parse_model(cfg)
-    if model is None:
-            raise ValueError('invalid model specified')
+    config_model = config.model
+    if config_model is None:
+        raise ValueError('model configuration not found')
+
+    model = parse_core_object(config_model, core_nodes,
+                                MODEL_MODULE, core_suffix=False)
+    assert not model is None

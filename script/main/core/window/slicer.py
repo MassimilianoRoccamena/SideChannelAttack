@@ -1,32 +1,27 @@
 from math import ceil
 
-from main.base.launcher.config import ConfigParseable, ConfigParser
+from main.base.launcher.config import ConfigParseable
 from main.base.data.params import TRACE_SIZE
 
-class AbstractTraceSlicer(ConfigParseable):
+class TraceSlicer(ConfigParseable):
     '''
-    Abstract slicer of a trace into fixed size subwindows.
+    Abstract configurable slicer of traces into windows.
     '''
-
-    class Parser(ConfigParser):
-        '''
-        Abstract parser from config of a strider trace slicer
-        '''
-
-        def constr_args(self, config):
-            return [ config.window_size ]
 
     INVALID_INDEX_MSG = 'invalid trace window index'
 
-    def __init__(self, parser, window_size, num_windows):
+    def __init__(self, window_size, num_windows):
         '''
         Create new slicer of traces into windows.
         window_size: temporal window size
         num_windows: number of windows in a trace
         '''
-        super().__init__(parser)
         self.window_size = window_size
         self.num_windows = num_windows
+
+    @classmethod
+    def parse_args(cls, config, core_nodes):
+        return [ config.window_size ]
 
     def validate_window_index(self, window_index):
         '''
@@ -34,7 +29,7 @@ class AbstractTraceSlicer(ConfigParseable):
         window_index: window index of a trace
         '''
         if window_index < 0 or window_index >= self.num_windows:
-            raise IndexError(AbstractTraceSlicer.INVALID_INDEX_MSG)
+            raise IndexError(TraceSlicer.INVALID_INDEX_MSG)
 
     def slice(self, window_index):
         '''
@@ -49,23 +44,10 @@ class AbstractTraceSlicer(ConfigParseable):
     def __getitem__(self, index):
         return self.slice(index)
 
-class StridedTraceSlicer(AbstractTraceSlicer):
+class StridedSlicer(TraceSlicer):
     '''
     Trace windows slicer with striding.
     '''
-
-    class Parser(AbstractTraceSlicer.Parser):
-        '''
-        Abstract parser from config of a strided trace slicer
-        '''
-
-        def __init__(self):
-            super().__init__(StridedTraceSlicer)
-
-        def constr_args(self, config):
-            return super().constr_args().extend(
-                [ config.stride ]
-            )
 
     def __init__(self, window_size, stride):
         '''
@@ -77,8 +59,12 @@ class StridedTraceSlicer(AbstractTraceSlicer):
         max_idx = TRACE_SIZE - window_size + 1
         nwindows = ceil((max_idx+1) / stride) + 1
 
-        super().__init__( StridedTraceSlicer.Parser(),
-                          window_size, nwindows )
+        super().__init__(window_size, nwindows)
+
+    @classmethod
+    def parse_args(cls, config, core_nodes):
+        new_args =  [ config.stride ]
+        return cls.super_args(config, core_nodes) + new_args
 
     def slice(self, window_index):
         if window_index < 0:
