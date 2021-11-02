@@ -1,10 +1,8 @@
-import torch
-
 from main.core.model import ConfigModel
 
 class A(ConfigModel):
     '''
-    Classic vision-based model
+    Convolution based model
     '''
 
     def __init__(self):
@@ -16,13 +14,25 @@ class A(ConfigModel):
         return []
 
     def forward(self, x):
-        return self.model(x)
+        return x
 
 class MixedA(A):
+    '''
+    Convolution model with voltage, frequency labelling
+    '''
+
     pass
 
 class VoltageA(A):
+    '''
+    Convolution model with voltage labelling
+    '''
+
     pass
 
 class FrequencyA(A):
+    '''
+    Convolution model with frequency labelling
+    '''
+
     pass

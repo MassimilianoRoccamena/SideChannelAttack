@@ -2,13 +2,9 @@ from omegaconf import OmegaConf
 
 from main.base.util.string import upper1
 from main.base.app.reflection import get_package_name, get_class
-from main.base.app.params import TRAINING_CONF_PATH
 
 def load_config(config_path):
     return OmegaConf.load(config_path)
-
-def load_training_config():
-    return load_config(TRAINING_CONF_PATH)
 
 
 class ConfigObject:

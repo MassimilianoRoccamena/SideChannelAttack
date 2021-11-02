@@ -1,4 +1,11 @@
-# I
+# determinism
+
+determinism:
+  seed: 314159
+  seed_workers: True
+  force_determinism: False
+
+# core
 
 core:
 - window
@@ -27,54 +34,47 @@ model:
   params:
     checkpoint:
 
-#loss:
-#  classname: CrossEntropyLoss
-#  params:
-#    ...
+# learning
 
-#lightning:
-#  classname: Trainable
-#  params:
+learning:
 
-# II
+  loss:
+    classname: CrossEntropyLoss
+    params:
 
-seed: 314159
-seed_workers: True
-force_determinism: False
-
-trainer:
-  gpus: 1
-  max_epochs: 20
-  check_val_every_n_epoch: 1
-
-early_stopping:
-  params:
-    monitor: 'validation/acc'
-    patience: 5
-    mode: 'max'
-
-dataloader:
-  params:
+  data_loader:
     batch_size: 32
     num_workers: 10
     shuffle: True
 
-optimizer:
-  name: SGD
-  params:
-    lr: 0.01
-    momentum: 0.9
-    weight_decay: 1e-4
+  trainer:
+    params:
+      gpus: 1
+      max_epochs: 20
+      check_val_every_n_epoch: 1
 
-scheduler:
-  name: StepLR
-  params:
-    step_size: 2
-    gamma: 0.9
+  optimizer:
+    name: SGD
+    params:
+      lr: 0.01
+      momentum: 0.9
+      weight_decay: 1e-4
 
-# III
+  early_stopping:
+    monitor: 'validation/acc'
+    patience: 5
+    mode: 'max'
 
-loggers:
+  scheduler:
+    name: StepLR
+    params:
+      step_size: 2
+      gamma: 0.9
+
+# logging
+
+logging:
+
   tensorboard:
     enable: False
 
