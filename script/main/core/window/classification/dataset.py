@@ -1,4 +1,4 @@
-from main.base.app.config import config_object
+from main.base.app.run.training import config_core_object1
 from main.core.dataset import ConfigDataset
 from main.core.window.reader import WindowReader
 
@@ -18,12 +18,13 @@ class WindowClassification(ConfigDataset):
         num_traces: number of traces in each file
         '''
         super().__init__()
-        self.reader = WindowReader(slicer, voltages, frequencies, key_values, num_traces)
+        self.reader = WindowReader(slicer, voltages, frequencies,
+                                    key_values, num_traces)
 
     @classmethod
     def config_args(cls, config, core_nodes):
-        slicer = config_object(config.slicer, core_nodes[:1],
-                                WindowClassification.SLICER_MODULE)
+        slicer = config_core_object1(config.slicer, core_nodes[:1],
+                                        WindowClassification.SLICER_MODULE)
 
         return [ slicer, config.voltages, config.frequencies,
                  config.key_values, config.num_traces ]

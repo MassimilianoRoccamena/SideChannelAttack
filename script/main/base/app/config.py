@@ -1,15 +1,16 @@
 from omegaconf import OmegaConf
 
-from main.base.util.string import upper1
+from main.base.util.string import upper_identifier
 from main.base.app.reflection import get_package_name, get_class
+
+# basic stuff
 
 def load_config(config_path):
     return OmegaConf.load(config_path)
 
-
 class ConfigObject:
     '''
-    Configurable object from .yaml file
+    Configurable core object from .yaml file
     '''
 
     @classmethod
@@ -25,42 +26,35 @@ class ConfigObject:
         args = cls.config_args(config, core_nodes)
         return cls(*args)
 
+# configuring object
 
-def config_core(config):
-    return config.core
+def config_core_prompt(config):
+    return config.core.prompt
 
 CLASS_NOT_FOUND_MSG = lambda clsname: "class {clsname} not found"
 FAILED_CONFIG_MSG = lambda clsname: "failed to configure {clsname} object"
 
-def config_object(config, core_nodes, module_name):
+def config_object(class_constr, core_nodes, module_name, class_name):
     package_name = get_package_name(core_nodes)
-    class_name = config.name
     cls = get_class(package_name, module_name, class_name)
 
     if cls is None:
         raise ValueError(CLASS_NOT_FOUND_MSG(class_name))
 
-    obj = cls.from_config(config.params, core_nodes)
+    obj = class_constr(cls)
     if obj is None:
         raise RuntimeError(FAILED_CONFIG_MSG(class_name))
 
     return obj
 
-def config_core_object(config, core_nodes, module_name, core_suffix=True):
-    package_name = get_package_name(core_nodes[:-1])
-    class_prefix = upper1(core_nodes[-1])
-    if core_suffix:
-        class_suffix = upper1(core_nodes[-2])
-    else:
-        class_suffix = config.name
-    class_name = f"{class_prefix}{class_suffix}"
-    cls = get_class(package_name, module_name, class_name)
+def config_object1(object_constr, core_nodes, module_name, config, field_name):
+    return config_object(object_constr, core_nodes,
+                        module_name, upper_identifier(field_name, '_'))
 
-    if cls is None:
-        raise ValueError(CLASS_NOT_FOUND_MSG(class_name))
+def config_object2(object_constr, core_nodes, module_name, field_name):
+    return config_object(object_constr, core_nodes,
+                        module_name, field_name)
 
-    obj = cls.from_config(config.params, core_nodes)
-    if obj is None:
-        raise RuntimeError(FAILED_CONFIG_MSG(class_name))
-
-    return obj
+def config_object3(object_constr, core_nodes, module_name, config):
+    return config_object(object_constr, core_nodes,
+                        module_name, config.name)

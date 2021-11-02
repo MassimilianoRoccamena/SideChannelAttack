@@ -16,4 +16,14 @@ def upper1(s):
     '''
     prefix = s[0].upper()
     suffix = s[1:]
-    return f"{prefix}{suffix}"
+    return f'{prefix}{suffix}'
+
+def upper_identifier(s, sep):
+    '''
+    Separated string become hungarian notation like
+    '''
+    splitted = s.split(sep)
+    output = ''
+    for w in splitted:
+        output = f'{output}{upper1(w)}'
+    return output

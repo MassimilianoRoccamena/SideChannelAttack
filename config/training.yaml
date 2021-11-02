@@ -1,6 +1,7 @@
 # determinism
 
 determinism:
+
   seed: 314159
   seed_workers: True
   force_determinism: False
@@ -8,38 +9,40 @@ determinism:
 # core
 
 core:
-- window
-- classification
-- frequency
 
-dataset:
-  params:
-    slicer:
-      name: StridedSlicer
-      params:
-        window_size: 1000
-        stride: 50
+  prompt:
+  - window
+  - classification
+  - frequency
 
-    voltages:
-    - '1.00'
-    frequencies:
-    - '52.000'
-    key_values:
-    - '32'
-    - 'a3'
-    num_traces: 500
+  dataset:
+    params:
+      slicer:
+        name: StridedSlicer
+        params:
+          window_size: 1000
+          stride: 50
 
-model:
-  name: A
-  params:
-    checkpoint:
+      voltages:
+      - '1.00'
+      frequencies:
+      - '52.000'
+      key_values:
+      - '32'
+      - 'a3'
+      num_traces: 500
+
+  model:
+    name: A
+    params:
+      checkpoint:
 
 # learning
 
 learning:
 
   loss:
-    classname: CrossEntropyLoss
+    name: CrossEntropyLoss
     params:
 
   data_loader:
@@ -48,10 +51,14 @@ learning:
     shuffle: True
 
   trainer:
-    params:
-      gpus: 1
-      max_epochs: 20
-      check_val_every_n_epoch: 1
+    gpus: 1
+    max_epochs: 20
+    check_val_every_n_epoch: 1
+
+  early_stopping:
+    monitor: 'validation/acc'
+    patience: 5
+    mode: 'max'
 
   optimizer:
     name: SGD
@@ -59,11 +66,6 @@ learning:
       lr: 0.01
       momentum: 0.9
       weight_decay: 1e-4
-
-  early_stopping:
-    monitor: 'validation/acc'
-    patience: 5
-    mode: 'max'
 
   scheduler:
     name: StepLR
