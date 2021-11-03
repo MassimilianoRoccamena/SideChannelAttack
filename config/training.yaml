@@ -34,8 +34,8 @@ core:
 
   model:
     name: A
+    checkpoint:
     params:
-      checkpoint:
 
 # learning
 
@@ -47,7 +47,7 @@ learning:
 
   data_loader:
     batch_size: 32
-    num_workers: 10
+    num_workers: 8
     shuffle: True
 
   trainer:

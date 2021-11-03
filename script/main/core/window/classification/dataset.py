@@ -1,4 +1,4 @@
-from main.base.app.run.training import config_core_object1
+from main.base.app.config import config_core_object1
 from main.core.dataset import ConfigDataset
 from main.core.window.reader import WindowReader
 
