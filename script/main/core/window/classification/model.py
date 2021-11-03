@@ -1,38 +1,38 @@
-from main.core.model import ConfigModel
+from main.base.module.arch.resnet import ResNet1D
+from main.core.model import SingleClassifierModel
+from main.core.model import MultiClassifierModel
 
-class A(ConfigModel):
+# A : convolutional
+
+class SingleA(SingleClassifierModel):
     '''
-    Convolution based model
-    '''
-
-    def __init__(self):
-        #self.model = torch.hub.load('pytorch/vision:v0.4.2', 'resnet18', pretrained=True)
-        pass
-
-    @classmethod
-    def config_args(cls, config, core_nodes):
-        return []
-
-    def forward(self, x):
-        return x
-
-class MixedA(A):
-    '''
-    Convolution model with voltage, frequency labelling
+    Convolution based single classifier
     '''
 
     pass
 
-class VoltageA(A):
+class MultiA(MultiClassifierModel):
+    '''
+    Convolution based model with multiple labels 
+    (voltage, frequency)
+    '''
+
+    pass
+
+class VoltageA(SingleA):
     '''
     Convolution model with voltage labelling
     '''
 
     pass
 
-class FrequencyA(A):
+class FrequencyA(SingleA):
     '''
     Convolution model with frequency labelling
     '''
 
     pass
+
+# B : recurrent
+
+# C : unknown

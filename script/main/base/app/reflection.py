@@ -1,12 +1,13 @@
 import importlib
 
-from main.base.app.params import ROOT_PACKAGE
+from main.base.app.params import CORE_PACKAGE
 
-def get_package_name(path_nodes):
-    output = path_nodes[0]
-    for node in path_nodes[1:]:
-        output = f"{output}.{node}"
-    return f"{ROOT_PACKAGE}.{output}"
+def get_package_name(package_nodes):
+    root_package = CORE_PACKAGE
+    package_name = package_nodes[0]
+    for node in package_nodes[1:]:
+        package_name = f"{package_name}.{node}"
+    return f"{root_package}.{package_name}"
 
 def get_module_name(package_name, module_name):
     return f"{package_name}.{module_name}"
@@ -19,6 +20,3 @@ def get_class(package_name, module_name, class_name):
         raise ValueError(f'module {parent_name} not found')
 
     return getattr(module_name, class_name)
-
-def get_class_from_path(path_nodes, module_name, class_name):
-    pass

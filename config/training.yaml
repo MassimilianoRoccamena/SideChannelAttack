@@ -32,10 +32,24 @@ core:
       - 'a3'
       num_traces: 500
 
+  only_prediction: False
+
   model:
     name: A
-    checkpoint:
+    # checkpoint:
     params:
+      encoder:
+        name: ResNet1D
+        params:
+          base_filters: 50
+          kernel_size: 4
+          stride: 1
+          groups: 1
+          n_block: 50
+          downsample_gap: 2
+          increasefilter_gap: 4
+          use_bn: True
+          use_do: True
 
 # learning
 

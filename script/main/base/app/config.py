@@ -14,13 +14,13 @@ def load_config(file_path):
 
 class ConfigObject:
     '''
-    Configurable core object from file
+    Configurable object from file
     '''
 
     @classmethod
     def config_args(cls, config, core_nodes):
         '''
-        Build args for the class from configuration.
+        Build args for a class from configuration.
         config: configuration object
         core_nodes: nodes of the path of a core location
         '''
@@ -29,7 +29,7 @@ class ConfigObject:
     @classmethod
     def super_config_args(cls, config, core_nodes, super_index=0):
         '''
-        Build args for the inherited class from configuration.
+        Build args of a parent class from configuration.
         config: configuration object
         core_nodes: nodes of the path of a core location
         super_index: index of the super class
@@ -154,7 +154,8 @@ def config_core_object1(config, core_nodes, module_name):
     core_nodes: nodes of the path of a core location
     module_name: name of the module file inside the core location
     '''
-    return config_object3(lambda cls: cls.from_config(config.params, core_nodes),
+    params = config.params if not config.params is None else {}
+    return config_object3(lambda cls: cls.from_config(params, core_nodes),
                             core_nodes, module_name, config)
 
 def config_core_object2(config, core_nodes, module_name, core_suffix=True):
@@ -169,5 +170,7 @@ def config_core_object2(config, core_nodes, module_name, core_suffix=True):
     else:
         class_suffix = config.name
     class_name = f"{class_prefix}{class_suffix}"
-    return config_object(lambda cls: cls.from_config(config.params, core_nodes),
+
+    params = config.params if not config.params is None else {}
+    return config_object(lambda cls: cls.from_config(params, core_nodes),
                             core_nodes[:-1], module_name, class_name)

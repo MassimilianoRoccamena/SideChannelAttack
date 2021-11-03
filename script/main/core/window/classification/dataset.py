@@ -1,12 +1,12 @@
 from main.base.app.config import config_core_object1
-from main.core.dataset import ConfigDataset
+from main.core.dataset import ClassificationDataset
+from main.core.window.params import SLICER_MODULE
 from main.core.window.reader import WindowReader
 
-class WindowClassification(ConfigDataset):
+class WindowClassification(ClassificationDataset):
     '''
     Abstract dataset which reads power trace windows with some labels
     '''
-    SLICER_MODULE = 'slicer'
 
     def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
         '''
@@ -24,7 +24,7 @@ class WindowClassification(ConfigDataset):
     @classmethod
     def config_args(cls, config, core_nodes):
         slicer = config_core_object1(config.slicer, core_nodes[:1],
-                                        WindowClassification.SLICER_MODULE)
+                                        SLICER_MODULE)
 
         return [ slicer, config.voltages, config.frequencies,
                  config.key_values, config.num_traces ]
@@ -37,8 +37,13 @@ class WindowClassification(ConfigDataset):
 
 class MultiClassification(WindowClassification):
     '''
-    Dataset composed of power trace windows with multiple labels
+    Dataset composed of power trace windows with voltage
+    and frequency labelling
     '''
+
+    def get_num_classes(self):
+        return ( len(self.voltages),
+                 len(self.frequencies) )
 
     def __getitem__(self, index):
         reader = self.reader
@@ -52,6 +57,9 @@ class VoltageClassification(WindowClassification):
     Dataset composed of power trace windows labelled with voltage
     '''
 
+    def get_num_classes(self):
+        return len(self.voltages)
+
     def __getitem__(self, index):
         reader = self.reader
         x = reader[index]
@@ -62,6 +70,9 @@ class FrequencyClassification(WindowClassification):
     '''
     Dataset composed of power trace windows labelled with frequency
     '''
+
+    def get_num_classes(self):
+        return len(self.frequencies)
 
     def __getitem__(self, index):
         reader = self.reader
