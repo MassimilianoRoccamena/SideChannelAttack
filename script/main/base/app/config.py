@@ -96,17 +96,6 @@ def build_object2(class_constr, core_nodes, module_name, class_name):
                         module_name, upper_identifier(class_name,
                                                     CLASS1_SEPARATOR))
 
-def build_object3(class_constr, core_nodes, module_name, config):
-    '''
-    Abstract builder of an object with class name inside configuration field.
-    class_constr: constructor for the class
-    core_nodes: nodes of the path of a core location
-    module_name: name of the module file inside the core location
-    config: configuration object
-    '''
-    return build_object(class_constr, core_nodes,
-                        module_name, config.name)
-
 # simple objects
 
 def build_simple_object1(config, core_nodes, module_name, class_name, args=[], kwargs={}):
@@ -169,8 +158,8 @@ def build_core_object1(config, core_nodes, module_name):
     module_name: name of the module file inside the core location
     '''
     params = config.params if not config.params is None else {}
-    return build_object3(lambda cls: cls.from_config(params, core_nodes),
-                            core_nodes[:-1], module_name, config)
+    return build_object1(lambda cls: cls.from_config(params, core_nodes),
+                            core_nodes[:-1], module_name, config.name)
 
 def build_core_object2(config, core_nodes, module_name, core_suffix=True):
     '''
@@ -194,5 +183,5 @@ def build_core_object2(config, core_nodes, module_name, core_suffix=True):
     class_name = f"{class_prefix}{class_suffix}"
 
     params = config.params if not config.params is None else {}
-    return build_object(lambda cls: cls.from_config(params, core_nodes),
+    return build_object1(lambda cls: cls.from_config(params, core_nodes),
                             core_nodes[:-1], module_name, class_name)

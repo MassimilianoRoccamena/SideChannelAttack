@@ -13,13 +13,16 @@ class CoreModel(LightningModule, CoreObject):
 
     def set_learning(self, loss, optimizer, scheduler=None):
         '''
-        Set model learning parameters
+        Set model learning parameters.
         '''
         self.loss = loss
         self.optimizer = optimizer
         self.scheduler = scheduler
 
     def step(self, batch, batch_index):
+        '''
+        Basic loss computation on a batch.
+        '''
         x, y = batch
         y_hat = self(x)
         return self.loss(y_hat, y)
@@ -35,6 +38,13 @@ class CoreModel(LightningModule, CoreObject):
             return self.optimizer
         else:
             return self.optimizer, self.scheduler
+
+    def mount_from_dataset(self, dataset):
+        '''
+        Mount the part of the model which is function of some data.
+        dataset: dataset object
+        '''
+        raise NotImplementedError
 
 class WrapperModel(CoreModel):
     '''
@@ -59,11 +69,15 @@ class ClassifierModel(WrapperModel):
     Abstract model wrapping a classifier
     '''
 
-    def mount_classifier(self, dataset):
-        '''
-        Mount the classifier by reading dataset labels.
-        '''
-        self.module.set_labels(dataset.all_labels())
+    @classmethod
+    def build_args(cls, config, core_nodes):
+        encoder = build_core_object1(config.encoder, core_nodes,
+                                        MODEL_MODULE)
+                                        
+        return [ encoder ]
+
+    def mount_from_dataset(self, dataset):
+        self.module.mount_labels(dataset.all_labels())
 
 class SingleClassifierModel(ClassifierModel):
     '''
@@ -72,16 +86,6 @@ class SingleClassifierModel(ClassifierModel):
 
     def __init__(self, encoder):
         super().__init__(SingleClassifier(encoder))
-
-    def set_labels(self, labels):
-        self.module.set_labels(labels)
-
-    @classmethod
-    def build_args(cls, config, core_nodes):
-        encoder = build_core_object1(config.encoder, core_nodes,
-                                        MODEL_MODULE)
-                                        
-        return [ encoder ]
 
 class MultiClassifierModel(ClassifierModel):
     '''

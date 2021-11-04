@@ -1,1 +1,0 @@
-SLICER_MODULE = 'slicer'

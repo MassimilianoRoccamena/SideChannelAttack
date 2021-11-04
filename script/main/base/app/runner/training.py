@@ -146,12 +146,6 @@ def config_learning(config, core_nodes, dataset, model):
 
 INVALID_TASK_MSG = lambda task: f'training task {task} is not supported'
 
-def handle_training_task(task, dataset, model):
-    if task == 'classification':
-        model.mount_classifier(dataset)
-    else:
-        raise ValueError(INVALID_TASK_MSG(task))
-
 def run_training():
     config = load_training_config()
 
@@ -177,7 +171,7 @@ def run_training():
     print('learning section done')
 
     model.set_learning(loss, optimizer, scheduler=scheduler)
-    handle_training_task(core_nodes[1], dataset, model)
+    model.mount_from_dataset(dataset)
 
     # logging
     # TODO

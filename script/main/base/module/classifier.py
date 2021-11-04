@@ -5,9 +5,9 @@ class Classifier:
     Abstract classifier object
     '''
 
-    def set_labels(self, labels):
+    def mount_labels(self, labels):
         '''
-        Set the classification labelling.
+        Mount the classification labelling.
         labels: classification labels
         '''
         self.labels = labels
@@ -25,10 +25,10 @@ class SingleClassifier(nn.Module, Classifier):
         '''
         super().__init__()
         self.encoder = encoder
-        self.set_labels(labels)
+        self.mount_labels(labels)
 
-    def set_labels(self, labels):
-        super().set_labels(labels)
+    def mount_labels(self, labels):
+        super().mount_labels(labels)
         if labels is None:
             self.softmax = None
         else:

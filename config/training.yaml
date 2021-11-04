@@ -81,14 +81,6 @@ learning:
       step_size: 2
       gamma: 0.9
 
-# determinism
-
-determinism:
-
-  seed: 314159
-  seed_workers: True
-  force_determinism: False
-
 # logging
 
 logging:
@@ -104,3 +96,11 @@ logging:
     - '*.py'
     - '*.c'
     - '*.yaml'
+
+# determinism
+
+determinism:
+
+  seed: 314159
+  seed_workers: True
+  force_determinism: False

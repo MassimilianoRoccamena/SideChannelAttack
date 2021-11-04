@@ -1,6 +1,7 @@
+from main.base.app.params import DATASET_MODULE
 from main.base.app.config import build_core_object1
 from main.core.dataset import ClassificationDataset
-from main.core.window.params import SLICER_MODULE
+from main.core.window.slicer import StridedSlicer
 from main.core.window.reader import WindowReader
 
 class WindowClassification(ClassificationDataset):
@@ -23,8 +24,7 @@ class WindowClassification(ClassificationDataset):
 
     @classmethod
     def build_args(cls, config, core_nodes):
-        slicer = build_core_object1(config.slicer, core_nodes[:-1],
-                                        SLICER_MODULE)
+        slicer = build_core_object1(config.slicer, core_nodes, DATASET_MODULE)
 
         return [ slicer, config.voltages, config.frequencies,
                  config.key_values, config.num_traces ]
