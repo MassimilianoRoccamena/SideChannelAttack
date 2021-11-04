@@ -70,8 +70,8 @@ class ClassifierModel(WrapperModel):
     '''
 
     @classmethod
-    def build_args(cls, config, core_nodes):
-        encoder = build_core_object1(config.encoder, core_nodes,
+    def build_args(cls, config, core_prompt):
+        encoder = build_core_object1(config.encoder, core_prompt,
                                         MODEL_MODULE)
                                         
         return [ encoder ]

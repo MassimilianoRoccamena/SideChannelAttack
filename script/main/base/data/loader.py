@@ -68,8 +68,6 @@ class BasicFileLoader:
         '''
         if np.all(time_indices < 0) or np.all(time_indices >= self.trace_size):
             raise IndexError(BasicFileLoader.INVALID_TRACE_INDICES_MSG)
-
-    # -----------------------------------------------------------------------------------------
     
     def load_all_traces(self):
         '''

@@ -12,12 +12,14 @@ class MyConv1dPadSame(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride, groups=1):
-        super(MyConv1dPadSame, self).__init__()
+        super().__init__()
+        
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
         self.groups = groups
+
         self.conv = torch.nn.Conv1d(
             in_channels=self.in_channels, 
             out_channels=self.out_channels, 
@@ -46,7 +48,7 @@ class MyMaxPool1dPadSame(nn.Module):
     """
 
     def __init__(self, kernel_size):
-        super(MyMaxPool1dPadSame, self).__init__()
+        super().__init__()
         self.kernel_size = kernel_size
         self.stride = 1
         self.max_pool = torch.nn.MaxPool1d(kernel_size=self.kernel_size)
@@ -72,7 +74,7 @@ class BasicBlock(CoreModule):
     """
     
     def __init__(self, in_channels, out_channels, kernel_size, stride, groups, downsample, use_bn, use_do, is_first_block=False):
-        super(BasicBlock, self).__init__()
+        super().__init__()
         
         self.in_channels = in_channels
         self.kernel_size = kernel_size
@@ -150,7 +152,7 @@ class BasicBlock(CoreModule):
 
         return out
     
-class ResNet1D(CoreModule):
+class ResNet(CoreModule):
     """
     ResNet 1-dimensional
     
@@ -172,7 +174,7 @@ class ResNet1D(CoreModule):
     """
 
     def __init__(self, base_filters, kernel_size, stride, groups, n_block, n_classes, in_channels=1, downsample_gap=2, increasefilter_gap=4, use_bn=True, use_do=True, verbose=False):
-        super(ResNet1D, self).__init__()
+        super().__init__()
 
         self.verbose = verbose
         self.n_block = n_block
@@ -236,7 +238,7 @@ class ResNet1D(CoreModule):
         # self.softmax = nn.Softmax(dim=1)
 
     @classmethod
-    def build_args(cls, config, core_nodes):
+    def build_args(cls, config, core_prompt):
         return [
             config.base_filters,
             config.kernel_size,

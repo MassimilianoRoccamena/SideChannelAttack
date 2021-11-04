@@ -20,24 +20,24 @@ CONFIG_NOT_FOUND_MSG = lambda id: f'{id} configuration not found'
 
 # core
 
-def config_dataset(config, core_nodes):
+def build_dataset(config, core_prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('dataset'))
 
-    return build_core_object2(config, core_nodes, DATASET_MODULE)
+    return build_core_object2(config, core_prompt, DATASET_MODULE)
 
-def config_model(config, core_nodes):
+def build_model(config, core_prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('model'))
 
-    return build_core_object2(config, core_nodes,
+    return build_core_object2(config, core_prompt,
                                 MODEL_MODULE, core_suffix=False)
 
-def config_core(config, core_nodes):
-    dataset = config_dataset(config.dataset, core_nodes)
+def build_core(config, core_prompt):
+    dataset = build_dataset(config.dataset, core_prompt)
     assert not dataset is None
     print('loaded dataset')
-    model = config_model(config.model, core_nodes)
+    model = build_model(config.model, core_prompt)
     assert not model is None
     print('loaded model')
 
@@ -45,7 +45,7 @@ def config_core(config, core_nodes):
 
 # learning
 
-def config_data_loaders(config, core_nodes, dataset):
+def build_data_loaders(config, core_prompt, dataset):
     valid_split = config.validation_split
     if valid_split is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('validation split'))
@@ -61,79 +61,79 @@ def config_data_loaders(config, core_nodes, dataset):
         indices[0] += data_len - (indices[0]+indices[1])
 
     train_dataset, valid_dataset = random_split(dataset, indices)
-    train_loader =  build_simple_object1(config, core_nodes,
+    train_loader =  build_simple_object1(config, core_prompt,
                                             LEARNING_MODULE, class_name,
                                             args=[train_dataset])
-    valid_loader =  build_simple_object1(config, core_nodes,
+    valid_loader =  build_simple_object1(config, core_prompt,
                                             LEARNING_MODULE, class_name,
                                             args=[valid_dataset])   
 
     return train_loader, valid_loader
 
-def config_early_stopping(config, core_nodes):
+def build_early_stopping(config, core_prompt):
     class_name = 'early_stopping'
     if config[class_name] is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('early stopping'))
 
-    return build_simple_object1(config, core_nodes,
+    return build_simple_object1(config, core_prompt,
                                     LEARNING_MODULE, class_name)
 
-def config_trainer(config, core_nodes, early_stop):
+def build_trainer(config, core_prompt, early_stop):
     class_name = 'trainer'
     if config[class_name] is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG(class_name))
 
-    return build_simple_object1(config, core_nodes,
+    return build_simple_object1(config, core_prompt,
                                     LEARNING_MODULE, class_name,
                                     kwargs={'callbacks':[early_stop]})
 
-def config_loss(config, core_nodes):
+def build_loss(config, core_prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('loss'))
 
-    return build_simple_object2(config, core_nodes, LEARNING_MODULE)
+    return build_simple_object2(config, core_prompt, LEARNING_MODULE)
 
-def config_optimizer(config, core_nodes, model):
+def build_optimizer(config, core_prompt, model):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('optimizer'))
 
-    return build_simple_object2(config, core_nodes, LEARNING_MODULE,
+    return build_simple_object2(config, core_prompt, LEARNING_MODULE,
                                     args=[model.parameters()])
 
-def config_scheduler(config, core_nodes, optimizer):
+def build_scheduler(config, core_prompt, optimizer):
     if config is None:
         return None
 
-    return build_simple_object2(config, core_nodes, LEARNING_MODULE,
+    return build_simple_object2(config, core_prompt, LEARNING_MODULE,
                                     args=[optimizer])
     
-def config_learning(config, core_nodes, dataset, model):
-    train_loader, valid_loader = config_data_loaders(config, core_nodes, dataset)
+def build_learning(config, core_prompt, dataset, model):
+    train_loader, valid_loader = build_data_loaders(config, core_prompt, dataset)
     assert not train_loader is None
     assert not valid_loader is None
     print('loaded data loaders')
     yield (train_loader, valid_loader)
 
-    early_stopping = config_early_stopping(config, core_nodes)
+    early_stopping = build_early_stopping(config, core_prompt)
     assert not early_stopping is None
     print('loaded early stopping')
 
-    trainer = config_trainer(config, core_nodes, early_stopping)
+    trainer = build_trainer(config, core_prompt, early_stopping)
     assert not trainer is None
     print('loaded trainer')
     yield trainer
 
-    loss = config_loss(config.loss, core_nodes)
+    loss = build_loss(config.loss, core_prompt)
     assert not loss is None
     print('loaded loss')
     yield loss
 
-    optimizer = config_optimizer(config.optimizer, core_nodes, model)
+    optimizer = build_optimizer(config.optimizer, core_prompt, model)
     assert not optimizer is None
     print('loaded optimizer')
     yield optimizer
 
-    scheduler = config_scheduler(config.scheduler, core_nodes, optimizer)
+    scheduler = build_scheduler(config.scheduler, core_prompt, optimizer)
     assert not scheduler is None
     print('loaded scheduler')
     yield scheduler
@@ -154,14 +154,14 @@ def run_training():
 
     # core
     print("----- TRAINING -----\n")
-    core_nodes = build_core_prompt(config)
-    core = config_core(config.core, core_nodes)
+    core_prompt = build_core_prompt(config)
+    core = build_core(config.core, core_prompt)
     dataset = core[0]
     model = core[1]
     print("core section done\n")
 
     # learning
-    learning = config_learning(config.learning, core_nodes,
+    learning = build_learning(config.learning, core_prompt,
                                 dataset, model)
     train_loader, valid_loader = next(learning)
     trainer = next(learning)

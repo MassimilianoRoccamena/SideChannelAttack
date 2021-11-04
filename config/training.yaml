@@ -24,14 +24,14 @@ core:
       - 'a3'
       num_traces: 500
 
-  only_prediction: False
+  # only_prediction: False
 
   model:
     name: A
     # checkpoint:
     params:
       encoder:
-        name: ResNet1D
+        name: ResNet
         params:
           base_filters: 10
           kernel_size: 4

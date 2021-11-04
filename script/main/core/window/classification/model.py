@@ -1,4 +1,4 @@
-from main.base.module.arch.resnet import ResNet1D
+from main.base.module.arch.resnet import ResNet
 from main.core.model import SingleClassifierModel
 from main.core.model import MultiClassifierModel
 
