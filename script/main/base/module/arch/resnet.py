@@ -236,7 +236,7 @@ class ResNet1D(ConfigModule):
         # self.softmax = nn.Softmax(dim=1)
 
     @classmethod
-    def config_args(self, config):
+    def config_args(cls, config, core_nodes):
         return [
             config.base_filters,
             config.kernel_size,

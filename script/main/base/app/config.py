@@ -116,7 +116,7 @@ def config_object3(class_constr, core_nodes, module_name, config):
 
 # main objects configs
 
-def config_simple_object1(config, core_nodes, module_name, class_name, args=[]):
+def config_simple_object1(config, core_nodes, module_name, class_name, args=[], kwargs={}):
     '''
     Configure a simple1 object.
     Example for ClassName:
@@ -128,10 +128,13 @@ def config_simple_object1(config, core_nodes, module_name, class_name, args=[]):
     module_name: name of the module file inside the core location
     args: additional args passed to constructor
     '''
-    return config_object2(lambda cls: cls(*args, **config[class_name]),
+    params = config[class_name] if not config[class_name] is None else {}
+    params = dict(params)
+    params.update(kwargs)
+    return config_object2(lambda cls: cls(*args, **params),
                             core_nodes[:-1], module_name, class_name)
 
-def config_simple_object2(config, core_nodes, module_name):
+def config_simple_object2(config, core_nodes, module_name, args=[], kwargs={}):
     '''
     Configure a simple2 object.
     Example for ClassName:
@@ -145,7 +148,9 @@ def config_simple_object2(config, core_nodes, module_name):
     module_name: name of the module file inside the core location
     '''
     params = config.params if not config.params is None else {}
-    return config_object1(lambda cls: cls(**params),
+    params = dict(params)
+    params.update(kwargs)
+    return config_object1(lambda cls: cls(*args, **params),
                             core_nodes[:-1], module_name, config.name)
 
 def config_core_object1(config, core_nodes, module_name):
@@ -156,7 +161,7 @@ def config_core_object1(config, core_nodes, module_name):
     '''
     params = config.params if not config.params is None else {}
     return config_object3(lambda cls: cls.from_config(params, core_nodes),
-                            core_nodes, module_name, config)
+                            core_nodes[:-1], module_name, config)
 
 def config_core_object2(config, core_nodes, module_name, core_suffix=True):
     '''

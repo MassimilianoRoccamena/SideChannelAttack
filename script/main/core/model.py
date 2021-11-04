@@ -11,12 +11,13 @@ class ConfigModel(LightningModule, ConfigObject):
     Abstract configurable core model
     '''
 
-    def set_learning(self, loss, optimizer):
+    def set_learning(self, loss, optimizer, scheduler=None):
         '''
         Set model learning parameters
         '''
         self.loss = loss
         self.optimizer = optimizer
+        self.scheduler = scheduler
 
     def step(self, batch, batch_index):
         x, y = batch
@@ -30,7 +31,10 @@ class ConfigModel(LightningModule, ConfigObject):
         return self.step(batch, batch_index)
 
     def configure_optimizers(self):
-        return self.optimizer
+        if self.scheduler is None:
+            return self.optimizer
+        else:
+            return self.optimizer, self.scheduler
 
 class WrapperModel(ConfigModel):
     '''
@@ -42,6 +46,7 @@ class WrapperModel(ConfigModel):
         Create new wrapper model.
         module: torch module
         '''
+        super().__init__()
         self.module = module
 
     def forward(self, x):
@@ -73,7 +78,7 @@ class SingleClassifierModel(ClassifierModel):
 
     @classmethod
     def config_args(cls, config, core_nodes):
-        encoder = config_core_object1(config.encoder, core_nodes[:1],
+        encoder = config_core_object1(config.encoder, core_nodes,
                                         MODEL_MODULE)
                                         
         return [ encoder ]

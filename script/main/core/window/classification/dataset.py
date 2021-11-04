@@ -23,7 +23,7 @@ class WindowClassification(ClassificationDataset):
 
     @classmethod
     def config_args(cls, config, core_nodes):
-        slicer = config_core_object1(config.slicer, core_nodes[:1],
+        slicer = config_core_object1(config.slicer, core_nodes[:-1],
                                         SLICER_MODULE)
 
         return [ slicer, config.voltages, config.frequencies,
@@ -42,8 +42,8 @@ class MultiClassification(WindowClassification):
     '''
 
     def get_num_classes(self):
-        return ( len(self.voltages),
-                 len(self.frequencies) )
+        return ( len(self.reader.voltages),
+                 len(self.reader.frequencies) )
 
     def __getitem__(self, index):
         reader = self.reader
@@ -58,7 +58,7 @@ class VoltageClassification(WindowClassification):
     '''
 
     def get_num_classes(self):
-        return len(self.voltages)
+        return len(self.reader.voltages)
 
     def __getitem__(self, index):
         reader = self.reader
@@ -72,7 +72,7 @@ class FrequencyClassification(WindowClassification):
     '''
 
     def get_num_classes(self):
-        return len(self.frequencies)
+        return len(self.reader.frequencies)
 
     def __getitem__(self, index):
         reader = self.reader
