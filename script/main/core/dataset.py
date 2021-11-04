@@ -1,20 +1,29 @@
 from torch.utils.data import Dataset
 
-from main.base.app.config import ConfigObject
+from main.base.app.config import CoreObject
 
-class ConfigDataset(Dataset, ConfigObject):
+class CoreDataset(Dataset, CoreObject):
     ''''
-    Abstract configurable core dataset
+    Abstract core dataset
     '''
 
     pass
 
 # classification
 
-class ClassificationDataset(Dataset, ConfigObject):
+class ClassificationDataset(CoreDataset):
     ''''
     Abstract classification dataset
     '''
 
-    def get_num_classes():
+    def all_labels(self):
+        '''
+        Labels of the classification.
+        '''
+        raise NotImplementedError
+
+    def current_label(self):
+        '''
+        Label of the current sample
+        '''
         raise NotImplementedError

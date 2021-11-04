@@ -1,11 +1,3 @@
-# determinism
-
-determinism:
-
-  seed: 314159
-  seed_workers: True
-  force_determinism: False
-
 # core
 
 core:
@@ -88,6 +80,14 @@ learning:
     params:
       step_size: 2
       gamma: 0.9
+
+# determinism
+
+determinism:
+
+  seed: 314159
+  seed_workers: True
+  force_determinism: False
 
 # logging
 

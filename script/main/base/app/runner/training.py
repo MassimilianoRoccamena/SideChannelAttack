@@ -5,9 +5,9 @@ from main.base.app.params import CONFIG_DIR
 from main.base.app.params import DATASET_MODULE
 from main.base.app.params import MODEL_MODULE
 from main.base.app.params import LEARNING_MODULE
-from main.base.app.config import load_config, config_core_prompt
-from main.base.app.config import config_simple_object1, config_simple_object2
-from main.base.app.config import config_core_object2
+from main.base.app.config import load_config, build_core_prompt
+from main.base.app.config import build_simple_object1, build_simple_object2
+from main.base.app.config import build_core_object2
 
 # basic
 
@@ -24,13 +24,13 @@ def config_dataset(config, core_nodes):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('dataset'))
 
-    return config_core_object2(config, core_nodes, DATASET_MODULE)
+    return build_core_object2(config, core_nodes, DATASET_MODULE)
 
 def config_model(config, core_nodes):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('model'))
 
-    return config_core_object2(config, core_nodes,
+    return build_core_object2(config, core_nodes,
                                 MODEL_MODULE, core_suffix=False)
 
 def config_core(config, core_nodes):
@@ -61,10 +61,10 @@ def config_data_loaders(config, core_nodes, dataset):
         indices[0] += data_len - (indices[0]+indices[1])
 
     train_dataset, valid_dataset = random_split(dataset, indices)
-    train_loader =  config_simple_object1(config, core_nodes,
+    train_loader =  build_simple_object1(config, core_nodes,
                                             LEARNING_MODULE, class_name,
                                             args=[train_dataset])
-    valid_loader =  config_simple_object1(config, core_nodes,
+    valid_loader =  build_simple_object1(config, core_nodes,
                                             LEARNING_MODULE, class_name,
                                             args=[valid_dataset])   
 
@@ -75,7 +75,7 @@ def config_early_stopping(config, core_nodes):
     if config[class_name] is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('early stopping'))
 
-    return config_simple_object1(config, core_nodes,
+    return build_simple_object1(config, core_nodes,
                                     LEARNING_MODULE, class_name)
 
 def config_trainer(config, core_nodes, early_stop):
@@ -83,7 +83,7 @@ def config_trainer(config, core_nodes, early_stop):
     if config[class_name] is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG(class_name))
 
-    return config_simple_object1(config, core_nodes,
+    return build_simple_object1(config, core_nodes,
                                     LEARNING_MODULE, class_name,
                                     kwargs={'callbacks':[early_stop]})
 
@@ -91,20 +91,20 @@ def config_loss(config, core_nodes):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('loss'))
 
-    return config_simple_object2(config, core_nodes, LEARNING_MODULE)
+    return build_simple_object2(config, core_nodes, LEARNING_MODULE)
 
 def config_optimizer(config, core_nodes, model):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('optimizer'))
 
-    return config_simple_object2(config, core_nodes, LEARNING_MODULE,
+    return build_simple_object2(config, core_nodes, LEARNING_MODULE,
                                     args=[model.parameters()])
 
 def config_scheduler(config, core_nodes, optimizer):
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('lr scheduler'))
+        return None
 
-    return config_simple_object2(config, core_nodes, LEARNING_MODULE,
+    return build_simple_object2(config, core_nodes, LEARNING_MODULE,
                                     args=[optimizer])
     
 def config_learning(config, core_nodes, dataset, model):
@@ -138,6 +138,10 @@ def config_learning(config, core_nodes, dataset, model):
     print('loaded scheduler')
     yield scheduler
 
+# determinism
+
+# logging
+
 # runner
 
 INVALID_TASK_MSG = lambda task: f'training task {task} is not supported'
@@ -150,14 +154,19 @@ def handle_training_task(task, dataset, model):
 
 def run_training():
     config = load_training_config()
-    core_nodes = config_core_prompt(config)
 
+    # determinism
+    # TODO
+
+    # core
     print("----- TRAINING -----\n")
+    core_nodes = build_core_prompt(config)
     core = config_core(config.core, core_nodes)
     dataset = core[0]
     model = core[1]
     print("core section done\n")
 
+    # learning
     learning = config_learning(config.learning, core_nodes,
                                 dataset, model)
     train_loader, valid_loader = next(learning)
@@ -170,4 +179,8 @@ def run_training():
     model.set_learning(loss, optimizer, scheduler=scheduler)
     handle_training_task(core_nodes[1], dataset, model)
 
-    #trainer.fit(model, train_loader, valid_loader)
+    # logging
+    # TODO
+
+    # fit
+    # trainer.fit(model, train_loader, valid_loader)

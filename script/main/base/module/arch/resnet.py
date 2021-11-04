@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from main.base.module.config import ConfigModule
+from main.base.module.config import CoreModule
     
 class MyConv1dPadSame(nn.Module):
     """
@@ -66,7 +66,7 @@ class MyMaxPool1dPadSame(nn.Module):
         
         return net
     
-class BasicBlock(ConfigModule):
+class BasicBlock(CoreModule):
     """
     ResNet basic block
     """
@@ -150,7 +150,7 @@ class BasicBlock(ConfigModule):
 
         return out
     
-class ResNet1D(ConfigModule):
+class ResNet1D(CoreModule):
     """
     ResNet 1-dimensional
     
@@ -236,7 +236,7 @@ class ResNet1D(ConfigModule):
         # self.softmax = nn.Softmax(dim=1)
 
     @classmethod
-    def config_args(cls, config, core_nodes):
+    def build_args(cls, config, core_nodes):
         return [
             config.base_filters,
             config.kernel_size,

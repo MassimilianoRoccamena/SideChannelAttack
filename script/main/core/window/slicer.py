@@ -1,11 +1,11 @@
 from math import ceil
 
-from main.base.app.config import ConfigObject
+from main.base.app.config import CoreObject
 from main.base.data.params import TRACE_SIZE
 
-class TraceSlicer(ConfigObject):
+class TraceSlicer(CoreObject):
     '''
-    Abstract configurable slicer of traces into windows.
+    Abstract core slicer of traces into windows.
     '''
 
     INVALID_INDEX_MSG = 'invalid trace window index'
@@ -20,7 +20,7 @@ class TraceSlicer(ConfigObject):
         self.num_windows = num_windows
 
     @classmethod
-    def config_args(cls, config, core_nodes):
+    def build_args(cls, config, core_nodes):
         return [ config.window_size ]
 
     def validate_window_index(self, window_index):
@@ -62,9 +62,9 @@ class StridedSlicer(TraceSlicer):
         super().__init__(window_size, nwindows)
 
     @classmethod
-    def config_args(cls, config, core_nodes):
+    def build_args(cls, config, core_nodes):
         new_args =  [ config.stride ]
-        return cls.super_config_args(config, core_nodes) + new_args
+        return cls.build_super_args(config, core_nodes) + new_args
 
     def slice(self, window_index):
         if window_index < 0:

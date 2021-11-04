@@ -1,4 +1,4 @@
-from main.base.app.config import config_core_object1
+from main.base.app.config import build_core_object1
 from main.core.dataset import ClassificationDataset
 from main.core.window.params import SLICER_MODULE
 from main.core.window.reader import WindowReader
@@ -22,8 +22,8 @@ class WindowClassification(ClassificationDataset):
                                     key_values, num_traces)
 
     @classmethod
-    def config_args(cls, config, core_nodes):
-        slicer = config_core_object1(config.slicer, core_nodes[:-1],
+    def build_args(cls, config, core_nodes):
+        slicer = build_core_object1(config.slicer, core_nodes[:-1],
                                         SLICER_MODULE)
 
         return [ slicer, config.voltages, config.frequencies,
@@ -32,50 +32,58 @@ class WindowClassification(ClassificationDataset):
     def __len__(self):
         return len(self.reader.slicer)
 
+class SingleClassification(WindowClassification):
+    '''
+    Abstract dataset composed of power trace windows with one label
+    '''
+
     def __getitem__(self, index):
-        raise NotImplementedError
+        x = self.reader[index]
+        labels = self.all_labels()
+        label = self.current_label()
+        y = labels.index(label)
+        return x, y
 
 class MultiClassification(WindowClassification):
     '''
-    Dataset composed of power trace windows with voltage
-    and frequency labelling
+    Dataset composed of power trace windows with (voltage, frequency)
+    labelling
     '''
 
-    def get_num_classes(self):
-        return ( len(self.reader.voltages),
-                 len(self.reader.frequencies) )
+    def all_labels(self):
+        return ( self.reader.voltages,
+                 self.reader.frequencies )
+
+    def current_label(self):
+        return ( self.reader.file_id.voltage,
+                 self.reader.file_id.frequency )
 
     def __getitem__(self, index):
-        reader = self.reader
-        x = reader[index]
-        y0 = reader.voltages.index(reader.file_id.voltage)
-        y1 = reader.frequencies.index(reader.file_id.frequency)
+        x = self.reader[index]
+        labels = self.all_labels()
+        label = self.current_label()
+        y0 = labels[0].index(label[0])
+        y1 = labels[1].index(label[1])
         return x, (y0, y1)
 
-class VoltageClassification(WindowClassification):
+class VoltageClassification(SingleClassification):
     '''
     Dataset composed of power trace windows labelled with voltage
     '''
 
-    def get_num_classes(self):
-        return len(self.reader.voltages)
+    def all_labels(self):
+        return self.reader.voltages
 
-    def __getitem__(self, index):
-        reader = self.reader
-        x = reader[index]
-        y = reader.voltages.index(reader.file_id.voltage)
-        return x, y
+    def current_label(self):
+        return self.reader.file_id.voltage
 
 class FrequencyClassification(WindowClassification):
     '''
     Dataset composed of power trace windows labelled with frequency
     '''
 
-    def get_num_classes(self):
-        return len(self.reader.frequencies)
+    def all_labels(self):
+        return self.reader.frequencies
 
-    def __getitem__(self, index):
-        reader = self.reader
-        x = reader[index]
-        y = reader.frequencies.index(reader.file_id.frequency)
-        return x, y
+    def current_label(self):
+        return self.reader.file_id.frequency

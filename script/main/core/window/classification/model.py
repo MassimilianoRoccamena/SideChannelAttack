@@ -13,8 +13,8 @@ class SingleA(SingleClassifierModel):
 
 class MultiA(MultiClassifierModel):
     '''
-    Convolution based model with multiple labels 
-    (voltage, frequency)
+    Convolution based model with (voltage, frequency)
+    labelling
     '''
 
     pass

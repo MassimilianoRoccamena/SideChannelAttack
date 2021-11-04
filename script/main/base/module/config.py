@@ -1,10 +1,10 @@
 from torch.nn import Module
 
-from main.base.app.config import ConfigObject
+from main.base.app.config import CoreObject
 
-class ConfigModule(Module, ConfigObject):
+class CoreModule(Module, CoreObject):
     '''
-    Configurable neural module
+    Abstract core neural module
     '''
 
     pass

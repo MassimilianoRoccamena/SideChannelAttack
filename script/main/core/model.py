@@ -1,14 +1,14 @@
 from pytorch_lightning import LightningModule
 
 from main.base.app.params import MODEL_MODULE
-from main.base.app.config import ConfigObject
-from main.base.app.config import config_core_object1
+from main.base.app.config import CoreObject
+from main.base.app.config import build_core_object1
 from main.base.module.classifier import SingleClassifier
 from main.base.module.classifier import MultiClassifier
 
-class ConfigModel(LightningModule, ConfigObject):
+class CoreModel(LightningModule, CoreObject):
     ''''
-    Abstract configurable core model
+    Abstract core model
     '''
 
     def set_learning(self, loss, optimizer, scheduler=None):
@@ -36,9 +36,9 @@ class ConfigModel(LightningModule, ConfigObject):
         else:
             return self.optimizer, self.scheduler
 
-class WrapperModel(ConfigModel):
+class WrapperModel(CoreModel):
     '''
-    Abstract model wrapping a neural module
+    Abstract core model wrapping a module
     '''
 
     def __init__(self, module):
@@ -61,9 +61,9 @@ class ClassifierModel(WrapperModel):
 
     def mount_classifier(self, dataset):
         '''
-        Mount the classifier by reading dataset labels
+        Mount the classifier by reading dataset labels.
         '''
-        self.module.set_num_classes(dataset.get_num_classes())
+        self.module.set_labels(dataset.all_labels())
 
 class SingleClassifierModel(ClassifierModel):
     '''
@@ -73,12 +73,12 @@ class SingleClassifierModel(ClassifierModel):
     def __init__(self, encoder):
         super().__init__(SingleClassifier(encoder))
 
-    def set_num_classes(self, num_classes):
-        self.module.set_num_classes(num_classes)
+    def set_labels(self, labels):
+        self.module.set_labels(labels)
 
     @classmethod
-    def config_args(cls, config, core_nodes):
-        encoder = config_core_object1(config.encoder, core_nodes,
+    def build_args(cls, config, core_nodes):
+        encoder = build_core_object1(config.encoder, core_nodes,
                                         MODEL_MODULE)
                                         
         return [ encoder ]
