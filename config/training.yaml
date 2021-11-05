@@ -1,4 +1,17 @@
-# determinism
+base:
+
+  prompt:
+  - window
+  - classification
+  - frequency
+
+  name: Test
+
+  skip:
+    training:
+    testing:
+
+# ---------------------------------------------------------------
 
 determinism:
 
@@ -6,14 +19,26 @@ determinism:
   seed_workers: True
   force_determinism: False
 
-# core
+# ---------------------------------------------------------------
+
+logging:
+
+  tensorboard:
+    enable: False
+
+  neptune:
+    enable: False
+    
+    offline_mode: False
+    project_name: 'ToyUser/SideChannelAttack' # '${env:NEPTUNE_API_USER}/SideChannelAttack'
+    upload_source_files:
+    - '*.py'
+    - '*.c'
+    - '*.yaml'
+
+# ---------------------------------------------------------------
 
 core:
-
-  prompt:
-  - window
-  - classification
-  - frequency
 
   dataset:
     params:
@@ -32,11 +57,8 @@ core:
       - 'a3'
       num_traces: 500
 
-  # only_prediction: False
-
   model:
     name: A
-    # checkpoint:
     params:
       encoder:
         name: ResNet
@@ -51,7 +73,9 @@ core:
           use_bn: True
           use_do: True
 
-# learning
+    checkpoint:
+
+# ---------------------------------------------------------------
 
 learning:
 
@@ -88,19 +112,3 @@ learning:
     params:
       step_size: 2
       gamma: 0.9
-
-# logging
-
-logging:
-
-  tensorboard:
-    enable: False
-
-  neptune:
-    enable: False
-    offline_mode: False
-    project_name: '${env:NEPTUNE_API_USER}/SideChannelAttack'
-    upload_source_files:
-    - '*.py'
-    - '*.c'
-    - '*.yaml'

@@ -1,6 +1,6 @@
 from omegaconf import OmegaConf
 
-from main.base.util.string import upper1, upper_identifier
+from main.base.utils.string import upper1, upper_identifier
 from main.base.app.reflection import get_package_name, get_class
 
 # basic stuff
@@ -136,13 +136,6 @@ def build_simple_object2(config, core_prompt, module_name, args=[], kwargs={}):
                             core_prompt[:-1], module_name, config.name)
 
 # core objects
-
-def build_core_prompt(config):
-    '''
-    Build core prompt from a configuration.
-    config: configuration object
-    '''
-    return config.core.prompt
 
 def build_core_object1(config, core_prompt, module_name):
     '''

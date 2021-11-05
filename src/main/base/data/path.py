@@ -1,6 +1,6 @@
 import os
 
-from main.base.util.string import cat2, cat3
+from main.base.utils.string import cat2, cat3
 from main.base.data.params import PathReference
 
 # global vars/constants
