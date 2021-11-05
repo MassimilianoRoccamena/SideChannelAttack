@@ -1,7 +1,15 @@
 import os
+import torch
 from torch.utils.data import random_split
+from pytorch_lightning.utilities.seed import seed_everything
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
 from main.base.app.params import CONFIG_DIR
+from main.base.app.params import LOGS_DIR
+from main.base.app.params import TENSORBOARD_DIR
+from main.base.app.params import NEPTUNE_DIR
 from main.base.app.params import DATASET_MODULE
 from main.base.app.params import MODEL_MODULE
 from main.base.app.params import LEARNING_MODULE
@@ -37,11 +45,12 @@ def build_core(config, core_prompt):
     dataset = build_dataset(config.dataset, core_prompt)
     assert not dataset is None
     print('loaded dataset')
+    yield dataset
+
     model = build_model(config.model, core_prompt)
     assert not model is None
     print('loaded model')
-
-    return dataset, model
+    yield model
 
 # learning
 
@@ -138,43 +147,91 @@ def build_learning(config, core_prompt, dataset, model):
     print('loaded scheduler')
     yield scheduler
 
-# determinism
-
 # logging
+
+def build_tensorboard(config, name):
+    config = config.logging
+    kwargs = config.tensorboard
+
+    if config.enable:
+        kwargs.pop('enable')
+        kwargs.name = name
+        kwargs.save_dir = os.path.join(LOGS_DIR, TENSORBOARD_DIR)
+        logger = TensorBoardLogger(**kwargs)
+
+    return logger
+
+def build_neptune(config):
+    config = config.logging
+    kwargs = config.neptune
+
+    if config.enable:
+        pass
 
 # runner
 
-INVALID_TASK_MSG = lambda task: f'training task {task} is not supported'
+def run_determinism(config):
+    config = config.determinism
 
-def run_training():
-    config = load_training_config()
+    if config.force_determinism:
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ":4096:8"
+        seed_everything(config.seed, workers=True)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+        torch.use_deterministic_algorithms(True)
+    elif not config.seed is None:
+        seed_everything(config.seed, workers=config.seed_workers)
 
-    # determinism
-    # TODO
-
-    # core
-    print("----- TRAINING -----\n")
+def run_core(config):
     core_prompt = build_core_prompt(config)
+
     core = build_core(config.core, core_prompt)
-    dataset = core[0]
-    model = core[1]
+    dataset = next(core)
+    model = next(core)
     print("core section done\n")
 
-    # learning
+    return core_prompt, dataset, model
+
+def run_learning(config, core_prompt, dataset, model):
     learning = build_learning(config.learning, core_prompt,
                                 dataset, model)
+
     train_loader, valid_loader = next(learning)
     trainer = next(learning)
     loss = next(learning)
     optimizer = next(learning)
     scheduler = next(learning)
-    print('learning section done')
 
     model.set_learning(loss, optimizer, scheduler=scheduler)
     model.mount_from_dataset(dataset)
+    print('learning section done\n')
 
-    # logging
+    return train_loader, valid_loader, trainer
+
+def run_logging(config):
     # TODO
+    pass
 
-    # fit
+def run_fit(trainer, model, train_loader, valid_loader):
     # trainer.fit(model, train_loader, valid_loader)
+    pass
+
+INVALID_TASK_MSG = lambda task: f'training task {task} is not supported'
+
+def run_training():
+    '''
+    Entry point for training executable
+    '''
+    print("----- TRAINING -----\n")
+    config = load_training_config()
+
+    # determinism
+    run_determinism(config)
+    # core
+    prompt, dataset, model = run_core(config)
+    # learning
+    train, valid, trainer = run_learning(config, prompt, dataset, model)
+    # logging
+    run_logging(config)
+    # fit
+    run_fit(trainer, model, train, valid)

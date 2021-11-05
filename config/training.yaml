@@ -1,3 +1,11 @@
+# determinism
+
+determinism:
+
+  seed: 314159
+  seed_workers: True
+  force_determinism: False
+
 # core
 
 core:
@@ -96,11 +104,3 @@ logging:
     - '*.py'
     - '*.c'
     - '*.yaml'
-
-# determinism
-
-determinism:
-
-  seed: 314159
-  seed_workers: True
-  force_determinism: False

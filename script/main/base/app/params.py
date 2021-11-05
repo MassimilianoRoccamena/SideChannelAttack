@@ -1,7 +1,9 @@
 import os
 
 CONFIG_DIR = 'config'
-LOG_DIR = ".log"
+LOGS_DIR = ".log"
+TENSORBOARD_DIR = 'tensorboard'
+NEPTUNE_DIR = 'neptune'
 
 BASE_PACKAGE = 'main.base'
 CORE_PACKAGE = 'main.core'
