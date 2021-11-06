@@ -1,8 +1,5 @@
-import os
-
 CONFIG_DIR = 'config'
-LOGS_DIR = ".log"
-TENSORBOARD_DIR = 'tensorboard'
+LOG_DIR = ".log"
 
 BASE_PACKAGE = 'main.base'
 CORE_PACKAGE = 'main.core'

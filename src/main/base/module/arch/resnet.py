@@ -238,7 +238,7 @@ class ResNet(CoreModule):
         # self.softmax = nn.Softmax(dim=1)
 
     @classmethod
-    def build_args(cls, config, core_prompt):
+    def build_args(cls, config, prompt):
         return [
             config.base_filters,
             config.kernel_size,

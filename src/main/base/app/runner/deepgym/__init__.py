@@ -7,23 +7,24 @@ from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
-from main.base.app.params import CONFIG_DIR
-from main.base.app.params import LOGS_DIR
-from main.base.app.params import TENSORBOARD_DIR
+from main.base.app.params import LOG_DIR
 from main.base.app.params import DATASET_MODULE
 from main.base.app.params import MODEL_MODULE
 from main.base.app.params import LEARNING_MODULE
 from main.base.app.config import load_config
 from main.base.app.config import build_simple_object1, build_simple_object2
 from main.base.app.config import build_core_object2
-from main.base.app.logging import LoggerCollection, HyperParamsLogger
+from main.base.app.runner.deepgym.params import TENSORBOARD_DIR
+from main.base.app.runner.deepgym.params import EXECUTABLE_CONF_PATH
+from main.base.app.runner.deepgym.params import NEPTUNE_PRJ_NAME
+from main.base.app.runner.deepgym.params import NEPTUNE_USER_ENV
+from main.base.app.runner.deepgym.params import NEPTUNE_TOKEN_ENV
+from main.base.app.runner.deepgym.logging import LoggerCollection, HyperParamsLogger
 
 # loading and definitions
 
-TRAINING_CONF_PATH = os.path.join(CONFIG_DIR, 'training.yaml')
-
 def load_training_config():
-    return load_config(TRAINING_CONF_PATH)
+    return load_config(EXECUTABLE_CONF_PATH)
 
 CONFIG_NOT_FOUND_MSG = lambda id: f'{id} configuration not found'
 
@@ -36,6 +37,7 @@ def build_base(config):
     if prompt is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('prompt'))
 
+    # custom naming
     name = config.name
     if name is None:
         p = prompt
@@ -47,10 +49,12 @@ def build_base(config):
             raise ValueError(INVALID_PROMPT_MSG)
         print('using default experiment name')
 
+    # log dir creation
     dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(LOGS_DIR, name, dt_string)
+    log_dir = os.path.join(LOG_DIR, name, dt_string)
     print(f'log directory is {log_dir}')
 
+    # optional skip
     skip = config.skip
     if skip is None:
         skip = {'training':False, 'testing':True}
@@ -94,9 +98,11 @@ def build_tensorboard(config, name, log_dir):
     if config.enable:
         kwargs['name'] = name
         kwargs['save_dir'] = os.path.join(log_dir, TENSORBOARD_DIR)
-        logger = TensorBoardLogger(**config)
+        logger = TensorBoardLogger(**kwargs)
 
     return logger
+
+ENV_NOT_FOUND_MSG = lambda env: f'{env} environment variable not found'
 
 def build_neptune(config, name):
     if config is None:
@@ -111,6 +117,17 @@ def build_neptune(config, name):
         raise ValueError(CONFIG_NOT_FOUND_MSG('enable'))
 
     if config.enable:
+        # check env vars
+        try:
+            user = os.environ[NEPTUNE_USER_ENV]
+        except KeyError:
+            raise RuntimeError(ENV_NOT_FOUND_MSG(NEPTUNE_USER_ENV))
+        try:
+            token = os.environ[NEPTUNE_TOKEN_ENV]
+        except KeyError:
+            raise RuntimeError(ENV_NOT_FOUND_MSG(NEPTUNE_TOKEN_ENV))
+
+        # load files to upload
         extensions = config.upload_source_files
         if extensions:
             source_files = [str(path) for ext in extensions
@@ -118,17 +135,23 @@ def build_neptune(config, name):
         else:
             source_files = None
 
+        # create kwargs
         kwargs['upload_source_files'] = source_files
-        config['name'] = name
-        logger = NeptuneLogger(api_key=os.environ['NEPTUNE_API_TOKEN'],
-                                **config)
+        kwargs['experiment_name'] = name
+        if config.project_name is None:
+            project_name = NEPTUNE_PRJ_NAME
+            print('using default neptune project name')
+        else:
+            project_name = config.project_name
+        kwargs['project_name'] = f'{user}/{project_name}'
+        logger = NeptuneLogger(api_key=token, **kwargs)
 
     return logger
 
 def build_logging(config, name, log_dir):
     tensorboard = build_tensorboard(config.tensorboard, name, log_dir)
     neptune = build_neptune(config.neptune, name)
-    
+
     output = []
     if not tensorboard is None:
         output.append(tensorboard)
@@ -139,19 +162,20 @@ def build_logging(config, name, log_dir):
 
 # core builder
 
-def build_dataset(config, core_prompt):
+def build_dataset(config, prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('dataset'))
 
-    return build_core_object2(config, core_prompt, DATASET_MODULE)
+    return build_core_object2(config, prompt, DATASET_MODULE)
 
-def build_model(config, core_prompt):
+def build_model(config, prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('model'))
 
-    model = build_core_object2(config, core_prompt,
-                                MODEL_MODULE, core_suffix=False)
+    model = build_core_object2(config, prompt,
+                                MODEL_MODULE, prompt_suffix=False)
     
+    # load from file
     checkpoint = config.checkpoint
     if not checkpoint is None:
         print('loading from checkpoint...')
@@ -181,12 +205,14 @@ def build_data_loaders(config, prompt, dataset):
     if config.data_loader is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('data loader'))
 
+    # split indices
     data_len = len(dataset)
     indices = [ int(data_len*(1.-valid_split)),
                 int(data_len*valid_split) ]
     if indices[0] + indices[1] < data_len: # fix float approx
         indices[0] += data_len - (indices[0]+indices[1])
 
+    # do split
     train_dataset, valid_dataset = random_split(dataset, indices)
     train_loader =  build_simple_object1(config, prompt,
                                             LEARNING_MODULE, 'data_loader',
@@ -237,14 +263,14 @@ def build_scheduler(config, prompt, optimizer):
     return build_simple_object2(config, prompt, LEARNING_MODULE,
                                     args=[optimizer])
     
-def build_learning(config, core_prompt, dataset, model, loggers):
-    train_loader, valid_loader = build_data_loaders(config, core_prompt, dataset)
+def build_learning(config, prompt, dataset, model, loggers):
+    train_loader, valid_loader = build_data_loaders(config, prompt, dataset)
     assert not train_loader is None
     assert not valid_loader is None
     print('loaded data loaders')
     yield (train_loader, valid_loader)
 
-    early_stop = build_early_stopping(config, core_prompt)
+    early_stop = build_early_stopping(config, prompt)
     assert not early_stop is None
     print('loaded early stopping')
 
@@ -253,22 +279,22 @@ def build_learning(config, core_prompt, dataset, model, loggers):
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     callbacks = [ early_stop, params_writer, checkpoint_callback, lr_monitor ]
 
-    trainer = build_trainer(config, core_prompt, loggers, callbacks)
+    trainer = build_trainer(config, prompt, loggers, callbacks)
     assert not trainer is None
     print('loaded trainer')
     yield trainer
 
-    loss = build_loss(config.loss, core_prompt)
+    loss = build_loss(config.loss, prompt)
     assert not loss is None
     print('loaded loss')
     yield loss
 
-    optimizer = build_optimizer(config.optimizer, core_prompt, model)
+    optimizer = build_optimizer(config.optimizer, prompt, model)
     assert not optimizer is None
     print('loaded optimizer')
     yield optimizer
 
-    scheduler = build_scheduler(config.scheduler, core_prompt, optimizer)
+    scheduler = build_scheduler(config.scheduler, prompt, optimizer)
     assert not scheduler is None
     print('loaded scheduler')
     yield scheduler
@@ -282,7 +308,7 @@ def parse_base(config):
 
     prompt, name, log_dir, skip = build_base(config)
     
-    print('base configuration done\n')
+    print('base configuration done')
     return prompt, name, log_dir, skip
 
 def parse_determinism(config):
@@ -292,7 +318,7 @@ def parse_determinism(config):
 
     build_determinism(config)
 
-    print('determinism configuration done\n')
+    print('determinism configuration done')
 
 def parse_logging(config, name, log_dir):
     config = config.logging
@@ -301,7 +327,7 @@ def parse_logging(config, name, log_dir):
 
     loggers = build_logging(config, name, log_dir)
 
-    print("logging configuration done\n")
+    print("logging configuration done")
     return loggers
 
 def parse_core(config, prompt):
@@ -311,15 +337,15 @@ def parse_core(config, prompt):
 
     dataset, model = build_core(config, prompt)
 
-    print("core configuration done\n")
+    print("core configuration done")
     return dataset, model
 
-def parse_learning(config, core_prompt, dataset, model, loggers):
+def parse_learning(config, prompt, dataset, model, loggers):
     config = config.learning
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('learning'))
 
-    learning = build_learning(config, core_prompt,
+    learning = build_learning(config, prompt,
                                 dataset, model, loggers)
 
     train_loader, valid_loader = next(learning)
@@ -331,29 +357,29 @@ def parse_learning(config, core_prompt, dataset, model, loggers):
     model.set_learning(loss, optimizer, scheduler=scheduler)
     model.mount_from_dataset(dataset)
 
-    print('learning configuration done\n')
+    print('learning configuration done')
     return train_loader, valid_loader, trainer
 
 # main
 
-def do_work(trainer, model, train_loader, valid_loader, test_loader):
+def run_train_test(trainer, model, train_loader, valid_loader, test_loader):
     if not (train_loader is None or valid_loader is None):
         trainer.fit(model, train_loader, valid_loader)
-        print('model fit done')
+        print('model training done')
     else:
-        print('model fit skipped')
+        print('model training skipped')
 
     if not test_loader is None:
         trainer.test(model, test_loader)
-        print('model test done')
+        print('model testing done')
     else:
-        print('model test skipped')
+        print('model testing skipped')
 
 def run():
     '''
-    Entry point for training executable
+    Entry point for deep-gym executable
     '''
-    print("deep gym started\n")
+    print("deep gym started")
 
     config = load_training_config()
     prompt, name, log_dir, skip = parse_base(config)
@@ -368,6 +394,6 @@ def run():
         train, valid, trainer = parse_learning(config, prompt, dataset,
                                                 model, loggers)
 
-        do_work(trainer, model, None, None, None) # tested up to here
+        run_train_test(trainer, model, None, None, None) # tested up to here
     
     print('deep gym finished')

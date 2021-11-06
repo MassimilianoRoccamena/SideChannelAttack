@@ -23,8 +23,8 @@ class WindowClassification(ClassificationDataset):
                                     key_values, num_traces)
 
     @classmethod
-    def build_args(cls, config, core_prompt):
-        slicer = build_core_object1(config.slicer, core_prompt, DATASET_MODULE)
+    def build_args(cls, config, prompt):
+        slicer = build_core_object1(config.slicer, prompt, DATASET_MODULE)
 
         return [ slicer, config.voltages, config.frequencies,
                  config.key_values, config.num_traces ]

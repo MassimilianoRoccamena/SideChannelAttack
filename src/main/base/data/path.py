@@ -16,7 +16,7 @@ KEY_PREFIX = 'k'
 FILE_EXTENSION = 'dat'
 
 LOCAL_DATA_DIR = '.data'
-AIRLAB_DATA_DIR = ''
+REMOTE_DATA_DIR = '/multiverse'
 
 root_data_dir = LOCAL_DATA_DIR
 

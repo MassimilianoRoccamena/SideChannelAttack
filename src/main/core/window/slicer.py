@@ -20,7 +20,7 @@ class TraceSlicer(CoreObject):
         self.num_windows = num_windows
 
     @classmethod
-    def build_args(cls, config, core_prompt):
+    def build_args(cls, config, prompt):
         return [ config.window_size ]
 
     def validate_window_index(self, window_index):
@@ -62,9 +62,9 @@ class StridedSlicer(TraceSlicer):
         super().__init__(window_size, nwindows)
 
     @classmethod
-    def build_args(cls, config, core_prompt):
+    def build_args(cls, config, prompt):
         new_args =  [ config.stride ]
-        return cls.build_super_args(config, core_prompt) + new_args
+        return cls.build_super_args(config, prompt) + new_args
 
     def slice(self, window_index):
         if window_index < 0:

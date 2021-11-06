@@ -24,13 +24,13 @@ determinism:
 logging:
 
   tensorboard:
-    enable: False
+    enable: True
 
   neptune:
     enable: False
     
     offline_mode: False
-    project_name: 'ToyUser/SideChannelAttack' # '${env:NEPTUNE_API_USER}/SideChannelAttack'
+    project_name:
     upload_source_files:
     - '*.py'
     - '*.c'
