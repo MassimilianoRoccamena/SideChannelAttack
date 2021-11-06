@@ -7,7 +7,11 @@ class CoreDataset(Dataset, CoreObject):
     Abstract core dataset
     '''
 
-    pass
+    def __len__(self):
+        raise NotImplementedError
+
+    def __getitem__(self, index):
+        raise NotImplementedError
 
 # classification
 
@@ -24,6 +28,6 @@ class ClassificationDataset(CoreDataset):
 
     def current_label(self):
         '''
-        Label of the current sample.
+        Label of the current sample
         '''
         raise NotImplementedError

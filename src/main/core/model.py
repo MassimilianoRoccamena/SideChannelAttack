@@ -33,11 +33,14 @@ class CoreModel(LightningModule, CoreObject):
     def validation_step(self, batch, batch_index):
         return self.step(batch, batch_index)
 
+    def test_step(self, batch, batch_index):
+        return self.step(batch, batch_index)
+
     def configure_optimizers(self):
         if self.scheduler is None:
             return self.optimizer
         else:
-            return self.optimizer, self.scheduler
+            return [self.optimizer], [self.scheduler]
 
     def mount_from_dataset(self, dataset):
         '''

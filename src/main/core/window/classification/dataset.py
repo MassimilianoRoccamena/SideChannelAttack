@@ -1,3 +1,5 @@
+import torch
+
 from main.base.app.params import DATASET_MODULE
 from main.base.app.config import build_core_object1
 from main.core.dataset import ClassificationDataset
@@ -29,6 +31,10 @@ class WindowClassification(ClassificationDataset):
         return [ slicer, config.voltages, config.frequencies,
                  config.key_values, config.num_traces ]
 
+    def tensor_x(self, x):
+        x = torch.Tensor(x)
+        return  x.view(1, *x.size())
+
     def __len__(self):
         return len(self.reader.slicer)
 
@@ -39,6 +45,7 @@ class SingleClassification(WindowClassification):
 
     def __getitem__(self, index):
         x = self.reader[index]
+        x = self.tensor_x(x)
         labels = self.all_labels()
         label = self.current_label()
         y = labels.index(label)
@@ -60,6 +67,7 @@ class MultiClassification(WindowClassification):
 
     def __getitem__(self, index):
         x = self.reader[index]
+        x = self.tensor_x(x)
         labels = self.all_labels()
         label = self.current_label()
         y0 = labels[0].index(label[0])
@@ -77,7 +85,7 @@ class VoltageClassification(SingleClassification):
     def current_label(self):
         return self.reader.file_id.voltage
 
-class FrequencyClassification(WindowClassification):
+class FrequencyClassification(SingleClassification):
     '''
     Dataset composed of power trace windows labelled with frequency
     '''

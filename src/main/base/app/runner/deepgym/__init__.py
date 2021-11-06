@@ -217,6 +217,7 @@ def build_data_loaders(config, prompt, dataset):
     train_loader =  build_simple_object1(config, prompt,
                                             LEARNING_MODULE, 'data_loader',
                                             args=[train_dataset])
+    config.shuffle = False
     valid_loader =  build_simple_object1(config, prompt,
                                             LEARNING_MODULE, 'data_loader',
                                             args=[valid_dataset])   
@@ -394,6 +395,6 @@ def run():
         train, valid, trainer = parse_learning(config, prompt, dataset,
                                                 model, loggers)
 
-        run_train_test(trainer, model, None, None, None) # tested up to here
+        run_train_test(trainer, model, train, valid, None) # test WIP
     
     print('deep gym finished')
