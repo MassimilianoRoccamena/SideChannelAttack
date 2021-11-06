@@ -2,8 +2,9 @@ import os
 
 from main.base.app.params import CONFIG_DIR
 
-TENSORBOARD_DIR = 'tensorboard'
 EXECUTABLE_CONF_PATH = os.path.join(CONFIG_DIR, 'deep-gym.yaml')
+TENSORBOARD_DIR = 'tensorboard'
+CHECKPOINT_DIR = 'checkpoints'
 
 NEPTUNE_PRJ_NAME = 'SideChannelAttack'
 NEPTUNE_USER_ENV = 'NEPTUNE_API_USER'

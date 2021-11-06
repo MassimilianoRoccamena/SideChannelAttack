@@ -18,33 +18,47 @@ class CoreObject:
     '''
 
     @classmethod
-    def build_args(cls, config, prompt):
+    def build_kwargs(cls, config, prompt):
         '''
-        Build args for a class from configuration.
-        config: configuration object
+        Build kwargs for a class from configuration.
+        config: configuration object or dict
         prompt: nodes of the path of a core location
         '''
-        raise NotImplementedError
+        if type(config) is dict:
+            return config
+        else:
+            return dict(config)
 
     @classmethod
-    def build_super_args(cls, config, prompt, super_index=0):
+    def update_kwargs(cls, config, **kwargs):
+        '''
+        TODO
+        '''
+        config = dict(config)
+        for k,v in kwargs.items():
+            config[k] = v
+        return config
+
+    @classmethod
+    def build_super_kwargs(cls, config, prompt, super_index=0):
         '''
         Build args of a parent class from configuration.
         config: configuration object
         prompt: nodes of the path of a core location
         super_index: index of the super class
         '''
-        return cls.__bases__[super_index].build_args(config, prompt)
+        return cls.__bases__[super_index].build_kwargs(config, prompt)
 
     @classmethod
     def from_config(cls, config, prompt):
         '''
-        Build a class instance from configuration.
+        Build a class instance from configuration by calling
+        constructor with kwargs.
         config: configuration object
         prompt: nodes of the path of a core location
         '''
-        args = cls.build_args(config, prompt)
-        return cls(*args)
+        kwargs = cls.build_kwargs(config, prompt)
+        return cls(**kwargs)
 
 # abstract objects configs
 

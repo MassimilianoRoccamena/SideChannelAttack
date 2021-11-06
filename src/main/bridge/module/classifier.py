@@ -36,7 +36,7 @@ class SingleClassifier(nn.Module, Classifier):
 
     def forward(self, x):
         encoding = self.encoder(x)
-        prediction = self.sofmax(encoding)
+        prediction = self.softmax(encoding)
         return prediction
 
 class MultiClassifier(nn.Module):

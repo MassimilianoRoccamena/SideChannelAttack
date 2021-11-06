@@ -173,7 +173,7 @@ class ResNet(CoreModule):
         n_classes: number of classes
     """
 
-    def __init__(self, base_filters, kernel_size, stride, groups, n_block, n_classes, in_channels=1, downsample_gap=2, increasefilter_gap=4, use_bn=True, use_do=True, verbose=False):
+    def __init__(self, encoding_dim, base_filters, kernel_size, stride, groups, n_block, in_channels=1, downsample_gap=2, increasefilter_gap=4, use_bn=True, use_do=True, verbose=False):
         super().__init__()
 
         self.verbose = verbose
@@ -234,22 +234,8 @@ class ResNet(CoreModule):
         self.final_bn = nn.BatchNorm1d(out_channels)
         self.final_relu = nn.ReLU(inplace=True)
         # self.do = nn.Dropout(p=0.5)
-        self.dense = nn.Linear(out_channels, n_classes)
+        self.dense = nn.Linear(out_channels, encoding_dim)
         # self.softmax = nn.Softmax(dim=1)
-
-    @classmethod
-    def build_args(cls, config, prompt):
-        return [
-            config.base_filters,
-            config.kernel_size,
-            config.stride,
-            config.groups,
-            config.n_block,
-            config.downsample_gap,
-            config.increasefilter_gap,
-            config.use_bn,
-            config.use_do,
-        ]
         
     def forward(self, x):
         out = x

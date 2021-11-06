@@ -19,10 +19,6 @@ class TraceSlicer(CoreObject):
         self.window_size = window_size
         self.num_windows = num_windows
 
-    @classmethod
-    def build_args(cls, config, prompt):
-        return [ config.window_size ]
-
     def validate_window_index(self, window_index):
         '''
         Check consistency of a window index.
@@ -60,11 +56,6 @@ class StridedSlicer(TraceSlicer):
         nwindows = ceil((max_idx+1) / stride) + 1
 
         super().__init__(window_size, nwindows)
-
-    @classmethod
-    def build_args(cls, config, prompt):
-        new_args =  [ config.stride ]
-        return cls.build_super_args(config, prompt) + new_args
 
     def slice(self, window_index):
         if window_index < 0:

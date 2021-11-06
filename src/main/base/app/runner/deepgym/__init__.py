@@ -14,8 +14,9 @@ from main.base.app.params import LEARNING_MODULE
 from main.base.app.config import load_config
 from main.base.app.config import build_simple_object1, build_simple_object2
 from main.base.app.config import build_core_object2
-from main.base.app.runner.deepgym.params import TENSORBOARD_DIR
 from main.base.app.runner.deepgym.params import EXECUTABLE_CONF_PATH
+from main.base.app.runner.deepgym.params import TENSORBOARD_DIR
+from main.base.app.runner.deepgym.params import CHECKPOINT_DIR
 from main.base.app.runner.deepgym.params import NEPTUNE_PRJ_NAME
 from main.base.app.runner.deepgym.params import NEPTUNE_USER_ENV
 from main.base.app.runner.deepgym.params import NEPTUNE_TOKEN_ENV
@@ -231,7 +232,7 @@ def build_early_stopping(config, prompt):
     return build_simple_object1(config, prompt,
                                     LEARNING_MODULE, 'early_stopping')
 
-def build_trainer(config, prompt, loggers, callbacks):
+def build_trainer(config, prompt, callbacks, loggers, log_dir):
     if config.trainer is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('trainer'))
 
@@ -241,7 +242,8 @@ def build_trainer(config, prompt, loggers, callbacks):
                                 LEARNING_MODULE, 'trainer',
                                 kwargs= {
                                     'logger' : loggers,
-                                    'callbacks' : callbacks
+                                    'callbacks' : callbacks,
+                                    'default_root_dir' : log_dir
                                 })
 
 def build_loss(config, prompt):
@@ -264,7 +266,7 @@ def build_scheduler(config, prompt, optimizer):
     return build_simple_object2(config, prompt, LEARNING_MODULE,
                                     args=[optimizer])
     
-def build_learning(config, prompt, dataset, model, loggers):
+def build_learning(config, prompt, dataset, model, loggers, log_dir):
     train_loader, valid_loader = build_data_loaders(config, prompt, dataset)
     assert not train_loader is None
     assert not valid_loader is None
@@ -275,12 +277,13 @@ def build_learning(config, prompt, dataset, model, loggers):
     assert not early_stop is None
     print('loaded early stopping')
 
-    params_writer = HyperParamsLogger(config, './', 'training.yaml')
-    checkpoint_callback = ModelCheckpoint(save_top_k=-1)
+    params_writer = HyperParamsLogger(config, log_dir, 'params.yaml')
+    ckpt_path = os.path.join(log_dir, CHECKPOINT_DIR)
+    checkpoint_callback = ModelCheckpoint(dirpath=ckpt_path, save_top_k=-1)
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     callbacks = [ early_stop, params_writer, checkpoint_callback, lr_monitor ]
 
-    trainer = build_trainer(config, prompt, loggers, callbacks)
+    trainer = build_trainer(config, prompt, callbacks, loggers, log_dir)
     assert not trainer is None
     print('loaded trainer')
     yield trainer
@@ -341,13 +344,13 @@ def parse_core(config, prompt):
     print("core configuration done")
     return dataset, model
 
-def parse_learning(config, prompt, dataset, model, loggers):
+def parse_learning(config, prompt, dataset, model, loggers, log_dir):
     config = config.learning
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('learning'))
 
     learning = build_learning(config, prompt,
-                                dataset, model, loggers)
+                                dataset, model, loggers, log_dir)
 
     train_loader, valid_loader = next(learning)
     trainer = next(learning)
@@ -361,7 +364,7 @@ def parse_learning(config, prompt, dataset, model, loggers):
     print('learning configuration done')
     return train_loader, valid_loader, trainer
 
-# main
+# runners
 
 def run_train_test(trainer, model, train_loader, valid_loader, test_loader):
     if not (train_loader is None or valid_loader is None):
@@ -393,7 +396,7 @@ def run():
 
         dataset, model = parse_core(config, prompt)
         train, valid, trainer = parse_learning(config, prompt, dataset,
-                                                model, loggers)
+                                                model, loggers, log_dir)
 
         run_train_test(trainer, model, train, valid, None) # test WIP
     

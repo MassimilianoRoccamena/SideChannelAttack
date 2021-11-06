@@ -73,11 +73,11 @@ class ClassifierModel(WrapperModel):
     '''
 
     @classmethod
-    def build_args(cls, config, core_prompt):
+    def build_kwargs(cls, config, core_prompt):
         encoder = build_core_object1(config.encoder, core_prompt,
                                         MODEL_MODULE)
-                                        
-        return [ encoder ]
+        config = cls.update_kwargs(config, encoder=encoder)
+        return config
 
     def mount_from_dataset(self, dataset):
         self.module.mount_labels(dataset.all_labels())

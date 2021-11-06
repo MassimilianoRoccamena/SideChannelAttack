@@ -63,6 +63,7 @@ core:
       encoder:
         name: ResNet
         params:
+          encoding_dim: 100
           base_filters: 10
           kernel_size: 4
           stride: 1

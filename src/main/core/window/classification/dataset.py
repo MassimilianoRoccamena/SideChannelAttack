@@ -25,11 +25,10 @@ class WindowClassification(ClassificationDataset):
                                     key_values, num_traces)
 
     @classmethod
-    def build_args(cls, config, prompt):
+    def build_kwargs(cls, config, prompt):
         slicer = build_core_object1(config.slicer, prompt, DATASET_MODULE)
-
-        return [ slicer, config.voltages, config.frequencies,
-                 config.key_values, config.num_traces ]
+        config = cls.update_kwargs(config, slicer=slicer)
+        return config
 
     def tensor_x(self, x):
         x = torch.Tensor(x)
