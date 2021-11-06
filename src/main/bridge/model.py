@@ -3,8 +3,8 @@ from pytorch_lightning import LightningModule
 from main.base.app.params import MODEL_MODULE
 from main.base.app.config import CoreObject
 from main.base.app.config import build_core_object1
-from main.base.module.classifier import SingleClassifier
-from main.base.module.classifier import MultiClassifier
+from main.bridge.module.classifier import SingleClassifier
+from main.bridge.module.classifier import MultiClassifier
 
 class CoreModel(LightningModule, CoreObject):
     ''''

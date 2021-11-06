@@ -2,7 +2,7 @@ import torch
 
 from main.base.app.params import DATASET_MODULE
 from main.base.app.config import build_core_object1
-from main.core.dataset import ClassificationDataset
+from main.bridge.dataset import ClassificationDataset
 from main.core.window.slicer import StridedSlicer
 from main.core.window.reader import WindowReader
 

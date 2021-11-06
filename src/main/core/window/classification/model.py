@@ -1,6 +1,6 @@
-from main.base.module.arch.resnet import ResNet
-from main.core.model import SingleClassifierModel
-from main.core.model import MultiClassifierModel
+from main.bridge.model import SingleClassifierModel
+from main.bridge.model import MultiClassifierModel
+from main.bridge.module.arch.resnet import ResNet
 
 # A : convolutional
 
@@ -35,4 +35,4 @@ class FrequencyA(SingleA):
 
 # B : recurrent
 
-# C : unknown
+# C : attention
