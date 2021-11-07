@@ -1,5 +1,6 @@
-from main.core.window.slicer import StridedSlicer
-from main.core.window.classification.dataset import MultiClassification
+from main.sca.core.window.loader import WindowLoader1
+from main.sca.core.window.slicer import StridedSlicer
+from main.sca.core.window.classification.dataset import MultiClassification
 
 WINDOW_SIZE = 1000
 STRIDE = 50
@@ -11,7 +12,8 @@ NUM_TRACES = 500
 
 def print_window_classification_item():
     slicer = StridedSlicer(WINDOW_SIZE, STRIDE)
-    dataset = MultiClassification(slicer, VOLTAGES, FREQUENCIES, KEY_VALUES, NUM_TRACES)
+    loader = WindowLoader1(slicer)
+    dataset = MultiClassification(loader, VOLTAGES, FREQUENCIES, KEY_VALUES, NUM_TRACES)
     reader = dataset.reader
 
     reader_idx = 1400000

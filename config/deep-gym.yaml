@@ -42,11 +42,14 @@ core:
 
   dataset:
     params:
-      slicer:
-        name: StridedSlicer
+      loader:
+        name: Convention1
         params:
-          window_size: 1000
-          stride: 50
+          slicer:
+            name: Strided
+            params:
+              window_size: 1000
+              stride: 50
 
       voltages:
       - '1.00'

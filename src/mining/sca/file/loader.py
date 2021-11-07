@@ -1,10 +1,10 @@
-from main.base.data.path import FileIdentifier, file_path
-from main.base.data.loader import BasicFileLoader
+from main.sca.file.convention1.path import FileIdentifier, file_path
+from main.sca.file.loader import OurTraceLoader
 
 FILE_ID = FileIdentifier('1.00', '52.000', '32')
 FILE_PATH = file_path(FILE_ID)
 
-loader = BasicFileLoader(FILE_PATH)
+loader = OurTraceLoader(FILE_PATH)
 
 def load_all_shapes():
     traces, texts = loader.load_all_traces()

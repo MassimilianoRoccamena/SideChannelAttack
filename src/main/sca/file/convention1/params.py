@@ -1,11 +1,7 @@
-TRACE_SIZE = 134016
-TEXT_SIZE = 16
-KEY_SIZE = 16
-BYTE_SIZE = 256
-
 class PathReference:
     '''
-    Container of data constant parameters used in the path of a file.
+    Container of data constant parameters used in filesystem
+    convention.
     '''
 
     date = '2021-10-25'

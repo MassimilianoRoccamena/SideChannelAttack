@@ -4,11 +4,18 @@ from main.base.app.config import CoreObject
 
 class CoreDataset(Dataset, CoreObject):
     ''''
-    Abstract core dataset
+    Abstract core dataset.
     '''
 
+    def __init__(self, reader):
+        '''
+        Create new core dataset.
+        reader: file reader
+        '''
+        self.reader = reader
+
     def __len__(self):
-        raise NotImplementedError
+        return len(self.reader)
 
     def __getitem__(self, index):
         raise NotImplementedError

@@ -1,7 +1,7 @@
 from math import ceil
 
-from main.base.data.params import TRACE_SIZE
 from main.base.app.config import CoreObject
+from main.sca.file.params import TRACE_SIZE
 
 class TraceSlicer(CoreObject):
     '''

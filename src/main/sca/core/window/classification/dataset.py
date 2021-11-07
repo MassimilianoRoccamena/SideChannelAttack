@@ -3,46 +3,44 @@ import torch
 from main.base.app.params import DATASET_MODULE
 from main.base.app.config import build_core_object1
 from main.bridge.dataset import ClassificationDataset
-from main.core.window.slicer import StridedSlicer
-from main.core.window.reader import WindowReader
+from main.sca.core.window.loader import WindowLoader1 as Convention1
+from main.sca.core.window.slicer import StridedSlicer as Strided
+from main.sca.core.window.reader import WindowReader
 
 class WindowClassification(ClassificationDataset):
     '''
-    Abstract dataset which reads power trace windows with some labels
+    Abstract classification dataset of trace windows.
     '''
 
-    def __init__(self, slicer, voltages, frequencies, key_values, num_traces):
+    def __init__(self, loader, voltages, frequencies, key_values, num_traces):
         '''
         Create new window classification dataset.
-        slicer: window slicing strategy
+        loader: window loader
         voltages: desired voltages
         frequencies: desired frequencies
         key_values: desired key values
         num_traces: number of traces in each file
         '''
-        super().__init__()
-        self.reader = WindowReader(slicer, voltages, frequencies,
-                                    key_values, num_traces)
+        reader = WindowReader(loader, voltages, frequencies,
+                                key_values, num_traces)
+        super().__init__(reader)
 
     @classmethod
     def build_kwargs(cls, config, prompt):
-        slicer = build_core_object1(config.slicer, prompt, DATASET_MODULE)
-        config = cls.update_kwargs(config, slicer=slicer)
+        loader = build_core_object1(config.loader, prompt, DATASET_MODULE)
+        config = cls.update_kwargs(config, loader=loader)
         return config
 
     def tensor_x(self, x):
         '''
-        Extends zs a 1 channel sequence.
+        Extends input as a 1 channel sequence.
         '''
         x = torch.Tensor(x)
         return  x.view(1, *x.size())
 
-    def __len__(self):
-        return len(self.reader.slicer)
-
 class SingleClassification(WindowClassification):
     '''
-    Abstract dataset composed of power trace windows with one label
+    Abstract 1-label classification dataset of trace windows.
     '''
 
     def __getitem__(self, index):
@@ -55,8 +53,7 @@ class SingleClassification(WindowClassification):
 
 class MultiClassification(WindowClassification):
     '''
-    Dataset composed of power trace windows with (voltage, frequency)
-    labelling
+    Abstract (volt,freq)-classification dataset of trace windows.
     '''
 
     def all_labels(self):
