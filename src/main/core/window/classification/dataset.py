@@ -31,6 +31,9 @@ class WindowClassification(ClassificationDataset):
         return config
 
     def tensor_x(self, x):
+        '''
+        Extends zs a 1 channel sequence.
+        '''
         x = torch.Tensor(x)
         return  x.view(1, *x.size())
 

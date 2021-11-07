@@ -80,7 +80,7 @@ class ClassifierModel(WrapperModel):
         return config
 
     def mount_from_dataset(self, dataset):
-        self.module.mount_labels(dataset.all_labels())
+        self.module.set_labels(dataset.all_labels())
 
 class SingleClassifierModel(ClassifierModel):
     '''

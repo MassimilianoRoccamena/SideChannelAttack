@@ -15,9 +15,9 @@ class CoreDataset(Dataset, CoreObject):
 
 # classification
 
-class ClassificationDataset(CoreDataset):
+class Classification:
     ''''
-    Abstract classification dataset
+    Abstract classification interface
     '''
 
     def all_labels(self):
@@ -31,3 +31,10 @@ class ClassificationDataset(CoreDataset):
         Label of the current sample
         '''
         raise NotImplementedError
+
+class ClassificationDataset(CoreDataset, Classification):
+    ''''
+    Abstract classification dataset
+    '''
+
+    pass

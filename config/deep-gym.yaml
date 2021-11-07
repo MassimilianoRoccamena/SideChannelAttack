@@ -58,7 +58,7 @@ core:
       num_traces: 500
 
   model:
-    name: A
+    name: Basic
     params:
       encoder:
         name: ResNet

@@ -2,37 +2,32 @@ from main.bridge.model import SingleClassifierModel
 from main.bridge.model import MultiClassifierModel
 from main.bridge.module.arch.resnet import ResNet
 
-# A : convolutional
+# Basic : encoder + classifier
 
-class SingleA(SingleClassifierModel):
+class SingleBasic(SingleClassifierModel):
     '''
-    Convolution based single classifier
-    '''
-
-    pass
-
-class MultiA(MultiClassifierModel):
-    '''
-    Convolution based model with (voltage, frequency)
-    labelling
+    Abstract encoder + single classifier model
     '''
 
     pass
 
-class VoltageA(SingleA):
+class MultiBasic(MultiClassifierModel):
     '''
-    Convolution model with voltage labelling
-    '''
-
-    pass
-
-class FrequencyA(SingleA):
-    '''
-    Convolution model with frequency labelling
+    Encoder + multiple classifier model
     '''
 
     pass
 
-# B : recurrent
+class VoltageBasic(SingleBasic):
+    '''
+    Encoder + voltage classifier model
+    '''
 
-# C : attention
+    pass
+
+class FrequencyBasic(SingleBasic):
+    '''
+    Encoder + frequency classifier model
+    '''
+
+    pass
