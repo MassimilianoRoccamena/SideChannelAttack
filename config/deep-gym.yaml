@@ -10,10 +10,6 @@ base:
 
   name: Test
 
-  skip:
-    training:
-    testing:
-
 # ---------------------------------------------------------------
 
 determinism:
@@ -84,7 +80,13 @@ core:
 
 learning:
 
-  validation_split: 0.1
+  skip:
+    training:
+    test:
+
+  split:
+    validation: 0.1
+    test:
 
   data_loader:
     batch_size: 32

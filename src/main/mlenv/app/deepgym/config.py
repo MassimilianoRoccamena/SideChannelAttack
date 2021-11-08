@@ -96,7 +96,7 @@ def build_learning_object2(config, prompt, args=[], kwargs={}):
 
 # base builders
 
-INVALID_PROMPT_MSG = 'selected prompt not valid'
+INVALID_PROMPT_MSG = 'selected prompt is not valid'
 
 def build_base(config):
     # load core origin
@@ -120,23 +120,14 @@ def build_base(config):
             name = f"{p[0]}{p[1]}"
         else:
             raise ValueError(INVALID_PROMPT_MSG)
-        print('using default experiment name')
+        print('Using default experiment name')
 
     # log dir creation
     dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = os.path.join(LOG_DIR, name, dt_string)
-    print(f'log directory is {log_dir}')
+    print(f'Log directory is {log_dir}')
 
-    # optional skip
-    skip = config.skip
-    if skip is None:
-        skip = {'training':False, 'testing':True}
-    if skip.training is None:
-        skip.training = False
-    if skip.testing is None:
-        skip.testing = True
-
-    return prompt, name, log_dir, skip
+    return prompt, name, log_dir
 
 # determinism builders
 
@@ -221,7 +212,10 @@ def build_neptune(config, name):
 
 def build_logging(config, name, log_dir):
     tensorboard = build_tensorboard(config.tensorboard, name, log_dir)
+    print('Loaded tensorboard configuration')
+
     neptune = build_neptune(config.neptune, name)
+    print('Loaded neptune configuration')
 
     output = []
     if not tensorboard is None:
@@ -248,51 +242,91 @@ def build_model(config, prompt):
     # load from file
     checkpoint = config.checkpoint
     if not checkpoint is None:
-        print('loading from checkpoint...')
+        print('Loading from checkpoint...')
         model.load_from_checkpoint(checkpoint)
-        print('checkpoint loaded')
+        print('Checkpoint loaded')
     
     return model
 
 def build_core(config, prompt):
     dataset = build_dataset(config.dataset, prompt)
-    assert not dataset is None
-    print('loaded dataset')
+    print('Loaded dataset')
 
     model = build_model(config.model, prompt)
-    assert not model is None
-    print('loaded model')
+    print('Loaded model')
 
     return dataset, model
 
 # learning builders
 
-def build_data_loaders(config, prompt, dataset):
-    valid_split = config.validation_split
-    if valid_split is None:
+def build_skip(config):
+    skip = config.skip
+
+    if skip is None:
+        skip = {'training':False, 'test':True}
+    if skip.training is None:
+        skip.training = False
+    if skip.test is None:
+        skip.test = True
+
+    return skip.training, skip.test
+
+def build_split(config):
+    split = config.split
+
+    if split is None:
+         raise ValueError(CONFIG_NOT_FOUND_MSG('split'))
+    if split.validation is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('validation split'))
 
+    return split.validation, split.test
+
+def build_data_loaders(config, prompt, dataset, skip, split):
     if config.data_loader is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('data loader'))
 
-    # split indices
-    data_len = len(dataset)
-    indices = [ int(data_len*(1.-valid_split)),
-                int(data_len*valid_split) ]
-    if indices[0] + indices[1] < data_len: # fix float approx
-        indices[0] += data_len - (indices[0]+indices[1])
+    def get_split_indices(d, s):
+        d_len = len(d)
+        indices = [ int(d_len*(1.-s)),
+                    int(d_len*s) ]
+        if indices[0] + indices[1] < d_len: # fix float approx
+            indices[0] += len - (indices[0]+indices[1])
+        return indices
 
-    # do split
-    train_dataset, valid_dataset = random_split(dataset, indices)
-    train_loader =  build_learning_object1(config, prompt,
-                                            'data_loader',
-                                            args=[train_dataset])
-    config.shuffle = False
-    valid_loader =  build_learning_object1(config, prompt,
-                                            'data_loader',
-                                            args=[valid_dataset])   
 
-    return train_loader, valid_loader
+    skip_train, skip_test = skip
+    split_valid, split_test = split
+
+    # test
+    test_loader = None
+
+    if not skip_test and not split_test is None:
+        indices = get_split_indices(dataset, split_test)
+        dataset, test_dataset = random_split(dataset, indices)
+        test_loader =  build_learning_object1(config, prompt,
+                                                'data_loader',
+                                                args=[test_dataset])
+    else:
+        print('Test data loader skipped')
+
+    # training & validation
+    train_loader = None
+    valid_loader = None
+
+    if not skip_train:
+        indices = get_split_indices(dataset, split_valid)
+        train_dataset, valid_dataset = random_split(dataset, indices)
+        train_loader =  build_learning_object1(config, prompt,
+                                                'data_loader',
+                                                args=[train_dataset])
+        config.shuffle = False
+        valid_loader =  build_learning_object1(config, prompt,
+                                                'data_loader',
+                                                args=[valid_dataset])
+    else:
+        print('Train and validation data loader skipped')
+
+    return train_loader, valid_loader, test_loader
 
 def build_early_stopping(config, prompt):
     if config.early_stopping is None:
@@ -336,15 +370,18 @@ def build_scheduler(config, prompt, optimizer):
                                     args=[optimizer])
     
 def build_learning(config, prompt, dataset, model, loggers, log_dir):
-    train_loader, valid_loader = build_data_loaders(config, prompt, dataset)
-    assert not train_loader is None
-    assert not valid_loader is None
-    print('loaded data loaders')
-    yield (train_loader, valid_loader)
+    skip = build_skip(config)
+    print('Loaded skip options')
+
+    split = build_split(config)
+    print('Loaded split options')
+
+    loaders = build_data_loaders(config, prompt, dataset, skip, split)
+    print('Loaded data loaders')
+    yield loaders
 
     early_stop = build_early_stopping(config, prompt)
-    assert not early_stop is None
-    print('loaded early stopping')
+    print('Loaded early stopping')
 
     params_writer = HyperParamsLogger(config, log_dir, 'params.yaml')
     ckpt_path = os.path.join(log_dir, CHECKPOINT_DIR)
@@ -353,21 +390,17 @@ def build_learning(config, prompt, dataset, model, loggers, log_dir):
     callbacks = [ early_stop, params_writer, checkpoint_callback, lr_monitor ]
 
     trainer = build_trainer(config, prompt, callbacks, loggers, log_dir)
-    assert not trainer is None
-    print('loaded trainer')
+    print('Loaded trainer')
     yield trainer
 
     loss = build_loss(config.loss, prompt)
-    assert not loss is None
-    print('loaded loss')
+    print('Loaded loss')
     yield loss
 
     optimizer = build_optimizer(config.optimizer, prompt, model)
-    assert not optimizer is None
-    print('loaded optimizer')
+    print('Loaded optimizer')
     yield optimizer
 
     scheduler = build_scheduler(config.scheduler, prompt, optimizer)
-    assert not scheduler is None
-    print('loaded scheduler')
+    print('Loaded scheduler')
     yield scheduler

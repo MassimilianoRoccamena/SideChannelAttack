@@ -13,10 +13,10 @@ def parse_base(config):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('base'))
 
-    prompt, name, log_dir, skip = build_base(config)
+    prompt, name, log_dir = build_base(config)
     
-    print('base configuration done')
-    return prompt, name, log_dir, skip
+    print('Base configuration done')
+    return prompt, name, log_dir
 
 def parse_determinism(config):
     config = config.determinism
@@ -25,7 +25,7 @@ def parse_determinism(config):
 
     build_determinism(config)
 
-    print('determinism configuration done')
+    print('Determinism configuration done')
 
 def parse_logging(config, name, log_dir):
     config = config.logging
@@ -34,7 +34,7 @@ def parse_logging(config, name, log_dir):
 
     loggers = build_logging(config, name, log_dir)
 
-    print("logging configuration done")
+    print("Logging configuration done")
     return loggers
 
 def parse_core(config, prompt):
@@ -44,7 +44,7 @@ def parse_core(config, prompt):
 
     dataset, model = build_core(config, prompt)
 
-    print("core configuration done")
+    print("Core configuration done")
     return dataset, model
 
 def parse_learning(config, prompt, dataset, model, loggers, log_dir):
@@ -55,7 +55,7 @@ def parse_learning(config, prompt, dataset, model, loggers, log_dir):
     learning = build_learning(config, prompt,
                                 dataset, model, loggers, log_dir)
 
-    train_loader, valid_loader = next(learning)
+    loaders = next(learning)
     trainer = next(learning)
     loss = next(learning)
     optimizer = next(learning)
@@ -64,43 +64,40 @@ def parse_learning(config, prompt, dataset, model, loggers, log_dir):
     model.set_learning(loss, optimizer, scheduler=scheduler)
     model.mount_from_dataset(dataset)
 
-    print('learning configuration done')
-    return train_loader, valid_loader, trainer
+    print('Learning configuration done')
+    return loaders, trainer
 
 # main runners
 
 def run_train_test(trainer, model, train_loader, valid_loader, test_loader):
     if not (train_loader is None or valid_loader is None):
         trainer.fit(model, train_loader, valid_loader)
-        print('model training done')
+        print('Model training done')
     else:
-        print('model training skipped')
+        print('Model training skipped')
 
     if not test_loader is None:
         trainer.test(model, test_loader)
-        print('model testing done')
+        print('Model testing done')
     else:
-        print('model testing skipped')
+        print('Model testing skipped')
 
 def run():
     '''
     Entry point for deep-gym executable
     '''
-    print("deep gym started")
+    print("Deep gym started")
 
     config = load_training_config()
-    prompt, name, log_dir, skip = parse_base(config)
+    prompt, name, log_dir = parse_base(config)
 
-    if skip['training'] and skip['testing']:
-        print('found nothing to do')
-    else:
-        parse_determinism(config)
-        loggers = parse_logging(config, name, log_dir)
+    parse_determinism(config)
+    loggers = parse_logging(config, name, log_dir)
 
-        dataset, model = parse_core(config, prompt)
-        train, valid, trainer = parse_learning(config, prompt, dataset,
-                                                model, loggers, log_dir)
+    dataset, model = parse_core(config, prompt)
+    loaders, trainer = parse_learning(config, prompt, dataset,
+                                            model, loggers, log_dir)
 
-        run_train_test(trainer, model, train, valid, None) # test WIP
-    
-    print('deep gym finished')
+    run_train_test(trainer, model, *loaders) # test WIP
+
+    print('Deep gym finished')
