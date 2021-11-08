@@ -1,6 +1,6 @@
 from torch.nn import Module
 
-from main.mlenv.app.config import CoreObject
+from main.mlenv.api.config import CoreObject
 
 class CoreModule(Module, CoreObject):
     '''

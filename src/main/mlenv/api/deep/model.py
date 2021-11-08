@@ -1,8 +1,7 @@
 from pytorch_lightning import LightningModule
 
-from main.mlenv.app.params import MODEL_MODULE
-from main.mlenv.app.config import CoreObject
-from main.mlenv.app.config import build_core_object1
+from main.mlenv.api.config import CoreObject
+from main.mlenv.api.deep.config import build_model_object1
 from main.mlenv.api.deep.module.classifier import SingleClassifier
 from main.mlenv.api.deep.module.classifier import MultiClassifier
 
@@ -74,8 +73,7 @@ class ClassifierModel(WrapperModel):
 
     @classmethod
     def build_kwargs(cls, config, core_prompt):
-        encoder = build_core_object1(config.encoder, core_prompt,
-                                        MODEL_MODULE)
+        encoder = build_model_object1(config.encoder, core_prompt)
         config = cls.update_kwargs(config, encoder=encoder)
         return config
 

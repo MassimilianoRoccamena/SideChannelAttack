@@ -1,7 +1,6 @@
 import torch
 
-from main.mlenv.api.config import DATASET_MODULE
-from main.mlenv.app.config import build_core_object1
+from main.mlenv.api.deep.config import build_dataset_object1
 from main.mlenv.api.deep.dataset import ClassificationDataset
 from main.sca.core.window.loader import WindowLoader1 as Convention1
 from main.sca.core.window.slicer import StridedSlicer as Strided
@@ -27,7 +26,7 @@ class WindowClassification(ClassificationDataset):
 
     @classmethod
     def build_kwargs(cls, config, prompt):
-        loader = build_core_object1(config.loader, prompt, DATASET_MODULE)
+        loader = build_dataset_object1(config.loader, prompt)
         config = cls.update_kwargs(config, loader=loader)
         return config
 

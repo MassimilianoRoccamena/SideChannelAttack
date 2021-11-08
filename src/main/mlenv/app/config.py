@@ -60,7 +60,7 @@ class CoreObject:
         kwargs = cls.build_kwargs(config, prompt)
         return cls(**kwargs)
 
-# abstract objects configs
+# generic objects builders
 
 CLASS_NOT_FOUND_MSG = lambda clsname: "class {clsname} not found"
 FAILED_CONFIG_MSG = lambda clsname: "failed to configure {clsname} object"
@@ -108,9 +108,9 @@ def build_object2(class_constr, prompt, module_name, class_name):
                         module_name, upper_identifier(class_name,
                                                     '_'))
 
-# simple objects
+# simple objects builders
 
-def build_simple_object1(config, prompt, module_name, class_name, args=[], kwargs={}):
+def build_simple_object1(config, prompt, module_name, class_name, args, kwargs):
     '''
     Build a collapsed constructor based object.
     Example for ClassName:
@@ -120,7 +120,9 @@ def build_simple_object1(config, prompt, module_name, class_name, args=[], kwarg
     config: configuration object
     prompt: nodes of the path of a core location
     module_name: name of the module file inside the core location
-    args: additional args passed to constructor
+    class_name: name of the class
+    args: args passed to constructor
+    kwargs: kwargs passed to constructor
     '''
     params = config[class_name] if not config[class_name] is None else {}
     params = dict(params)
@@ -128,7 +130,7 @@ def build_simple_object1(config, prompt, module_name, class_name, args=[], kwarg
     return build_object2(lambda cls: cls(*args, **params),
                             prompt[:-1], module_name, class_name)
 
-def build_simple_object2(config, prompt, module_name, args=[], kwargs={}):
+def build_simple_object2(config, prompt, module_name, args, kwargs):
     '''
     Build an expanded constructor based object.
     Example for ClassName:
@@ -140,6 +142,8 @@ def build_simple_object2(config, prompt, module_name, args=[], kwargs={}):
     config: configuration object
     prompt: nodes of the path of a core location
     module_name: name of the module file inside the core location
+    args: args passed to constructor
+    kwargs: kwargs passed to constructor
     '''
     params = config.params if not config.params is None else {}
     params = dict(params)
@@ -147,7 +151,7 @@ def build_simple_object2(config, prompt, module_name, args=[], kwargs={}):
     return build_object1(lambda cls: cls(*args, **params),
                             prompt[:-1], module_name, config.name)
 
-# core objects
+# core objects builders
 
 def build_core_object1(config, prompt, module_name):
     '''
@@ -166,7 +170,7 @@ def build_core_object1(config, prompt, module_name):
     return build_object1(lambda cls: cls.from_config(params, prompt),
                             prompt[:-1], module_name, config.name)
 
-def build_core_object2(config, prompt, module_name, prompt_suffix=True):
+def build_core_object2(config, prompt, module_name, prompt_suffix):
     '''
     Build an expanded core object.
     This object exploits core prompt for locating the class name.
@@ -177,7 +181,7 @@ def build_core_object2(config, prompt, module_name, prompt_suffix=True):
             constr_arg0: ...
             constr_arg0: ...
     config: configuration object
-    nodes: nodes of the path of a core location
+    prompt: nodes of the path of a core location
     module_name: name of the module file inside the core location
     prompt_duffix: if true append part of prompt to class name
     '''

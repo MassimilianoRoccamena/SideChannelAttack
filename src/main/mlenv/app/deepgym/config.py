@@ -12,15 +12,18 @@ from main.mlenv.app.params import DATASET_MODULE
 from main.mlenv.app.params import MODEL_MODULE
 from main.mlenv.app.params import LEARNING_MODULE
 from main.mlenv.app.config import load_config
-from main.mlenv.app.config import build_simple_object1, build_simple_object2
+from main.mlenv.app.config import build_simple_object1
+from main.mlenv.app.config import build_simple_object2
+from main.mlenv.app.config import build_core_object1
 from main.mlenv.app.config import build_core_object2
-from main.mlenv.app.runner.deepgym.params import EXECUTABLE_CONF_PATH
-from main.mlenv.app.runner.deepgym.params import TENSORBOARD_DIR
-from main.mlenv.app.runner.deepgym.params import CHECKPOINT_DIR
-from main.mlenv.app.runner.deepgym.params import NEPTUNE_PRJ_NAME
-from main.mlenv.app.runner.deepgym.params import NEPTUNE_USER_ENV
-from main.mlenv.app.runner.deepgym.params import NEPTUNE_TOKEN_ENV
-from main.mlenv.app.runner.deepgym.logging import LoggerCollection, HyperParamsLogger
+from main.mlenv.app.deepgym.params import EXECUTABLE_CONF_PATH
+from main.mlenv.app.deepgym.params import TENSORBOARD_DIR
+from main.mlenv.app.deepgym.params import CHECKPOINT_DIR
+from main.mlenv.app.deepgym.params import NEPTUNE_PRJ_NAME
+from main.mlenv.app.deepgym.params import NEPTUNE_USER_ENV
+from main.mlenv.app.deepgym.params import NEPTUNE_TOKEN_ENV
+from main.mlenv.app.deepgym.logging import LoggerCollection
+from main.mlenv.app.deepgym.logging import HyperParamsLogger
 
 # loading and definitions
 
@@ -28,6 +31,67 @@ def load_training_config():
     return load_config(EXECUTABLE_CONF_PATH)
 
 CONFIG_NOT_FOUND_MSG = lambda id: f'{id} configuration not found'
+
+# executable objects builders
+
+def build_dataset_object1(config, prompt):
+    '''
+    Build an expanded dataset object.
+    config: configuration object
+    prompt: nodes of the path of a core location
+    '''
+    return build_core_object1(config, prompt, DATASET_MODULE)
+
+def build_dataset_object2(config, prompt):
+    '''
+    Build an expanded dataset object.
+    This object exploits core prompt for locating the class name.
+    config: configuration object
+    prompt: nodes of the path of a core location
+    '''
+    return build_core_object2(config, prompt, DATASET_MODULE, True)
+
+def build_model_object1(config, prompt):
+    '''
+    Build an expanded model object.
+    config: configuration object
+    prompt: nodes of the path of a core location
+    '''
+    return build_core_object1(config, prompt, MODEL_MODULE)
+
+def build_model_object2(config, prompt):
+    '''
+    Build an expanded model object.
+    This object exploits core prompt for locating the class name.
+    config: configuration object
+    prompt: nodes of the path of a core location
+    '''
+    return build_core_object2(config, prompt, MODEL_MODULE, False)
+
+def build_learning_object1(config, prompt, class_name, args=[], kwargs={}):
+    '''
+    Build a collapsed learning object.
+    config: configuration object
+    prompt: nodes of the path of a core location
+    module_name: name of the module file inside the core location
+    class_name: name of the class
+    args: args passed to constructor
+    kwargs: kwargs passed to constructor
+    '''
+    return build_simple_object1(config, prompt, LEARNING_MODULE,
+                                class_name, args, kwargs)
+
+def build_learning_object2(config, prompt, args=[], kwargs={}):
+    '''
+    Build an expanded learning object.
+    config: configuration object
+    prompt: nodes of the path of a core location
+    module_name: name of the module file inside the core location
+    args: args passed to constructor
+    kwargs: kwargs passed to constructor
+    '''
+    return build_simple_object2(config, prompt, LEARNING_MODULE,
+                                    args, kwargs)
 
 # base builders
 
@@ -138,7 +202,7 @@ def build_neptune(config, name):
 
         # create kwargs
         kwargs['upload_source_files'] = source_files
-        kwargs['experiment_name'] = name
+        kwargs['project_name'] = name
         if config.project_name is None:
             project_name = NEPTUNE_PRJ_NAME
             print('using default neptune project name')
@@ -161,20 +225,19 @@ def build_logging(config, name, log_dir):
 
     return tuple(output)
 
-# core builder
+# core builders
 
 def build_dataset(config, prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('dataset'))
 
-    return build_core_object2(config, prompt, DATASET_MODULE)
+    return build_dataset_object2(config, prompt)
 
 def build_model(config, prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('model'))
 
-    model = build_core_object2(config, prompt,
-                                MODEL_MODULE, prompt_suffix=False)
+    model = build_model_object2(config, prompt)
     
     # load from file
     checkpoint = config.checkpoint
@@ -215,12 +278,12 @@ def build_data_loaders(config, prompt, dataset):
 
     # do split
     train_dataset, valid_dataset = random_split(dataset, indices)
-    train_loader =  build_simple_object1(config, prompt,
-                                            LEARNING_MODULE, 'data_loader',
+    train_loader =  build_learning_object1(config, prompt,
+                                            'data_loader',
                                             args=[train_dataset])
     config.shuffle = False
-    valid_loader =  build_simple_object1(config, prompt,
-                                            LEARNING_MODULE, 'data_loader',
+    valid_loader =  build_learning_object1(config, prompt,
+                                            'data_loader',
                                             args=[valid_dataset])   
 
     return train_loader, valid_loader
@@ -229,8 +292,8 @@ def build_early_stopping(config, prompt):
     if config.early_stopping is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('early stopping'))
 
-    return build_simple_object1(config, prompt,
-                                    LEARNING_MODULE, 'early_stopping')
+    return build_learning_object1(config, prompt,
+                                    'early_stopping')
 
 def build_trainer(config, prompt, callbacks, loggers, log_dir):
     if config.trainer is None:
@@ -238,32 +301,32 @@ def build_trainer(config, prompt, callbacks, loggers, log_dir):
 
     loggers = LoggerCollection(loggers)
 
-    return build_simple_object1(config, prompt,
-                                LEARNING_MODULE, 'trainer',
-                                kwargs= {
-                                    'logger' : loggers,
-                                    'callbacks' : callbacks,
-                                    'default_root_dir' : log_dir
-                                })
+    return build_learning_object1(config, prompt,
+                                    'trainer',
+                                    kwargs= {
+                                        'logger' : loggers,
+                                        'callbacks' : callbacks,
+                                        'default_root_dir' : log_dir
+                                    })
 
 def build_loss(config, prompt):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('loss'))
 
-    return build_simple_object2(config, prompt, LEARNING_MODULE)
+    return build_learning_object2(config, prompt)
 
 def build_optimizer(config, prompt, model):
     if config is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('optimizer'))
 
-    return build_simple_object2(config, prompt, LEARNING_MODULE,
+    return build_learning_object2(config, prompt,
                                     args=[model.parameters()])
 
 def build_scheduler(config, prompt, optimizer):
     if config is None:
         return None
 
-    return build_simple_object2(config, prompt, LEARNING_MODULE,
+    return build_learning_object2(config, prompt,
                                     args=[optimizer])
     
 def build_learning(config, prompt, dataset, model, loggers, log_dir):
@@ -302,102 +365,3 @@ def build_learning(config, prompt, dataset, model, loggers, log_dir):
     assert not scheduler is None
     print('loaded scheduler')
     yield scheduler
-
-# section parsing
-
-def parse_base(config):
-    config = config.base
-    if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('base'))
-
-    prompt, name, log_dir, skip = build_base(config)
-    
-    print('base configuration done')
-    return prompt, name, log_dir, skip
-
-def parse_determinism(config):
-    config = config.determinism
-    if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('determinism'))
-
-    build_determinism(config)
-
-    print('determinism configuration done')
-
-def parse_logging(config, name, log_dir):
-    config = config.logging
-    if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('logging'))
-
-    loggers = build_logging(config, name, log_dir)
-
-    print("logging configuration done")
-    return loggers
-
-def parse_core(config, prompt):
-    config = config.core
-    if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('core'))
-
-    dataset, model = build_core(config, prompt)
-
-    print("core configuration done")
-    return dataset, model
-
-def parse_learning(config, prompt, dataset, model, loggers, log_dir):
-    config = config.learning
-    if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('learning'))
-
-    learning = build_learning(config, prompt,
-                                dataset, model, loggers, log_dir)
-
-    train_loader, valid_loader = next(learning)
-    trainer = next(learning)
-    loss = next(learning)
-    optimizer = next(learning)
-    scheduler = next(learning)
-
-    model.set_learning(loss, optimizer, scheduler=scheduler)
-    model.mount_from_dataset(dataset)
-
-    print('learning configuration done')
-    return train_loader, valid_loader, trainer
-
-# runners
-
-def run_train_test(trainer, model, train_loader, valid_loader, test_loader):
-    if not (train_loader is None or valid_loader is None):
-        trainer.fit(model, train_loader, valid_loader)
-        print('model training done')
-    else:
-        print('model training skipped')
-
-    if not test_loader is None:
-        trainer.test(model, test_loader)
-        print('model testing done')
-    else:
-        print('model testing skipped')
-
-def run():
-    '''
-    Entry point for deep-gym executable
-    '''
-    print("deep gym started")
-
-    config = load_training_config()
-    prompt, name, log_dir, skip = parse_base(config)
-
-    if skip['training'] and skip['testing']:
-        print('found nothing to do')
-    else:
-        parse_determinism(config)
-        loggers = parse_logging(config, name, log_dir)
-
-        dataset, model = parse_core(config, prompt)
-        train, valid, trainer = parse_learning(config, prompt, dataset,
-                                                model, loggers, log_dir)
-
-        run_train_test(trainer, model, train, valid, None) # test WIP
-    
-    print('deep gym finished')

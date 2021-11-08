@@ -1,7 +1,6 @@
 import numpy as np
 
-from main.mlenv.app.params import DATASET_MODULE
-from main.mlenv.app.config import build_core_object1
+from main.mlenv.api.deep.config import build_dataset_object1
 from main.sca.file.convention1.loader import TraceLoader1
 
 class WindowLoader:
@@ -19,7 +18,7 @@ class WindowLoader:
 
     @classmethod
     def build_kwargs(cls, config, prompt):
-        slicer = build_core_object1(config.slicer, prompt, DATASET_MODULE)
+        slicer = build_dataset_object1(config.slicer, prompt)
         config = cls.update_kwargs(config, slicer=slicer)
         return config
 
