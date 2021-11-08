@@ -6,7 +6,7 @@ from main.mlenv.app.deepgym.config import build_logging
 from main.mlenv.app.deepgym.config import build_core
 from main.mlenv.app.deepgym.config import build_learning
 
-# main sections parsers
+# sections parsers
 
 def parse_base(config):
     config = config.base

@@ -1,1 +1,1 @@
-export $NEPTUNE_API_USER=$1
+export $NEPTUNE_USER=$1

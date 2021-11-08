@@ -1,1 +1,1 @@
-export $NEPTUNE_API_TOKEN=$1
+export $NEPTUNE_TOKEN=$1

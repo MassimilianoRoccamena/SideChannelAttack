@@ -1,5 +1,8 @@
 base:
 
+  origin:
+  - sca
+
   prompt:
   - window
   - classification
@@ -30,11 +33,9 @@ logging:
     enable: False
     
     offline_mode: False
-    project_name:
     upload_source_files:
     - '*.py'
     - '*.c'
-    - '*.yaml'
 
 # ---------------------------------------------------------------
 

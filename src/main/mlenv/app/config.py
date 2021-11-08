@@ -1,7 +1,8 @@
 from omegaconf import OmegaConf
 
 from main.utils.string import upper1, upper_identifier
-from main.mlenv.app.reflection import get_package_name, get_class
+from main.mlenv.app.reflection import get_core_package_name
+from main.mlenv.app.reflection import get_core_class
 
 # basic stuff
 
@@ -14,7 +15,7 @@ def load_config(file_path):
 
 class CoreObject:
     '''
-    Core object, configurable from file
+    Core object, configurable from file.
     '''
 
     @classmethod
@@ -22,7 +23,7 @@ class CoreObject:
         '''
         Build kwargs for a class from configuration.
         config: configuration object or dict
-        prompt: nodes of the path of a core location
+        prompt: nodes of the path from the core package
         '''
         if type(config) is dict:
             return config
@@ -32,7 +33,9 @@ class CoreObject:
     @classmethod
     def update_kwargs(cls, config, **kwargs):
         '''
-        TODO
+        Update kwargs for a class constructor.
+        config: configuration object
+        prompt: nodes of the path from the core package
         '''
         config = dict(config)
         for k,v in kwargs.items():
@@ -44,7 +47,7 @@ class CoreObject:
         '''
         Build args of a parent class from configuration.
         config: configuration object
-        prompt: nodes of the path of a core location
+        prompt: nodes of the path from the core package
         super_index: index of the super class
         '''
         return cls.__bases__[super_index].build_kwargs(config, prompt)
@@ -55,7 +58,7 @@ class CoreObject:
         Build a class instance from configuration by calling
         constructor with kwargs.
         config: configuration object
-        prompt: nodes of the path of a core location
+        prompt: nodes of the path from the core package
         '''
         kwargs = cls.build_kwargs(config, prompt)
         return cls(**kwargs)
@@ -69,12 +72,12 @@ def build_object(class_constr, prompt, module_name, class_name):
     '''
     Abstract builder of objects from a module class.
     class_constr: constructor for the class
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     class_name: name of the class inside the module
     '''
-    package_name = get_package_name(prompt)
-    cls = get_class(package_name, module_name, class_name)
+    package_name = get_core_package_name(prompt)
+    cls = get_core_class(package_name, module_name, class_name)
 
     if cls is None:
         raise ValueError(CLASS_NOT_FOUND_MSG(class_name))
@@ -89,7 +92,7 @@ def build_object1(class_constr, prompt, module_name, class_name):
     '''
     Abstract builder of an object with passed class name.
     class_constr: constructor for the class
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     class_name: name of the class inside the module
     '''
@@ -100,7 +103,7 @@ def build_object2(class_constr, prompt, module_name, class_name):
     '''
     Abstract builder of an object with class name equal to configuration field.
     class_constr: constructor for the class
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     class_name: name of the class inside the module
     '''
@@ -118,7 +121,7 @@ def build_simple_object1(config, prompt, module_name, class_name, args, kwargs):
         constr_arg0: ...
         constr_arg1: ...
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     class_name: name of the class
     args: args passed to constructor
@@ -140,7 +143,7 @@ def build_simple_object2(config, prompt, module_name, args, kwargs):
             constr_arg0: ...
             constr_arg0: ...
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     args: args passed to constructor
     kwargs: kwargs passed to constructor
@@ -163,7 +166,7 @@ def build_core_object1(config, prompt, module_name):
             constr_arg0: ...
             constr_arg0: ...
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     '''
     params = config.params if not config.params is None else {}
@@ -181,7 +184,7 @@ def build_core_object2(config, prompt, module_name, prompt_suffix):
             constr_arg0: ...
             constr_arg0: ...
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     prompt_duffix: if true append part of prompt to class name
     '''

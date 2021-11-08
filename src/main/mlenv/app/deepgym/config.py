@@ -11,6 +11,7 @@ from main.mlenv.app.params import LOG_DIR
 from main.mlenv.app.params import DATASET_MODULE
 from main.mlenv.app.params import MODEL_MODULE
 from main.mlenv.app.params import LEARNING_MODULE
+from main.mlenv.app.params import set_core_package
 from main.mlenv.app.config import load_config
 from main.mlenv.app.config import build_simple_object1
 from main.mlenv.app.config import build_simple_object2
@@ -19,7 +20,7 @@ from main.mlenv.app.config import build_core_object2
 from main.mlenv.app.deepgym.params import EXECUTABLE_CONF_PATH
 from main.mlenv.app.deepgym.params import TENSORBOARD_DIR
 from main.mlenv.app.deepgym.params import CHECKPOINT_DIR
-from main.mlenv.app.deepgym.params import NEPTUNE_PRJ_NAME
+from main.mlenv.app.deepgym.params import NEPTUNE_PROJECT_ENV
 from main.mlenv.app.deepgym.params import NEPTUNE_USER_ENV
 from main.mlenv.app.deepgym.params import NEPTUNE_TOKEN_ENV
 from main.mlenv.app.deepgym.logging import LoggerCollection
@@ -38,7 +39,7 @@ def build_dataset_object1(config, prompt):
     '''
     Build an expanded dataset object.
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     '''
     return build_core_object1(config, prompt, DATASET_MODULE)
 
@@ -47,7 +48,7 @@ def build_dataset_object2(config, prompt):
     Build an expanded dataset object.
     This object exploits core prompt for locating the class name.
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     '''
     return build_core_object2(config, prompt, DATASET_MODULE, True)
 
@@ -55,7 +56,7 @@ def build_model_object1(config, prompt):
     '''
     Build an expanded model object.
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     '''
     return build_core_object1(config, prompt, MODEL_MODULE)
 
@@ -64,7 +65,7 @@ def build_model_object2(config, prompt):
     Build an expanded model object.
     This object exploits core prompt for locating the class name.
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     '''
     return build_core_object2(config, prompt, MODEL_MODULE, False)
 
@@ -72,7 +73,7 @@ def build_learning_object1(config, prompt, class_name, args=[], kwargs={}):
     '''
     Build a collapsed learning object.
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     class_name: name of the class
     args: args passed to constructor
@@ -85,7 +86,7 @@ def build_learning_object2(config, prompt, args=[], kwargs={}):
     '''
     Build an expanded learning object.
     config: configuration object
-    prompt: nodes of the path of a core location
+    prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     args: args passed to constructor
     kwargs: kwargs passed to constructor
@@ -98,6 +99,13 @@ def build_learning_object2(config, prompt, args=[], kwargs={}):
 INVALID_PROMPT_MSG = 'selected prompt not valid'
 
 def build_base(config):
+    # load core origin
+    origin = config.origin
+    if origin is None:
+        raise ValueError(CONFIG_NOT_FOUND_MSG('origin'))
+    set_core_package(list(origin))
+
+    # load core prompt
     prompt = config.prompt
     if prompt is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG('prompt'))
@@ -182,7 +190,7 @@ def build_neptune(config, name):
         raise ValueError(CONFIG_NOT_FOUND_MSG('enable'))
 
     if config.enable:
-        # check env vars
+        # load env vars
         try:
             user = os.environ[NEPTUNE_USER_ENV]
         except KeyError:
@@ -191,6 +199,10 @@ def build_neptune(config, name):
             token = os.environ[NEPTUNE_TOKEN_ENV]
         except KeyError:
             raise RuntimeError(ENV_NOT_FOUND_MSG(NEPTUNE_TOKEN_ENV))
+        try:
+            project = os.environ[NEPTUNE_PROJECT_ENV]
+        except KeyError:
+            raise RuntimeError(ENV_NOT_FOUND_MSG(NEPTUNE_PROJECT_ENV))
 
         # load files to upload
         extensions = config.upload_source_files
@@ -202,13 +214,7 @@ def build_neptune(config, name):
 
         # create kwargs
         kwargs['upload_source_files'] = source_files
-        kwargs['project_name'] = name
-        if config.project_name is None:
-            project_name = NEPTUNE_PRJ_NAME
-            print('using default neptune project name')
-        else:
-            project_name = config.project_name
-        kwargs['project_name'] = f'{user}/{project_name}'
+        kwargs['project_name'] = f'{user}/{project}'
         logger = NeptuneLogger(api_key=token, **kwargs)
 
     return logger
