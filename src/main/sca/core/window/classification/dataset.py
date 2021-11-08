@@ -1,6 +1,6 @@
 import torch
 
-from main.mlenv.api.deep.config import build_dataset_object1
+from main.mlenv.api.deep.config import build_dataset_kwarg
 from main.mlenv.api.deep.dataset import ClassificationDataset
 from main.sca.core.window.loader import WindowLoader1 as Convention1
 from main.sca.core.window.slicer import StridedSlicer as Strided
@@ -25,10 +25,9 @@ class WindowClassification(ClassificationDataset):
         super().__init__(reader)
 
     @classmethod
+    @build_dataset_kwarg('loader')
     def build_kwargs(cls, config, prompt):
-        loader = build_dataset_object1(config.loader, prompt)
-        config = cls.update_kwargs(config, loader=loader)
-        return config
+        pass
 
     def tensor_x(self, x):
         '''

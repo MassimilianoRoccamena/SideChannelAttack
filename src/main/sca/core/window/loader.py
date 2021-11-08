@@ -1,6 +1,6 @@
 import numpy as np
 
-from main.mlenv.api.deep.config import build_dataset_object1
+from main.mlenv.api.deep.config import build_dataset_kwarg
 from main.sca.file.convention1.loader import TraceLoader1
 
 class WindowLoader:
@@ -17,10 +17,9 @@ class WindowLoader:
         self.slicer = slicer
 
     @classmethod
+    @build_dataset_kwarg('slicer')
     def build_kwargs(cls, config, prompt):
-        slicer = build_dataset_object1(config.slicer, prompt)
-        config = cls.update_kwargs(config, slicer=slicer)
-        return config
+        pass
 
     def load_window_of_some_traces(self, trace_indices, window_index):
         '''
