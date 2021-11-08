@@ -1,8 +1,8 @@
 import torch
 
-from main.base.app.params import DATASET_MODULE
-from main.base.app.config import build_core_object1
-from main.bridge.dataset import ClassificationDataset
+from main.mlenv.api.config import DATASET_MODULE
+from main.mlenv.app.config import build_core_object1
+from main.mlenv.api.deep.dataset import ClassificationDataset
 from main.sca.core.window.loader import WindowLoader1 as Convention1
 from main.sca.core.window.slicer import StridedSlicer as Strided
 from main.sca.core.window.reader import WindowReader

@@ -2,7 +2,7 @@
 
 Thesis work by Massimiliano Roccamena
 
-### Running
+## Running
 
 You can launch the app by running one of the executable scripts, specifying the identifier and the arguments being passed to it
 
@@ -24,16 +24,6 @@ Other executables identifiers are:
 - ***testing***
   - run tests of main
 
-### Neptune
+## Logging
 
-You can setup your neptune username by running
-
-```bash
-sh utils/netpune/set-user.sh $user_name
-```
-
-You can setup your neptune token by running
-
-```bash
-sh utils/netpune/set-token.sh $api_token
-```
+You can setup yout ***Neptune*** account data with bash scripts inside utils folder

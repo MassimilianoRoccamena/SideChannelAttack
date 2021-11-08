@@ -1,7 +1,7 @@
 import numpy as np
 
-from main.base.app.params import DATASET_MODULE
-from main.base.app.config import build_core_object1
+from main.mlenv.app.params import DATASET_MODULE
+from main.mlenv.app.config import build_core_object1
 from main.sca.file.convention1.loader import TraceLoader1
 
 class WindowLoader:

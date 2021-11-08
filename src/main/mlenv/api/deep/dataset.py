@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 
-from main.base.app.config import CoreObject
+from main.mlenv.app.config import CoreObject
 
 class CoreDataset(Dataset, CoreObject):
     ''''

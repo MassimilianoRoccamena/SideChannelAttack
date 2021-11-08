@@ -7,20 +7,20 @@ from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
-from main.base.app.params import LOG_DIR
-from main.base.app.params import DATASET_MODULE
-from main.base.app.params import MODEL_MODULE
-from main.base.app.params import LEARNING_MODULE
-from main.base.app.config import load_config
-from main.base.app.config import build_simple_object1, build_simple_object2
-from main.base.app.config import build_core_object2
-from main.base.app.runner.deepgym.params import EXECUTABLE_CONF_PATH
-from main.base.app.runner.deepgym.params import TENSORBOARD_DIR
-from main.base.app.runner.deepgym.params import CHECKPOINT_DIR
-from main.base.app.runner.deepgym.params import NEPTUNE_PRJ_NAME
-from main.base.app.runner.deepgym.params import NEPTUNE_USER_ENV
-from main.base.app.runner.deepgym.params import NEPTUNE_TOKEN_ENV
-from main.base.app.runner.deepgym.logging import LoggerCollection, HyperParamsLogger
+from main.mlenv.app.params import LOG_DIR
+from main.mlenv.app.params import DATASET_MODULE
+from main.mlenv.app.params import MODEL_MODULE
+from main.mlenv.app.params import LEARNING_MODULE
+from main.mlenv.app.config import load_config
+from main.mlenv.app.config import build_simple_object1, build_simple_object2
+from main.mlenv.app.config import build_core_object2
+from main.mlenv.app.runner.deepgym.params import EXECUTABLE_CONF_PATH
+from main.mlenv.app.runner.deepgym.params import TENSORBOARD_DIR
+from main.mlenv.app.runner.deepgym.params import CHECKPOINT_DIR
+from main.mlenv.app.runner.deepgym.params import NEPTUNE_PRJ_NAME
+from main.mlenv.app.runner.deepgym.params import NEPTUNE_USER_ENV
+from main.mlenv.app.runner.deepgym.params import NEPTUNE_TOKEN_ENV
+from main.mlenv.app.runner.deepgym.logging import LoggerCollection, HyperParamsLogger
 
 # loading and definitions
 

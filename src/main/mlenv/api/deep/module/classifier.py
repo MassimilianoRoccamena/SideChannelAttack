@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from main.bridge.module.config import CoreModule
+from main.mlenv.api.deep.module.config import CoreModule
 
 class Classifier:
     '''

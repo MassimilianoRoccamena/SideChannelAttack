@@ -1,4 +1,4 @@
-from main.base.app.config import CoreObject
+from main.mlenv.app.config import CoreObject
 
 class FileLoader(CoreObject):
     '''

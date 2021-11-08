@@ -1,6 +1,6 @@
-from main.bridge.model import SingleClassifierModel
-from main.bridge.model import MultiClassifierModel
-from main.bridge.module.arch.resnet import ResNet
+from main.mlenv.api.deep.model import SingleClassifierModel
+from main.mlenv.api.deep.model import MultiClassifierModel
+from main.mlenv.api.deep.module.arch.resnet import ResNet
 
 # Basic : encoder + classifier
 

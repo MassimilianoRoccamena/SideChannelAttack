@@ -1,6 +1,6 @@
 import importlib
 
-from main.base.app.params import CORE_PACKAGE
+from main.mlenv.app.params import CORE_PACKAGE
 
 def get_package_name(package_nodes):
     root_package = CORE_PACKAGE

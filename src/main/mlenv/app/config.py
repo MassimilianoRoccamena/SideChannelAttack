@@ -1,7 +1,7 @@
 from omegaconf import OmegaConf
 
-from main.base.utils.string import upper1, upper_identifier
-from main.base.app.reflection import get_package_name, get_class
+from main.utils.string import upper1, upper_identifier
+from main.mlenv.app.reflection import get_package_name, get_class
 
 # basic stuff
 

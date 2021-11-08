@@ -1,6 +1,6 @@
 import numpy as np
 
-from main.bridge.file.reader import FileReader
+from main.mlenv.api.deep.file.reader import FileReader
 
 class WindowReader(FileReader):
     '''

@@ -1,6 +1,6 @@
 import os
 
-from main.base.app.params import CONFIG_DIR
+from main.mlenv.app.params import CONFIG_DIR
 
 EXECUTABLE_CONF_PATH = os.path.join(CONFIG_DIR, 'deep-gym.yaml')
 TENSORBOARD_DIR = 'tensorboard'

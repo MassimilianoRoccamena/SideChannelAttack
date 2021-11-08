@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from main.bridge.module.config import CoreModule
+from main.mlenv.api.deep.module.config import CoreModule
     
 class MyConv1dPadSame(nn.Module):
     """
