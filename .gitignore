@@ -113,7 +113,10 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Local development 
-#  in case of server unavailability
+# Local development,
+# in case of server unavailability
 .data/
 .log/
+
+# Neptune stuff
+config/neptune

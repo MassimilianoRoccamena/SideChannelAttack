@@ -1,1 +1,0 @@
-export $NEPTUNE_USER=$1

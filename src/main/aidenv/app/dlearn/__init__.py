@@ -1,5 +1,8 @@
-from aidenv.app.dlearn.config import CONFIG_NOT_FOUND_MSG
-from aidenv.app.dlearn.config import load_training_config
+import os
+
+from aidenv.app.params import AIDENV_CONFIG_ENV
+from aidenv.app.params import CONFIG_NOT_FOUND_MSG
+from aidenv.app.config import load_config
 from aidenv.app.dlearn.config import build_base
 from aidenv.app.dlearn.config import build_determinism
 from aidenv.app.dlearn.config import build_logging
@@ -82,15 +85,17 @@ def run_train_test(trainer, model, train_loader, valid_loader, test_loader):
     else:
         print('Model testing skipped')
 
-def run():
+def run(*args):
     '''
-    Entry point for dlearn executable
+    Entry point for dlearn environment
+    args: program arguments
     '''
     print("Deep learning environment started")
 
-    config = load_training_config()
-    prompt, name, log_dir = parse_base(config)
+    config_path = os.environ[AIDENV_CONFIG_ENV]
+    config = load_config(config_path)
 
+    prompt, name, log_dir = parse_base(config)
     parse_determinism(config)
     loggers = parse_logging(config, name, log_dir)
 
@@ -98,6 +103,6 @@ def run():
     loaders, trainer = parse_learning(config, prompt, dataset,
                                             model, loggers, log_dir)
 
-    run_train_test(trainer, model, *loaders) # test WIP
+    run_train_test(trainer, model, *loaders)
 
     print('Deep learning environment finished')

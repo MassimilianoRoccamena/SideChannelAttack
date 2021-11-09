@@ -7,17 +7,16 @@ from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
+from aidenv.app.params import CONFIG_NOT_FOUND_MSG
 from aidenv.app.params import LOG_DIR
 from aidenv.app.params import DATASET_MODULE
 from aidenv.app.params import MODEL_MODULE
 from aidenv.app.params import LEARNING_MODULE
 from aidenv.app.params import set_core_package
-from aidenv.app.config import load_config
 from aidenv.app.config import build_simple_object1
 from aidenv.app.config import build_simple_object2
 from aidenv.app.config import build_core_object1
 from aidenv.app.config import build_core_object2
-from aidenv.app.dlearn.params import EXECUTABLE_CONF_PATH
 from aidenv.app.dlearn.params import TENSORBOARD_DIR
 from aidenv.app.dlearn.params import CHECKPOINT_DIR
 from aidenv.app.dlearn.params import NEPTUNE_PROJECT_ENV
@@ -25,13 +24,6 @@ from aidenv.app.dlearn.params import NEPTUNE_USER_ENV
 from aidenv.app.dlearn.params import NEPTUNE_TOKEN_ENV
 from aidenv.app.dlearn.logging import LoggerCollection
 from aidenv.app.dlearn.logging import HyperParamsLogger
-
-# loading and definitions
-
-def load_training_config():
-    return load_config(EXECUTABLE_CONF_PATH)
-
-CONFIG_NOT_FOUND_MSG = lambda id: f'{id} configuration not found'
 
 # executable objects builders
 

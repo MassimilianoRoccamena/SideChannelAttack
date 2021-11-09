@@ -1,5 +1,10 @@
-root_path="src"
-file_name="test-main.py"
-file_path="$root_path/$file_name"
+function test()
+{
+    local test_path="src/test"
+    local script_name="test-main.py"
+    local script_path="$test_path/$script_name"
 
-python $file_path $@
+    python $script_path $@
+}
+
+test $@

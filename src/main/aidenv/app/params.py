@@ -1,8 +1,13 @@
 from utils.reflection import get_package_name
 
+# error
+
+CONFIG_NOT_FOUND_MSG = lambda id: f'{id} configuration not found'
+
 # basic
 
-CONFIG_DIR = 'config'
+AIDENV_CONFIG_ENV = 'AIDENV_CONFIG'
+
 LOG_DIR = ".log"
 
 DATASET_MODULE = 'dataset'

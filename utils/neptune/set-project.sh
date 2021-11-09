@@ -1,1 +1,0 @@
-export $NEPTUNE_PROJECT=$1
