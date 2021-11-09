@@ -1,7 +1,7 @@
 from math import ceil
 
-from main.mlenv.api.config import CoreObject
-from main.sca.file.params import TRACE_SIZE
+from aidenv.api.config import CoreObject
+from sca.file.params import TRACE_SIZE
 
 class TraceSlicer(CoreObject):
     '''

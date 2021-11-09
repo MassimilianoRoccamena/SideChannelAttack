@@ -1,7 +1,7 @@
 import os
 
-from main.utils.string import cat2, cat3
-from main.sca.file.convention1.params import PathReference
+from utils.string import cat2, cat3
+from sca.file.convention1.params import PathReference
 
 # global vars/constants
 

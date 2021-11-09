@@ -1,6 +1,6 @@
-from main.sca.file.loader import OurTraceLoader
-from main.sca.file.convention1.path import FileIdentifier
-from main.sca.file.convention1.path import file_path
+from sca.file.loader import OurTraceLoader
+from sca.file.convention1.path import FileIdentifier
+from sca.file.convention1.path import file_path
 
 class TraceLoader1(OurTraceLoader):
     '''

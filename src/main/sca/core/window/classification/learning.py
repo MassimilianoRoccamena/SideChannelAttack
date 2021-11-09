@@ -1,1 +1,1 @@
-from main.sca.core.learning import *
+from sca.core.learning import *

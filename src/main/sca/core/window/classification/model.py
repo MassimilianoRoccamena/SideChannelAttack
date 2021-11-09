@@ -1,6 +1,6 @@
-from main.mlenv.api.deep.model import SingleClassifierModel
-from main.mlenv.api.deep.model import MultiClassifierModel
-from main.mlenv.api.deep.module.arch.resnet import ResNet
+from aidenv.api.dlearn.model import SingleClassifierModel
+from aidenv.api.dlearn.model import MultiClassifierModel
+from aidenv.api.dlearn.module.arch.resnet import ResNet
 
 # Basic : encoder + classifier
 

@@ -1,7 +1,7 @@
 import numpy as np
 
-from main.mlenv.api.deep.config import build_dataset_kwarg
-from main.sca.file.convention1.loader import TraceLoader1
+from aidenv.api.dlearn.config import build_dataset_kwarg
+from sca.file.convention1.loader import TraceLoader1
 
 class WindowLoader:
     '''
