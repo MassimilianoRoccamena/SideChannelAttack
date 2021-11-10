@@ -1,6 +1,11 @@
+import os
 from omegaconf import OmegaConf
+from omegaconf.errors import ConfigKeyError
 
 from utils.string import upper1, upper_identifier
+from aidenv.app.params import ENV_NOT_FOUND_MSG
+from aidenv.app.params import CLASS_NAME_KEY
+from aidenv.app.params import CLASS_PARAMS_KEY
 from aidenv.app.reflection import get_core_package_name
 from aidenv.app.reflection import get_core_class
 
@@ -13,9 +18,32 @@ def load_config(file_path):
     '''
     return OmegaConf.load(file_path)
 
+def search_config_key(config, key):
+    '''
+    Fetch a configuration field putting none if exception.
+    config: configuration object
+    key: key name of configuration
+    '''
+    try:
+        loaded = config[key]
+    except ConfigKeyError:
+        loaded = None
+    return loaded
+
+def search_env_var(name):
+    '''
+    Fetch an environmental variable.
+    name: variable name
+    '''
+    try:
+        var = os.environ[name]
+    except KeyError:
+        raise EnvironmentError(ENV_NOT_FOUND_MSG(name))
+    return var
+
 class CoreObject:
     '''
-    Core object, configurable from file.
+    Core aidenv object, configurable from file.
     '''
 
     @classmethod
@@ -65,8 +93,8 @@ class CoreObject:
 
 # generic objects builders
 
-CLASS_NOT_FOUND_MSG = lambda clsname: "class {clsname} not found"
-FAILED_CONFIG_MSG = lambda clsname: "failed to configure {clsname} object"
+NO_CLASS_NAME_MSG = "class name not specified"
+FAILED_CONFIG_MSG = lambda cls: "failed to configure {cls} object"
 
 def build_object(class_constr, prompt, module_name, class_name):
     '''
@@ -78,9 +106,6 @@ def build_object(class_constr, prompt, module_name, class_name):
     '''
     package_name = get_core_package_name(prompt)
     cls = get_core_class(package_name, module_name, class_name)
-
-    if cls is None:
-        raise TypeError(CLASS_NOT_FOUND_MSG(class_name))
 
     obj = class_constr(cls)
     if obj is None:
@@ -127,9 +152,12 @@ def build_simple_object1(config, prompt, module_name, class_name, args, kwargs):
     args: args passed to constructor
     kwargs: kwargs passed to constructor
     '''
-    params = config[class_name] if not config[class_name] is None else {}
+    params = search_config_key(config, class_name)
+    if params is None:
+        params = {}
     params = dict(params)
     params.update(kwargs)
+
     return build_object2(lambda cls: cls(*args, **params),
                             prompt[:-1], module_name, class_name)
 
@@ -148,11 +176,18 @@ def build_simple_object2(config, prompt, module_name, args, kwargs):
     args: args passed to constructor
     kwargs: kwargs passed to constructor
     '''
-    params = config.params if not config.params is None else {}
+    name = search_config_key(config, CLASS_NAME_KEY)
+    if name is None:
+        raise KeyError(NO_CLASS_NAME_MSG)
+
+    params = search_config_key(config, CLASS_PARAMS_KEY)
+    if params is None:
+        params = {}
     params = dict(params)
     params.update(kwargs)
+
     return build_object1(lambda cls: cls(*args, **params),
-                            prompt[:-1], module_name, config.name)
+                            prompt[:-1], module_name, name)
 
 # core objects builders
 
@@ -169,9 +204,16 @@ def build_core_object1(config, prompt, module_name):
     prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
     '''
-    params = config.params if not config.params is None else {}
+    name = search_config_key(config, CLASS_NAME_KEY)
+    if name is None:
+        raise KeyError(NO_CLASS_NAME_MSG)
+
+    params = search_config_key(config, CLASS_PARAMS_KEY)
+    if params is None:
+        params = {}
+
     return build_object1(lambda cls: cls.from_config(params, prompt),
-                            prompt[:-1], module_name, config.name)
+                            prompt[:-1], module_name, name)
 
 def build_core_object2(config, prompt, module_name, prompt_suffix):
     '''
@@ -188,13 +230,17 @@ def build_core_object2(config, prompt, module_name, prompt_suffix):
     module_name: name of the module file inside the core location
     prompt_duffix: if true append part of prompt to class name
     '''
+    name = search_config_key(config, CLASS_NAME_KEY)
+    
     class_prefix = upper1(prompt[-1])
     if prompt_suffix:
         class_suffix = upper1(prompt[-2])
     else:
-        class_suffix = config.name
+        class_suffix = name
     class_name = f"{class_prefix}{class_suffix}"
 
-    params = config.params if not config.params is None else {}
+    params = search_config_key(config, CLASS_PARAMS_KEY)
+    if params is None:
+        params = {}
     return build_object1(lambda cls: cls.from_config(params, prompt),
                             prompt[:-1], module_name, class_name)

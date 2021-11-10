@@ -1,8 +1,15 @@
 import os
 
-from aidenv.app.params import AIDENV_CONFIG_ENV
 from aidenv.app.params import CONFIG_NOT_FOUND_MSG
+from aidenv.app.params import AIDENV_CONFIG_ENV
 from aidenv.app.config import load_config
+from aidenv.app.config import search_config_key
+from aidenv.app.config import search_env_var
+from aidenv.app.dlearn.params import BASE_KEY
+from aidenv.app.dlearn.params import DETERM_KEY
+from aidenv.app.dlearn.params import LOG_KEY
+from aidenv.app.dlearn.params import CORE_KEY
+from aidenv.app.dlearn.params import LEARN_KEY
 from aidenv.app.dlearn.config import build_base
 from aidenv.app.dlearn.config import build_determinism
 from aidenv.app.dlearn.config import build_logging
@@ -12,9 +19,9 @@ from aidenv.app.dlearn.config import build_learning
 # sections parsers
 
 def parse_base(config):
-    config = config.base
+    config = search_config_key(config, BASE_KEY)
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('base'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(BASE_KEY))
 
     prompt, name, log_dir = build_base(config)
     
@@ -22,18 +29,18 @@ def parse_base(config):
     return prompt, name, log_dir
 
 def parse_determinism(config):
-    config = config.determinism
+    config = search_config_key(config, DETERM_KEY)
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('determinism'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(DETERM_KEY))
 
     build_determinism(config)
 
     print('Determinism configuration done')
 
 def parse_logging(config, name, log_dir):
-    config = config.logging
+    config = search_config_key(config, LOG_KEY)
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('logging'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_KEY))
 
     loggers = build_logging(config, name, log_dir)
 
@@ -41,9 +48,9 @@ def parse_logging(config, name, log_dir):
     return loggers
 
 def parse_core(config, prompt):
-    config = config.core
+    config = search_config_key(config, CORE_KEY)
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('core'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(CORE_KEY))
 
     dataset, model = build_core(config, prompt)
 
@@ -51,9 +58,9 @@ def parse_core(config, prompt):
     return dataset, model
 
 def parse_learning(config, prompt, dataset, model, loggers, log_dir):
-    config = config.learning
+    config = search_config_key(config, LEARN_KEY)
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('learning'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
 
     learning = build_learning(config, prompt,
                                 dataset, model, loggers, log_dir)
@@ -92,7 +99,7 @@ def run(*args):
     '''
     print("Deep learning environment started")
 
-    config_path = os.environ[AIDENV_CONFIG_ENV]
+    config_path = search_env_var(AIDENV_CONFIG_ENV)
     config = load_config(config_path)
 
     prompt, name, log_dir = parse_base(config)

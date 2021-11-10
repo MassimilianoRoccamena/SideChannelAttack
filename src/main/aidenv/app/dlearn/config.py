@@ -13,15 +13,13 @@ from aidenv.app.params import DATASET_MODULE
 from aidenv.app.params import MODEL_MODULE
 from aidenv.app.params import LEARNING_MODULE
 from aidenv.app.params import set_core_package
+from aidenv.app.config import search_config_key
+from aidenv.app.config import search_env_var
 from aidenv.app.config import build_simple_object1
 from aidenv.app.config import build_simple_object2
 from aidenv.app.config import build_core_object1
 from aidenv.app.config import build_core_object2
-from aidenv.app.dlearn.params import TENSORBOARD_DIR
-from aidenv.app.dlearn.params import CHECKPOINT_DIR
-from aidenv.app.dlearn.params import NEPTUNE_PROJECT_ENV
-from aidenv.app.dlearn.params import NEPTUNE_USER_ENV
-from aidenv.app.dlearn.params import NEPTUNE_TOKEN_ENV
+from aidenv.app.dlearn.params import *
 from aidenv.app.dlearn.logging import LoggerCollection
 from aidenv.app.dlearn.logging import HyperParamsLogger
 
@@ -91,19 +89,20 @@ def build_learning_object2(config, prompt, args=[], kwargs={}):
 INVALID_PROMPT_MSG = 'selected prompt is not valid'
 
 def build_base(config):
-    # load core origin
-    origin = config.origin
+    # core origin
+    origin = search_config_key(config, BASE_ORIGIN_KEY)
     if origin is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('origin'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(BASE_ORIGIN_KEY))
+
     set_core_package(list(origin))
 
-    # load core prompt
-    prompt = config.prompt
+    # core prompt
+    prompt = search_config_key(config, BASE_PROMPT_KEY)
     if prompt is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('prompt'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(BASE_PROMPT_KEY))
 
     # custom naming
-    name = config.name
+    name = search_config_key(config, BASE_NAME_KEY)
     if name is None:
         p = prompt
         if len(prompt) == 3:
@@ -124,18 +123,28 @@ def build_base(config):
 # determinism builders
 
 def build_determinism(config):
-    if config.force_determinism is None:
-        config.force_determinism = False
-        print('setting force determinism to false')
+    force = search_config_key(config, DETERM_FORCE_KEY)
+    if force is None:
+        force = False
+        print('Not forcing determinism')
 
-    if config.force_determinism:
-        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ":4096:8"
-        seed_everything(config.seed, workers=True)
+    seed = search_config_key(config, DETERM_SEED_KEY)
+    if seed is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(DETERM_SEED_KEY))
+
+    if force:
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+        seed_everything(seed, workers=True)
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
         torch.use_deterministic_algorithms(True)
-    elif not config.seed is None:
-        seed_everything(config.seed, workers=config.seed_workers)
+    else:
+        workers = search_config_key(config, DETERM_WORKERS_KEY)
+        if workers is None:
+            workers = True
+            print('Seeding workers')
+
+        seed_everything(seed, workers=workers)
 
 # logging builders
 
@@ -145,11 +154,12 @@ def build_tensorboard(config, name, log_dir):
     
     kwargs = {}
     kwargs.update(dict(config))
-    del kwargs['enable']
+    del kwargs[LOG_ENABLE_KEY]
     logger = None
 
-    if config.enable is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('enable'))
+    enable = search_config_key(config, LOG_ENABLE_KEY)
+    if enable is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_ENABLE_KEY))
 
     if config.enable:
         kwargs['name'] = name
@@ -158,38 +168,28 @@ def build_tensorboard(config, name, log_dir):
 
     return logger
 
-ENV_NOT_FOUND_MSG = lambda env: f'{env} environment variable not found'
-
 def build_neptune(config, name):
     if config is None:
         return None
 
     kwargs = {}
     kwargs.update(dict(config))
-    del kwargs['enable']
+    del kwargs[LOG_ENABLE_KEY]
     logger = None
 
-    if config.enable is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('enable'))
+    enable = search_config_key(config, LOG_ENABLE_KEY)
+    if enable is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_ENABLE_KEY))
 
     if config.enable:
         # load env vars
-        try:
-            user = os.environ[NEPTUNE_USER_ENV]
-        except KeyError:
-            raise RuntimeError(ENV_NOT_FOUND_MSG(NEPTUNE_USER_ENV))
-        try:
-            token = os.environ[NEPTUNE_TOKEN_ENV]
-        except KeyError:
-            raise RuntimeError(ENV_NOT_FOUND_MSG(NEPTUNE_TOKEN_ENV))
-        try:
-            project = os.environ[NEPTUNE_PROJECT_ENV]
-        except KeyError:
-            raise RuntimeError(ENV_NOT_FOUND_MSG(NEPTUNE_PROJECT_ENV))
+        user = search_env_var(NEPTUNE_USER_ENV)
+        token = search_env_var(NEPTUNE_TOKEN_ENV)
+        project = search_env_var(NEPTUNE_PROJECT_ENV)
 
         # load files to upload
-        extensions = config.upload_source_files
-        if extensions:
+        extensions = search_config_key(config, LOG_NEPT_UP_KEY)
+        if not extensions is None:
             source_files = [str(path) for ext in extensions
                             for path in Path('./').rglob(ext)]
         else:
@@ -203,10 +203,12 @@ def build_neptune(config, name):
     return logger
 
 def build_logging(config, name, log_dir):
-    tensorboard = build_tensorboard(config.tensorboard, name, log_dir)
+    tensorboard = search_config_key(config, LOG_TB_KEY)
+    tensorboard = build_tensorboard(tensorboard, name, log_dir)
     print('Loaded tensorboard configuration')
 
-    neptune = build_neptune(config.neptune, name)
+    neptune = search_config_key(config, LOG_NEPT_KEY)
+    neptune = build_neptune(neptune, name)
     print('Loaded neptune configuration')
 
     output = []
@@ -221,18 +223,18 @@ def build_logging(config, name, log_dir):
 
 def build_dataset(config, prompt):
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('dataset'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG('dataset'))
 
     return build_dataset_object2(config, prompt)
 
 def build_model(config, prompt):
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('model'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG('model'))
 
     model = build_model_object2(config, prompt)
     
     # load from file
-    checkpoint = config.checkpoint
+    checkpoint = search_config_key(config, CORE_MODEL_CKPT_KEY)
     if not checkpoint is None:
         print('Loading from checkpoint...')
         model.load_from_checkpoint(checkpoint)
@@ -241,10 +243,12 @@ def build_model(config, prompt):
     return model
 
 def build_core(config, prompt):
-    dataset = build_dataset(config.dataset, prompt)
+    dataset = search_config_key(config, CORE_DATASET_KEY)
+    dataset = build_dataset(dataset, prompt)
     print('Loaded dataset')
 
-    model = build_model(config.model, prompt)
+    model = search_config_key(config, CORE_MODEL_KEY)
+    model = build_model(model, prompt)
     print('Loaded model')
 
     return dataset, model
@@ -252,30 +256,38 @@ def build_core(config, prompt):
 # learning builders
 
 def build_skip(config):
-    skip = config.skip
+    skip = search_config_key(config, LEARN_SKIP_KEY)
 
+    # default values
     if skip is None:
-        skip = {'training':False, 'test':True}
-    if skip.training is None:
-        skip.training = False
-    if skip.test is None:
-        skip.test = True
+        skip = { LEARN_TRAIN_KEY : False,
+                 LEARN_TEST_KEY : True }
+    training = search_config_key(skip, LEARN_TRAIN_KEY)
+    if training is None:
+        training = False
+    test = search_config_key(skip, LEARN_TEST_KEY)
+    if test is None:
+        test = True
 
-    return skip.training, skip.test
+    return training, test
 
 def build_split(config):
-    split = config.split
-
+    split = search_config_key(config, LEARN_SPLIT_KEY)
     if split is None:
-         raise ValueError(CONFIG_NOT_FOUND_MSG('split'))
-    if split.validation is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('validation split'))
+         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_SPLIT_KEY))
 
-    return split.validation, split.test
+    validation = search_config_key(split, LEARN_VALID_KEY)
+    if validation is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_VALID_KEY))
+
+    test = search_config_key(split, LEARN_TEST_KEY)
+
+    return validation, test
 
 def build_data_loaders(config, prompt, dataset, skip, split):
-    if config.data_loader is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('data loader'))
+    data_loader = search_config_key(config, LEARN_DATA_LOAD_KEY)
+    if data_loader is None:
+        raise ValueError(CONFIG_NOT_FOUND_MSG(LEARN_DATA_LOAD_KEY))
 
     def get_split_indices(d, s):
         d_len = len(d)
@@ -284,7 +296,6 @@ def build_data_loaders(config, prompt, dataset, skip, split):
         if indices[0] + indices[1] < d_len: # fix float approx
             indices[0] += len - (indices[0]+indices[1])
         return indices
-
 
     skip_train, skip_test = skip
     split_valid, split_test = split
@@ -296,7 +307,7 @@ def build_data_loaders(config, prompt, dataset, skip, split):
         indices = get_split_indices(dataset, split_test)
         dataset, test_dataset = random_split(dataset, indices)
         test_loader =  build_learning_object1(config, prompt,
-                                                'data_loader',
+                                                LEARN_DATA_LOAD_KEY,
                                                 args=[test_dataset])
     else:
         print('Test data loader skipped')
@@ -309,11 +320,11 @@ def build_data_loaders(config, prompt, dataset, skip, split):
         indices = get_split_indices(dataset, split_valid)
         train_dataset, valid_dataset = random_split(dataset, indices)
         train_loader =  build_learning_object1(config, prompt,
-                                                'data_loader',
+                                                LEARN_DATA_LOAD_KEY,
                                                 args=[train_dataset])
         config.shuffle = False
         valid_loader =  build_learning_object1(config, prompt,
-                                                'data_loader',
+                                                LEARN_DATA_LOAD_KEY,
                                                 args=[valid_dataset])
     else:
         print('Train and validation data loader skipped')
@@ -321,20 +332,22 @@ def build_data_loaders(config, prompt, dataset, skip, split):
     return train_loader, valid_loader, test_loader
 
 def build_early_stopping(config, prompt):
-    if config.early_stopping is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('early stopping'))
+    early_stopping = search_config_key(config, LEARN_EARLY_STOP_KEY)
+    if early_stopping is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_EARLY_STOP_KEY))
 
     return build_learning_object1(config, prompt,
-                                    'early_stopping')
+                                    LEARN_EARLY_STOP_KEY)
 
 def build_trainer(config, prompt, callbacks, loggers, log_dir):
-    if config.trainer is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('trainer'))
+    trainer = search_config_key(config, LEARN_TRAINER_KEY)
+    if trainer is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_TRAINER_KEY))
 
     loggers = LoggerCollection(loggers)
 
     return build_learning_object1(config, prompt,
-                                    'trainer',
+                                    LEARN_TRAINER_KEY,
                                     kwargs= {
                                         'logger' : loggers,
                                         'callbacks' : callbacks,
@@ -343,13 +356,13 @@ def build_trainer(config, prompt, callbacks, loggers, log_dir):
 
 def build_loss(config, prompt):
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('loss'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_LOSS_KEY))
 
     return build_learning_object2(config, prompt)
 
 def build_optimizer(config, prompt, model):
     if config is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG('optimizer'))
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_OPTIMIZER_KEY))
 
     return build_learning_object2(config, prompt,
                                     args=[model.parameters()])
@@ -385,14 +398,17 @@ def build_learning(config, prompt, dataset, model, loggers, log_dir):
     print('Loaded trainer')
     yield trainer
 
-    loss = build_loss(config.loss, prompt)
+    loss = search_config_key(config, LEARN_LOSS_KEY)
+    loss = build_loss(loss, prompt)
     print('Loaded loss')
     yield loss
 
-    optimizer = build_optimizer(config.optimizer, prompt, model)
+    optimizer = search_config_key(config, LEARN_OPTIMIZER_KEY)
+    optimizer = build_optimizer(optimizer, prompt, model)
     print('Loaded optimizer')
     yield optimizer
 
-    scheduler = build_scheduler(config.scheduler, prompt, optimizer)
+    scheduler = search_config_key(config, LEARN_SCHEDULER_KEY)
+    scheduler = build_scheduler(scheduler, prompt, optimizer)
     print('Loaded scheduler')
     yield scheduler

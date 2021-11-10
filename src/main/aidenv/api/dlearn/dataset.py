@@ -1,30 +1,19 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset as TorchDataset
 
-from aidenv.api.config import CoreObject
+from aidenv.api.dataset import CoreDataset
 
-class CoreDataset(Dataset, CoreObject):
+class DeepDataset(TorchDataset, CoreDataset):
     ''''
-    Abstract core dataset.
+    Abstract deep learning dataset.
     '''
 
-    def __init__(self, reader):
-        '''
-        Create new core dataset.
-        reader: file reader
-        '''
-        self.reader = reader
-
-    def __len__(self):
-        return len(self.reader)
-
-    def __getitem__(self, index):
-        raise NotImplementedError
+    pass
 
 # classification
 
 class Classification:
     ''''
-    Abstract classification interface
+    Abstract classification interface.
     '''
 
     def all_labels(self):
@@ -39,9 +28,9 @@ class Classification:
         '''
         raise NotImplementedError
 
-class ClassificationDataset(CoreDataset, Classification):
+class ClassificationDataset(DeepDataset, Classification):
     ''''
-    Abstract classification dataset
+    Abstract classification dataset.
     '''
 
     pass

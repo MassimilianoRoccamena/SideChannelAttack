@@ -1,13 +1,13 @@
 from pytorch_lightning import LightningModule
 
-from aidenv.api.config import CoreObject
+from aidenv.api.model import CoreModel
 from aidenv.api.dlearn.config import build_model_kwarg
 from aidenv.api.dlearn.module.classifier import SingleClassifier
 from aidenv.api.dlearn.module.classifier import MultiClassifier
 
-class CoreModel(LightningModule, CoreObject):
+class CoreModel(LightningModule, CoreModel):
     ''''
-    Abstract core model
+    Abstract core model.
     '''
 
     def set_learning(self, loss, optimizer, scheduler=None):

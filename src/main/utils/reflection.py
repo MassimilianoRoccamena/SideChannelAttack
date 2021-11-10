@@ -17,7 +17,7 @@ def get_module_path(package_name, module_name):
 def get_class(module_path, class_name):
     try:
         module_name = importlib.import_module(module_path)
-    except:
-        raise RuntimeError(MODULE_NOT_FOUND_MSG(module_path))
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(MODULE_NOT_FOUND_MSG(module_path))
 
     return getattr(module_name, class_name)

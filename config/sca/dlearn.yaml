@@ -16,7 +16,7 @@ determinism:
 
   seed: 314159
   seed_workers: True
-  force_determinism: False
+  force: False
 
 # ---------------------------------------------------------------
 

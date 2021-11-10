@@ -1,12 +1,20 @@
 from utils.reflection import get_package_name
 
-# error
+# errors
 
-CONFIG_NOT_FOUND_MSG = lambda id: f'{id} configuration not found'
+CONFIG_NOT_FOUND_MSG = lambda id: f'{id} configuration field not found'
+ENV_NOT_FOUND_MSG = lambda env: f'{env} environmental variable not found'
 
-# basic
+# language lex
+
+CLASS_NAME_KEY = 'name'
+CLASS_PARAMS_KEY = 'params'
+
+# env vars
 
 AIDENV_CONFIG_ENV = 'AIDENV_CONFIG'
+
+# basic filesystem
 
 LOG_DIR = ".log"
 
@@ -14,7 +22,7 @@ DATASET_MODULE = 'dataset'
 MODEL_MODULE = 'model'
 LEARNING_MODULE = 'learning'
 
-# core
+# core filesystem
 
 CORE_PACKAGE = None
 
