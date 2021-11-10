@@ -34,9 +34,9 @@ The following environmental variable are used by *aidenv*:
 
 And if you want to use *Neptune* the system also uses the following ones:
 
-- ***NEPTUNE_USER***
-- ***NEPTUNE_TOKEN***
-- ***NEPTUNE_PROJECT***
+- ***AIDENV_NEPTUNE_USER***
+- ***AIDENV_NEPTUNE_TOKEN***
+- ***AIDENV_NEPTUNE_PROJECT***
 
 You can define all these variable from the configuration folder of *aidenv* which is *config/aidenv*
 An *aidenv program* configuration files are stored in *config/{program_name}*
