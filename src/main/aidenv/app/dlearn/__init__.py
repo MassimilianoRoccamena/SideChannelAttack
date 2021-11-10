@@ -1,5 +1,3 @@
-import os
-
 from aidenv.app.params import CONFIG_NOT_FOUND_MSG
 from aidenv.app.config import get_program_config
 from aidenv.app.config import search_config_key

@@ -1,6 +1,3 @@
-import os
-from omegaconf import OmegaConf
-from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers.base import LoggerCollection as LoggerCollection_
 from pytorch_lightning.loggers.neptune import NeptuneLogger
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
@@ -26,16 +23,7 @@ class LoggerCollection(LoggerCollection_):
             elif isinstance(logger, TensorBoardLogger):
                 logger.experiment.add_figure(log_name, fig, step)
             else:
-                raise RuntimeError("Cannot log figure")
+                raise RuntimeError("Failed to log figure")
 
         if close:
             plt.close(fig)
-
-class HyperParamsLogger(Callback):
-    def __init__(self, config, save_dir, file_name):
-        self.config = config
-        self.save_dir = save_dir
-        self.file_name = file_name
-
-    def on_train_start(self, trainer, pl_module):
-        OmegaConf.save(config=self.config, f=os.path.join(self.save_dir, self.file_name))

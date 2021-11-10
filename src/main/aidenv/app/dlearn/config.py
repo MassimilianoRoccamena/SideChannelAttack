@@ -20,9 +20,9 @@ from aidenv.app.config import build_simple_object1
 from aidenv.app.config import build_simple_object2
 from aidenv.app.config import build_core_object1
 from aidenv.app.config import build_core_object2
+from aidenv.app.logging import log_program
 from aidenv.app.dlearn.params import *
 from aidenv.app.dlearn.logging import LoggerCollection
-from aidenv.app.dlearn.logging import HyperParamsLogger
 
 # executable objects builders
 
@@ -117,10 +117,17 @@ def build_base(config):
     # log dir creation
     dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = os.path.join(get_program_output_dir(), 'dlearn')
-    if os.path.exists(out_dir):
+    if not os.path.exists(out_dir):
         os.mkdir(out_dir)
-    log_dir = os.path.join(out_dir, name, dt_string)
+    name_dir = os.path.join(out_dir, name)
+    if not os.path.exists(name_dir):
+        os.mkdir(name_dir)
+    log_dir = os.path.join(name_dir, dt_string)
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
     print(f'Log directory is {log_dir}')
+    
+    log_program(get_program_config(), log_dir)
 
     return prompt, name, log_dir
 
@@ -392,11 +399,10 @@ def build_learning(config, prompt, dataset, model, loggers, log_dir):
     early_stop = build_early_stopping(config, prompt)
     print('Loaded early stopping')
 
-    program_writer = HyperParamsLogger(get_program_config(), log_dir, 'program.yaml')
     ckpt_path = os.path.join(log_dir, CHECKPOINT_DIR)
     checkpoint_callback = ModelCheckpoint(dirpath=ckpt_path, save_top_k=-1)
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    callbacks = [ program_writer, early_stop, checkpoint_callback, lr_monitor ]
+    callbacks = [ early_stop, checkpoint_callback, lr_monitor ]
 
     trainer = build_trainer(config, prompt, callbacks, loggers, log_dir)
     print('Loaded trainer')

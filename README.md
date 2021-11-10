@@ -6,50 +6,52 @@ Thesis work by Massimiliano Roccamena
 
 In the following sections are described the main coponents of application and how to interact with them
 
-### AIDENV
+### *aidenv*
 
-It is the main component of the application and it is used as a general framework for developing artifical agents. It provides to an ***aidenv program*** an execution platform called ***aidenv environment***. Currently there are the following environments:
+This is the platform component of the application and it is used as a general framework for developing artifical agents. It provides to an ***aidenv program*** an execution platform called ***aidenv environment***. Currently there are the following environments:
 
-- ***mlearn*** *(not implemented)*
-  - train and/or test a classical machine learning model
+- ***mining*** *(small usage)*
+  - fetch and show info about something
 - ***dlearn***
   - train and/or test a deep learning model
+- ***mlearn*** *(not implemented)*
+  - train and/or test a classical machine learning model
 
-You can define an *aidenv program* by providing an ***aidenv configuration*** *yaml* file:
+You can define an *aidenv program* by writing an ***aidenv configuration*** *yaml* file:
 
 - the field *base.origin* can be used to specify the package of the *aidenv program*
 - the field *base.prompt* can be used to specify the task inside the *aidenv program*
 - all other fields are specific configurations of each *aidenv environment*
 
-You can launch an *aidenv environment* specifying its identifier and the arguments being passed to the *aidenv program*
+The following environmental variable are used by *aidenv*:
 
-```bash
-sh run/environment.sh $environment_id $program_args
-```
+- ***AIDENV_INPUT***
+  - directory path of the data used by the program
+- ***AIDENV_OUTPUT***
+  - program log directory path
+- ***AIDENV_PROGRAM***
+  - path to an *aidenv configuration* program file
 
-You must also specify the following environmental variable
-
-- ***AIDENV_CONFIG***
-
-And if you want to use *Neptune* you must specify also also
+And if you want to use *Neptune* the system also uses the following ones:
 
 - ***NEPTUNE_USER***
-- ***NEPTUNE TOKEN***
+- ***NEPTUNE_TOKEN***
 - ***NEPTUNE_PROJECT***
 
-You can launch one *aidenv program* from default configuration folder (*config* folder) by specyfing its name (subfolder of *config*)
+You can define all these variable from the configuration folder of *aidenv* which is *config/aidenv*
+An *aidenv program* configuration files are stored in *config/{program_name}*
+
+You can launch *aidenv* by specifying an *aidenv environment* identifier, an *aidenv program* name and the arguments being passed to it
 
 ```bash
-sh run/origram.sh $environment_id $program_name $program_args
+sh aidenv.sh $environment_id $program_name $program_args
 ```
 
-And if you want to use *Neptune* you must also provide your account data inside *config/{program}/neptune/(user,token,project).conf*
-
-### SCA
+### *sca*
 
 It's the target component of the application which realizes the goals of the thesis. It's the only *aidenv program* inside the application.
 
-You can the component by running
+You can  launch the component by running
 
 ```bash
 sh sca.sh $environment_id
@@ -59,7 +61,7 @@ The only environment currently used by *sca* is *dlearn*
 
 ### Testing
 
-You can launch test for the overall system by running
+You can launch test for the main system by running
 
 ```bash
 sh test.sh
