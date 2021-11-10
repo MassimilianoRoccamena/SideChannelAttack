@@ -12,23 +12,23 @@ CLASS_PARAMS_KEY = 'params'
 
 # env vars
 
-AIDENV_CONFIG_ENV = 'AIDENV_CONFIG'
+AIDENV_INPUT_ENV = 'AIDENV_INPUT'
+AIDENV_OUTPUT_ENV = 'AIDENV_OUTPUT'
+AIDENV_PROGRAM_ENV = 'AIDENV_PROGRAM'
 
-# basic filesystem
-
-LOG_DIR = ".log"
+# modules
 
 DATASET_MODULE = 'dataset'
 MODEL_MODULE = 'model'
 LEARNING_MODULE = 'learning'
 
-# core filesystem
+# core package
 
 CORE_PACKAGE = None
 
 def set_core_package(origin, append_core=True):
     '''
-    Set core package used by the configuration system.
+    Set aidenv core package.
     origin: nodes of the path to the core package
     append_core: wheter to append a core package at the end
     '''
@@ -40,6 +40,6 @@ def set_core_package(origin, append_core=True):
 
 def get_core_package():
     '''
-    Get core package used by the configuration system.
+    Get aidenv core package.
     '''
     return CORE_PACKAGE

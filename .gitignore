@@ -113,10 +113,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Local development,
-# in case of server unavailability
-.data/
-.log/
+# default AIDENV configurations
+*.conf
 
-# Neptune stuff
-config/neptune
+# local AIDENV in/out folders
+.input/
+.output/

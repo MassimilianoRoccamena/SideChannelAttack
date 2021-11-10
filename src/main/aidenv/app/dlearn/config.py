@@ -8,13 +8,14 @@ from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
 from aidenv.app.params import CONFIG_NOT_FOUND_MSG
-from aidenv.app.params import LOG_DIR
 from aidenv.app.params import DATASET_MODULE
 from aidenv.app.params import MODEL_MODULE
 from aidenv.app.params import LEARNING_MODULE
 from aidenv.app.params import set_core_package
+from aidenv.app.config import get_program_output_dir
+from aidenv.app.config import get_program_config
 from aidenv.app.config import search_config_key
-from aidenv.app.config import search_env_var
+from aidenv.app.config import load_env_var
 from aidenv.app.config import build_simple_object1
 from aidenv.app.config import build_simple_object2
 from aidenv.app.config import build_core_object1
@@ -115,7 +116,10 @@ def build_base(config):
 
     # log dir creation
     dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(LOG_DIR, name, dt_string)
+    out_dir = os.path.join(get_program_output_dir(), 'dlearn')
+    if os.path.exists(out_dir):
+        os.mkdir(out_dir)
+    log_dir = os.path.join(out_dir, name, dt_string)
     print(f'Log directory is {log_dir}')
 
     return prompt, name, log_dir
@@ -183,9 +187,9 @@ def build_neptune(config, name):
 
     if config.enable:
         # load env vars
-        user = search_env_var(NEPTUNE_USER_ENV)
-        token = search_env_var(NEPTUNE_TOKEN_ENV)
-        project = search_env_var(NEPTUNE_PROJECT_ENV)
+        user = load_env_var(AIDENV_NEPT_USER_ENV)
+        token = load_env_var(AIDENV_NEPT_TOKEN_ENV)
+        project = load_env_var(AIDENV_NEPT_PROJECT_ENV)
 
         # load files to upload
         extensions = search_config_key(config, LOG_NEPT_UP_KEY)
@@ -388,11 +392,11 @@ def build_learning(config, prompt, dataset, model, loggers, log_dir):
     early_stop = build_early_stopping(config, prompt)
     print('Loaded early stopping')
 
-    params_writer = HyperParamsLogger(config, log_dir, 'params.yaml')
+    program_writer = HyperParamsLogger(get_program_config(), log_dir, 'program.yaml')
     ckpt_path = os.path.join(log_dir, CHECKPOINT_DIR)
     checkpoint_callback = ModelCheckpoint(dirpath=ckpt_path, save_top_k=-1)
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    callbacks = [ early_stop, params_writer, checkpoint_callback, lr_monitor ]
+    callbacks = [ program_writer, early_stop, checkpoint_callback, lr_monitor ]
 
     trainer = build_trainer(config, prompt, callbacks, loggers, log_dir)
     print('Loaded trainer')

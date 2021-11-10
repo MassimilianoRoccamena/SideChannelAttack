@@ -1,10 +1,8 @@
 import os
 
 from aidenv.app.params import CONFIG_NOT_FOUND_MSG
-from aidenv.app.params import AIDENV_CONFIG_ENV
-from aidenv.app.config import load_config
+from aidenv.app.config import get_program_config
 from aidenv.app.config import search_config_key
-from aidenv.app.config import search_env_var
 from aidenv.app.dlearn.params import BASE_KEY
 from aidenv.app.dlearn.params import DETERM_KEY
 from aidenv.app.dlearn.params import LOG_KEY
@@ -99,8 +97,7 @@ def run(*args):
     '''
     print("Deep learning environment started")
 
-    config_path = search_env_var(AIDENV_CONFIG_ENV)
-    config = load_config(config_path)
+    config = get_program_config()
 
     prompt, name, log_dir = parse_base(config)
     parse_determinism(config)

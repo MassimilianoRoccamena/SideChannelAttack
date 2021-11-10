@@ -4,35 +4,19 @@ from omegaconf.errors import ConfigKeyError
 
 from utils.string import upper1, upper_identifier
 from aidenv.app.params import ENV_NOT_FOUND_MSG
+from aidenv.app.params import AIDENV_INPUT_ENV
+from aidenv.app.params import AIDENV_OUTPUT_ENV
+from aidenv.app.params import AIDENV_PROGRAM_ENV
 from aidenv.app.params import CLASS_NAME_KEY
 from aidenv.app.params import CLASS_PARAMS_KEY
 from aidenv.app.reflection import get_core_package_name
 from aidenv.app.reflection import get_core_class
 
-# basic stuff
+# aidenv basics
 
-def load_config(file_path):
+def load_env_var(name):
     '''
-    Load into memory a configuration file.
-    config_path: file path
-    '''
-    return OmegaConf.load(file_path)
-
-def search_config_key(config, key):
-    '''
-    Fetch a configuration field putting none if exception.
-    config: configuration object
-    key: key name of configuration
-    '''
-    try:
-        loaded = config[key]
-    except ConfigKeyError:
-        loaded = None
-    return loaded
-
-def search_env_var(name):
-    '''
-    Fetch an environmental variable.
+    Load an environmental variable redirecting exceptions.
     name: variable name
     '''
     try:
@@ -41,9 +25,43 @@ def search_env_var(name):
         raise EnvironmentError(ENV_NOT_FOUND_MSG(name))
     return var
 
+PROGRAM_INPUT_DIR = load_env_var(AIDENV_INPUT_ENV)
+
+def get_program_input_dir():
+    return PROGRAM_INPUT_DIR
+
+PROGRAM_OUTPUT_DIR = load_env_var(AIDENV_OUTPUT_ENV)
+
+def get_program_output_dir():
+    return PROGRAM_OUTPUT_DIR
+
+PROGRAM_CONFIG = OmegaConf.load(load_env_var(AIDENV_PROGRAM_ENV))
+
+def get_program_config():
+    '''
+    Returns the loaded aidenv program configuration.
+    '''
+    return PROGRAM_CONFIG
+
+def search_config_key(config, key):
+    '''
+    Load a configuration field putting None if empty
+    or not present.
+    config: configuration object
+    key: field name of config
+    '''
+    try:
+        loaded = config[key]
+    except ConfigKeyError:
+        loaded = None
+    return loaded
+
+# aidenv core mechanism
+
 class CoreObject:
     '''
-    Core aidenv object, configurable from file.
+    Core aidenv object, configurable from program file and
+    aidenv program core package.
     '''
 
     @classmethod

@@ -1,6 +1,7 @@
 import os
 
 from utils.string import cat2, cat3
+from aidenv.api import get_program_input_dir
 from sca.file.convention1.params import PathReference
 
 # global vars/constants
@@ -15,10 +16,7 @@ KEY_PREFIX = 'k'
 
 FILE_EXTENSION = 'dat'
 
-LOCAL_DATA_DIR = '.data'
-REMOTE_DATA_DIR = '/multiverse'
-
-root_data_dir = LOCAL_DATA_DIR
+root_data_dir = get_program_input_dir()
 
 # basic naming manipulation
 
