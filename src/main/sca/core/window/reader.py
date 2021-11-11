@@ -1,6 +1,4 @@
-import numpy as np
-
-from aidenv.api.file.reader import FileReader
+from aidenv.api.reader import FileReader
 
 class WindowReader(FileReader):
     '''

@@ -5,9 +5,9 @@ from aidenv.api.dlearn.config import build_model_kwarg
 from aidenv.api.dlearn.module.classifier import SingleClassifier
 from aidenv.api.dlearn.module.classifier import MultiClassifier
 
-class CoreModel(LightningModule, CoreModel):
+class DeepModel(LightningModule, CoreModel):
     ''''
-    Abstract core model.
+    Abstract deep learning model.
     '''
 
     def set_learning(self, loss, optimizer, scheduler=None):
@@ -48,9 +48,13 @@ class CoreModel(LightningModule, CoreModel):
         '''
         raise NotImplementedError
 
-class WrapperModel(CoreModel):
+    def forward(self, x):
+        raise NotImplementedError
+
+
+class WrapperModel(DeepModel):
     '''
-    Abstract core model wrapping a module
+    Abstract deep model wrapping a module
     '''
 
     def __init__(self, module):

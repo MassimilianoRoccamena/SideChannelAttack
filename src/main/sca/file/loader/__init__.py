@@ -1,6 +1,6 @@
 import numpy as np
 
-from aidenv.api.file.loader import FileLoader
+from aidenv.api.loader import FileLoader
 
 class TraceLoader(FileLoader):
     '''

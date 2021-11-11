@@ -1,6 +1,7 @@
 from aidenv.api.dlearn.model import SingleClassifierModel
 from aidenv.api.dlearn.model import MultiClassifierModel
-from aidenv.api.dlearn.module.arch.resnet import ResNet
+from aidenv.api.dlearn.module.arch.resnet import ResNetEncoder \
+    as ResNet
 
 # Basic : encoder + classifier
 

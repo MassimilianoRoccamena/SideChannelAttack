@@ -1,12 +1,10 @@
-from matplotlib import pyplot as plt
-from sklearn.metrics import classification_report 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from aidenv.api.dlearn.module.config import CoreModule
     
-class MyConv1dPadSame(nn.Module):
+class Conv1dPadSame(nn.Module):
     """
     Extend nn.Conv1d to support SAME padding
     """
@@ -42,7 +40,7 @@ class MyConv1dPadSame(nn.Module):
 
         return net
         
-class MyMaxPool1dPadSame(nn.Module):
+class MaxPool1dPadSame(nn.Module):
     """
     Extend nn.MaxPool1d to support SAME padding
     """
@@ -68,9 +66,9 @@ class MyMaxPool1dPadSame(nn.Module):
         
         return net
     
-class BasicBlock(CoreModule):
+class ResidualBlock(CoreModule):
     """
-    ResNet basic block
+    ResNet basic residual block
     """
     
     def __init__(self, in_channels, out_channels, kernel_size, stride, groups, downsample, use_bn, use_do, is_first_block=False):
@@ -94,7 +92,7 @@ class BasicBlock(CoreModule):
         self.bn1 = nn.BatchNorm1d(in_channels)
         self.relu1 = nn.ReLU()
         self.do1 = nn.Dropout(p=0.5)
-        self.conv1 = MyConv1dPadSame(
+        self.conv1 = Conv1dPadSame(
             in_channels=in_channels, 
             out_channels=out_channels, 
             kernel_size=kernel_size, 
@@ -105,14 +103,14 @@ class BasicBlock(CoreModule):
         self.bn2 = nn.BatchNorm1d(out_channels)
         self.relu2 = nn.ReLU()
         self.do2 = nn.Dropout(p=0.5)
-        self.conv2 = MyConv1dPadSame(
+        self.conv2 = Conv1dPadSame(
             in_channels=out_channels, 
             out_channels=out_channels, 
             kernel_size=kernel_size, 
             stride=1,
             groups=self.groups)
                 
-        self.max_pool = MyMaxPool1dPadSame(kernel_size=self.stride)
+        self.max_pool = MaxPool1dPadSame(kernel_size=self.stride)
 
     def forward(self, x):
         identity = x
@@ -152,9 +150,9 @@ class BasicBlock(CoreModule):
 
         return out
     
-class ResNet(CoreModule):
+class ResNetEncoder(CoreModule):
     """
-    ResNet 1-dimensional
+    1D ResNet encoder
     
     Input:
         X: (n_samples, n_channel, n_length)
@@ -162,18 +160,20 @@ class ResNet(CoreModule):
         
     Output:
         out: (n_samples)
-        
-    Pararmetes:
-        in_channels: dim of input, the same as n_channel
+    """
+
+    def __init__(self, encoding_dim, base_filters, kernel_size, stride, groups, n_block,
+                    in_channels=1, downsample_gap=2, increasefilter_gap=4,
+                    use_bn=True, use_do=True, use_fdo=True, verbose=False):
+        '''
+        Create new ResNet encoder module.
+        encoding_dim: dim of encoder latent space
         base_filters: number of filters in the first several Conv layer, it will double at every 4 layers
         kernel_size: width of kernel
         stride: stride of kernel moving
         groups: set larget to 1 as ResNeXt
         n_block: number of blocks
-        n_classes: number of classes
-    """
-
-    def __init__(self, encoding_dim, base_filters, kernel_size, stride, groups, n_block, in_channels=1, downsample_gap=2, increasefilter_gap=4, use_bn=True, use_do=True, verbose=False):
+        '''
         super().__init__()
 
         self.verbose = verbose
@@ -183,12 +183,13 @@ class ResNet(CoreModule):
         self.groups = groups
         self.use_bn = use_bn
         self.use_do = use_do
+        self.use_fdo = use_fdo
 
         self.downsample_gap = downsample_gap # 2 for base model
         self.increasefilter_gap = increasefilter_gap # 4 for base model
 
         # first block
-        self.first_block_conv = MyConv1dPadSame(in_channels=in_channels, out_channels=base_filters, kernel_size=self.kernel_size, stride=1)
+        self.first_block_conv = Conv1dPadSame(in_channels=in_channels, out_channels=base_filters, kernel_size=self.kernel_size, stride=1)
         self.first_block_bn = nn.BatchNorm1d(base_filters)
         self.first_block_relu = nn.ReLU()
         out_channels = base_filters
@@ -218,7 +219,7 @@ class ResNet(CoreModule):
                 else:
                     out_channels = in_channels
             
-            tmp_block = BasicBlock(
+            tmp_block = ResidualBlock(
                 in_channels=in_channels, 
                 out_channels=out_channels, 
                 kernel_size=self.kernel_size, 
@@ -233,9 +234,8 @@ class ResNet(CoreModule):
         # final prediction
         self.final_bn = nn.BatchNorm1d(out_channels)
         self.final_relu = nn.ReLU(inplace=True)
-        # self.do = nn.Dropout(p=0.5)
+        self.fdo = nn.Dropout(p=0.5)
         self.dense = nn.Linear(out_channels, encoding_dim)
-        # self.softmax = nn.Softmax(dim=1)
         
     def forward(self, x):
         out = x
@@ -265,13 +265,11 @@ class ResNet(CoreModule):
         out = self.final_relu(out)
         out = out.mean(-1)
         if self.verbose:
-            print('final pooling', out.shape)
-        # out = self.do(out)
+            print('average global pooling', out.shape)
+        if self.use_fdo:
+            out = self.fdo(out)
         out = self.dense(out)
         if self.verbose:
-            print('dense', out.shape)
-        # out = self.softmax(out)
-        # if self.verbose:
-        #     print('softmax', out.shape)
+            print('encoder output', out.shape)
         
         return out

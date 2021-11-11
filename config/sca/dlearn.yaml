@@ -40,7 +40,7 @@ core:
   dataset:
     params:
       loader:
-        name: Convention1
+        name: FileConvention1
         params:
           slicer:
             name: Strided
