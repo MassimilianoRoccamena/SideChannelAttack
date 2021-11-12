@@ -27,19 +27,23 @@ class SingleClassifier(CoreModule, Classifier):
         '''
         super().__init__()
         self.encoder = encoder
+        self.linear = None
+        self.softmax = nn.Softmax()
         self.set_labels(labels)
 
     def set_labels(self, labels):
         super().set_labels(labels)
         if labels is None:
-            self.softmax = None
+            self.linear = None
         else:
-            self.softmax = nn.Softmax(len(labels))
+            self.linear = nn.Linear(self.encoder.encoding_dim,
+                                        len(labels))
 
     def forward(self, x):
-        encoding = self.encoder(x)
-        prediction = self.softmax(encoding)
-        return prediction
+        y = self.encoder(x)
+        y = self.linear(y)
+        y = self.softmax(y)
+        return y
 
 class MultiClassifier(CoreModule, Classifier):
     '''

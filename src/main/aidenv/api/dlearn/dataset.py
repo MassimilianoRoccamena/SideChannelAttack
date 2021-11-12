@@ -2,6 +2,8 @@ from torch.utils.data import Dataset as TorchDataset
 
 from aidenv.api.dataset import CoreDataset
 
+# basic
+
 class DeepDataset(TorchDataset, CoreDataset):
     ''''
     Abstract deep learning dataset.

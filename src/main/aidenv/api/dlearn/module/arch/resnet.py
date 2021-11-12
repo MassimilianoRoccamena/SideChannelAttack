@@ -175,6 +175,7 @@ class ResNetEncoder(CoreModule):
         n_block: number of blocks
         '''
         super().__init__()
+        self.encoding_dim = encoding_dim
 
         self.verbose = verbose
         self.n_block = n_block
