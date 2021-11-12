@@ -103,7 +103,8 @@ class ClassifierModel(WrapperModel):
     def build_kwargs(cls, config, prompt):
         pass
 
-    def mount_from_dataset(self, dataset):
+    def mount(self, *args, **kwargs):
+        dataset = args[0]
         labels = dataset.all_labels()
 
         self.module.set_labels(labels)
@@ -114,7 +115,7 @@ class ClassifierModel(WrapperModel):
         self.add_loggables(class_logs, 'valid')
         self.add_loggables(class_logs, 'test')
 
-        super().mount_from_dataset(dataset)
+        super().mount(dataset)
 
 class SingleClassifierModel(ClassifierModel):
     '''

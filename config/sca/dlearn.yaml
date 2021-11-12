@@ -26,20 +26,17 @@ logging:
     enable: True
 
   neptune:
-    enable: False
+    enable: True
     
-    offline_mode: False
     log_model_checkpoints: False
-    upload_source_files:
-    - '*.py'
-    - '*.sh'
-    - '*.yaml'
 
 # ---------------------------------------------------------------
 
 core:
 
   dataset:
+    num_samples: 1000
+
     params:
       loader:
         name: FileConvention1
@@ -61,6 +58,8 @@ core:
       num_traces: 500
 
   model:
+    checkpoint:
+
     name: Basic
     params:
       encoder:
@@ -77,8 +76,6 @@ core:
           use_bn: True
           use_do: True
 
-    checkpoint:
-
 # ---------------------------------------------------------------
 
 learning:
@@ -88,16 +85,16 @@ learning:
     test:
 
   split:
-    validation: 0.1
-    test:
+    validation: 0.1579
+    test: 0.05
 
   data_loader:
-    batch_size: 32
+    batch_size: 20
     num_workers: 8
     shuffle: True
 
   early_stopping:
-    monitor: 'validation/acc'
+    monitor: 'valid/accuracy'
     patience: 5
     mode: 'max'
 

@@ -15,10 +15,10 @@ LOG_TB_KEY = 'tensorboard'
 LOG_NEPT_KEY = 'neptune'
 LOG_ENABLE_KEY = 'enable'
 LOG_NEPT_OFF_KEY = 'offline_mode'
-LOG_NEPT_UP_KEY = 'upload_source_files'
 
 CORE_KEY = 'core'
 CORE_DATASET_KEY = 'dataset'
+CORE_DATASET_NSAMP_KEY = 'num_samples'
 CORE_MODEL_KEY = 'model'
 CORE_MODEL_CKPT_KEY = 'checkpoint'
 

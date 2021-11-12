@@ -32,7 +32,7 @@ init_neptune()
     local token_path="$NEPTUNE_PATH/$token_file"
     export AIDENV_NEPTUNE_TOKEN=$(cat "$token_path.$ENVIRONMENT_CONFIG_EXT")
 
-    local project_file="user"
+    local project_file="project"
     local project_path="$NEPTUNE_PATH/$project_file"
     export AIDENV_NEPTUNE_PROJECT=$(cat "$project_path.$ENVIRONMENT_CONFIG_EXT")
 }

@@ -48,30 +48,32 @@ def parse_core(config, prompt):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(CORE_KEY))
 
-    dataset, model = build_core(config, prompt)
+    dataset, nsamples, model = build_core(config, prompt)
 
     print("Core configuration done")
-    return dataset, model
+    return dataset, nsamples, model
 
-def parse_learning(config, prompt, dataset, model, loggers, log_dir):
+def parse_learning(config, prompt, dataset, nsamples, model, loggers, log_dir):
     config = search_config_key(config, LEARN_KEY)
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
 
     learning = build_learning(config, prompt,
-                                dataset, model, loggers, log_dir)
+                                dataset, nsamples,
+                                model, loggers, log_dir)
 
-    loaders = next(learning)
     trainer = next(learning)
     loss = next(learning)
     optimizer = next(learning)
     scheduler = next(learning)
 
     model.set_learning(loss, optimizer, scheduler=scheduler)
-    model.mount_from_dataset(dataset)
+    model.mount(dataset)
+
+    loaders = next(learning)
 
     print('Learning configuration done')
-    return loaders, trainer
+    return trainer, loaders
 
 # main runners
 
@@ -101,8 +103,8 @@ def run(*args):
     parse_determinism(config)
     loggers = parse_logging(config, name, log_dir)
 
-    dataset, model = parse_core(config, prompt)
-    loaders, trainer = parse_learning(config, prompt, dataset,
+    dataset, nsamples, model = parse_core(config, prompt)
+    trainer, loaders = parse_learning(config, prompt, dataset, nsamples,
                                             model, loggers, log_dir)
 
     run_train_test(trainer, model, *loaders)

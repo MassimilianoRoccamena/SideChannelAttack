@@ -81,7 +81,7 @@ class LoggableModel(DeepModel):
         '''
         self.loggables[prefix].update(loggables)
 
-    def mount_from_dataset(self, dataset):
+    def mount(self, *args, **kwargs):
         for prefix, sublogs in self.loggables.items():
             for log_name, loggable in sublogs.items():
                 loggable.set_model(self)

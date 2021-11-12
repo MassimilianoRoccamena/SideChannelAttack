@@ -38,9 +38,9 @@ class DeepModel(LightningModule, CoreModel):
     def test_step(self, batch, batch_index):
         return self.step(batch)[-1]
 
-    def mount_from_dataset(self, dataset):
+    def mount(self, *args, **kwargs):
         '''
-        Mount the part of the model which is function of some data.
+        Post mount the part of the model which is function of something.
         dataset: dataset object
         '''
         raise NotImplementedError

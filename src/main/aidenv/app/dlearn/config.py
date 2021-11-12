@@ -1,11 +1,13 @@
 import os
 from datetime import datetime
 from pathlib import Path
+import numpy as np
 import torch
+from torch.utils.data import Subset
 from torch.utils.data import random_split
 from pytorch_lightning.utilities.seed import seed_everything
-from pytorch_lightning.loggers import NeptuneLogger, TensorBoardLogger
-from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger, NeptuneLogger
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 from aidenv.app.params import CONFIG_NOT_FOUND_MSG
 from aidenv.app.params import DATASET_MODULE
@@ -115,18 +117,24 @@ def build_base(config):
         print('Using default experiment name')
 
     # log dir creation
-    dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = os.path.join(get_program_output_dir(), 'dlearn')
+    out_dir = get_program_output_dir()
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
-    name_dir = os.path.join(out_dir, name)
+
+    env_dir = os.path.join(out_dir, 'dlearn')
+    if not os.path.exists(env_dir):
+        os.mkdir(env_dir)
+
+    name_dir = os.path.join(env_dir, name)
     if not os.path.exists(name_dir):
         os.mkdir(name_dir)
+
+    dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = os.path.join(name_dir, dt_string)
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
+
     print(f'Log directory is {log_dir}')
-    
     log_program(get_program_config(), log_dir)
 
     return prompt, name, log_dir
@@ -192,23 +200,16 @@ def build_neptune(config, name):
     if enable is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_ENABLE_KEY))
 
-    if config.enable:
+    if enable:
         # load env vars
         user = load_env_var(AIDENV_NEPT_USER_ENV)
         token = load_env_var(AIDENV_NEPT_TOKEN_ENV)
         project = load_env_var(AIDENV_NEPT_PROJECT_ENV)
 
-        # load files to upload
-        extensions = search_config_key(config, LOG_NEPT_UP_KEY)
-        if not extensions is None:
-            source_files = [str(path) for ext in extensions
-                            for path in Path('./').rglob(ext)]
-        else:
-            source_files = None
-
         # create kwargs
-        kwargs['upload_source_files'] = source_files
-        kwargs['project_name'] = f'{user}/{project}'
+        kwargs['project'] = f'{user}/{project}'
+        kwargs['name'] = name
+        kwargs['prefix'] = 'dlearn'
         logger = NeptuneLogger(api_key=token, **kwargs)
 
     return logger
@@ -236,7 +237,12 @@ def build_dataset(config, prompt):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG('dataset'))
 
-    return build_dataset_object2(config, prompt)
+    dataset = build_dataset_object2(config, prompt)
+
+    # sampling
+    nsamples = search_config_key(config, CORE_DATASET_NSAMP_KEY)
+
+    return dataset, nsamples
 
 def build_model(config, prompt):
     if config is None:
@@ -255,14 +261,14 @@ def build_model(config, prompt):
 
 def build_core(config, prompt):
     dataset = search_config_key(config, CORE_DATASET_KEY)
-    dataset = build_dataset(dataset, prompt)
+    dataset, nsamples = build_dataset(dataset, prompt)
     print('Loaded dataset')
 
     model = search_config_key(config, CORE_MODEL_KEY)
     model = build_model(model, prompt)
     print('Loaded model')
 
-    return dataset, model
+    return dataset, nsamples, model
 
 # learning builders
 
@@ -295,28 +301,32 @@ def build_split(config):
 
     return validation, test
 
-def build_data_loaders(config, prompt, dataset, skip, split):
+def build_data_loaders(config, prompt, dataset, nsamples, skip, split):
     data_loader = search_config_key(config, LEARN_DATA_LOAD_KEY)
     if data_loader is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG(LEARN_DATA_LOAD_KEY))
 
-    def get_split_indices(d, s):
+    def get_split_lengths(d, s):
         d_len = len(d)
-        indices = [ int(d_len*(1.-s)),
-                    int(d_len*s) ]
-        if indices[0] + indices[1] < d_len: # fix float approx
-            indices[0] += len - (indices[0]+indices[1])
-        return indices
+        len1 = int(d_len * (1.-s))
+        len2 = d_len - len1
+        return [len1, len2]
 
     skip_train, skip_test = skip
     split_valid, split_test = split
+
+    # sampling
+    if not nsamples is None:
+        print('Sampling the dataset')
+        indices = np.random.choice(len(dataset), nsamples, replace=False)
+        dataset = Subset(dataset, indices)
 
     # test
     test_loader = None
 
     if not skip_test and not split_test is None:
-        indices = get_split_indices(dataset, split_test)
-        dataset, test_dataset = random_split(dataset, indices)
+        length = get_split_lengths(dataset, split_test)
+        dataset, test_dataset = random_split(dataset, length)
         test_loader =  build_learning_object1(config, prompt,
                                                 LEARN_DATA_LOAD_KEY,
                                                 args=[test_dataset])
@@ -328,8 +338,8 @@ def build_data_loaders(config, prompt, dataset, skip, split):
     valid_loader = None
 
     if not skip_train:
-        indices = get_split_indices(dataset, split_valid)
-        train_dataset, valid_dataset = random_split(dataset, indices)
+        length = get_split_lengths(dataset, split_valid)
+        train_dataset, valid_dataset = random_split(dataset, length)
         train_loader =  build_learning_object1(config, prompt,
                                                 LEARN_DATA_LOAD_KEY,
                                                 args=[train_dataset])
@@ -385,16 +395,12 @@ def build_scheduler(config, prompt, optimizer):
     return build_learning_object2(config, prompt,
                                     args=[optimizer])
     
-def build_learning(config, prompt, dataset, model, loggers, log_dir):
+def build_learning(config, prompt, dataset, nsamples, model, loggers, log_dir):
     skip = build_skip(config)
     print('Loaded skip options')
 
     split = build_split(config)
     print('Loaded split options')
-
-    loaders = build_data_loaders(config, prompt, dataset, skip, split)
-    print('Loaded data loaders')
-    yield loaders
 
     early_stop = build_early_stopping(config, prompt)
     print('Loaded early stopping')
@@ -422,3 +428,7 @@ def build_learning(config, prompt, dataset, model, loggers, log_dir):
     scheduler = build_scheduler(scheduler, prompt, optimizer)
     print('Loaded scheduler')
     yield scheduler
+
+    loaders = build_data_loaders(config, prompt, dataset, nsamples, skip, split)
+    print('Loaded data loaders')
+    yield loaders
