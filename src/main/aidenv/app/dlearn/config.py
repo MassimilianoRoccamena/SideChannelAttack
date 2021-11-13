@@ -104,7 +104,7 @@ def build_base(config):
     if prompt is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(BASE_PROMPT_KEY))
 
-    # custom naming
+    # name
     name = search_config_key(config, BASE_NAME_KEY)
     if name is None:
         p = prompt
@@ -116,7 +116,9 @@ def build_base(config):
             raise ValueError(INVALID_PROMPT_MSG)
         print('Using default experiment name')
 
-    # log dir creation
+    # id and log dir
+    id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
     out_dir = get_program_output_dir()
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
@@ -129,15 +131,20 @@ def build_base(config):
     if not os.path.exists(name_dir):
         os.mkdir(name_dir)
 
-    dt_string = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(name_dir, dt_string)
+    log_dir = os.path.join(name_dir, id)
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
 
     print(f'Log directory is {log_dir}')
     log_program(get_program_config(), log_dir)
+    print('Stored program configuration')
 
-    return prompt, name, log_dir
+    # description
+    descr = search_config_key(config, BASE_DESCR_KEY)
+    if prompt is None:
+        descr = ''
+
+    return prompt, name, id, log_dir, descr
 
 # determinism builders
 
@@ -165,6 +172,257 @@ def build_determinism(config):
 
         seed_everything(seed, workers=workers)
 
+# core builders
+
+def build_dataset(config, prompt, hparams):
+    if config is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('dataset'))
+
+    dataset = build_dataset_object2(config, prompt)
+
+    # sampling
+    nsamples = search_config_key(config, CORE_DATASET_NSAMP_KEY)
+
+    # hyperparams
+    hparams.update(dict(config))
+
+    return dataset, nsamples
+
+def build_model(config, prompt, hparams):
+    if config is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('model'))
+
+    model = build_model_object2(config, prompt)
+    
+    # checkpoint
+    checkpoint = search_config_key(config, CORE_MODEL_CKPT_KEY)
+    if not checkpoint is None:
+        print('Loading from checkpoint...')
+        model.load_from_checkpoint(checkpoint)
+        print('Checkpoint loaded')
+
+    # hyperparams
+    hparams.update(dict(config))
+    
+    return model
+
+def build_core(config, hparams, prompt):
+    core_hparams = {}
+
+    dataset = search_config_key(config, CORE_DATASET_KEY)
+    dataset_hparams = {}
+    dataset, nsamples = build_dataset(dataset, prompt, dataset_hparams)
+    core_hparams[CORE_DATASET_KEY] = dataset_hparams
+    print('Loaded dataset')
+
+    model = search_config_key(config, CORE_MODEL_KEY)
+    model_hparams = {}
+    model = build_model(model, prompt, model_hparams)
+    core_hparams[CORE_MODEL_KEY] = model_hparams
+    print('Loaded model')
+
+    hparams.update(core_hparams)
+
+    return dataset, nsamples, model
+
+# learning1 builders
+
+def build_skip(config, hparams):
+    skip = search_config_key(config, LEARN_SKIP_KEY)
+
+    # default
+    if skip is None:
+        skip = { LEARN_TRAIN_KEY : False,
+                 LEARN_TEST_KEY : True }
+    training = search_config_key(skip, LEARN_TRAIN_KEY)
+    if training is None:
+        training = False
+    test = search_config_key(skip, LEARN_TEST_KEY)
+    if test is None:
+        test = True
+
+    # hyperparams
+    hparams.update({ LEARN_SKIP_KEY : 
+                     { LEARN_TRAIN_KEY : training,
+                       LEARN_TEST_KEY : test }})
+
+    return training, test
+
+def build_split(config, hparams):
+    split = search_config_key(config, LEARN_SPLIT_KEY)
+
+    # default
+    if split is None:
+         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_SPLIT_KEY))
+
+    validation = search_config_key(split, LEARN_VALID_KEY)
+    if validation is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_VALID_KEY))
+
+    test = search_config_key(split, LEARN_TEST_KEY)
+
+    # hyperparams
+    hparams.update({ LEARN_SPLIT_KEY : 
+                     { LEARN_VALID_KEY : validation,
+                       LEARN_TEST_KEY : test }})
+
+    return validation, test
+
+def build_early_stopping(config, prompt, hparams):
+    early_stopping = search_config_key(config, LEARN_EARLY_STOP_KEY)
+
+    # default
+    if early_stopping is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_EARLY_STOP_KEY))
+
+    # hyperparams
+    hparams.update({ LEARN_EARLY_STOP_KEY: dict(early_stopping) })
+
+    return build_learning_object1(config, prompt,
+                                    LEARN_EARLY_STOP_KEY)
+
+def build_loss(config, prompt, hparams):
+    if config is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_LOSS_KEY))
+
+    # hyperparams
+    hparams.update(dict(config))
+
+    return build_learning_object2(config, prompt)
+
+def build_optimizer(config, prompt, hparams, model):
+    if config is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_OPTIMIZER_KEY))
+
+    # hyperparams
+    hparams.update(dict(config))
+
+    return build_learning_object2(config, prompt,
+                                    args=[model.parameters()])
+
+def build_scheduler(config, prompt, hparams, optimizer):
+    if config is None:
+        return None
+
+    # hyperparams
+    hparams.update(dict(config))
+
+    return build_learning_object2(config, prompt,
+                                    args=[optimizer])
+
+def build_data_loaders(config, prompt, hparams, dataset, nsamples, skip, split):
+    data_loader = search_config_key(config, LEARN_DATA_LOAD_KEY)
+    if data_loader is None:
+        raise ValueError(CONFIG_NOT_FOUND_MSG(LEARN_DATA_LOAD_KEY))
+
+    shuffle = data_loader.shuffle
+
+    # split lengths
+    def get_split_lengths(d, s):
+        d_len = len(d)
+        len1 = int(d_len * (1.-s))
+        len2 = d_len - len1
+        return [len1, len2]
+
+    skip_train, skip_test = skip
+    split_valid, split_test = split
+
+    # sampling
+    if not nsamples is None:
+        print('Sampling the dataset')
+        indices = np.random.choice(len(dataset), nsamples, replace=False)
+        dataset = Subset(dataset, indices)
+
+    # test
+    test_loader = None
+
+    if not skip_test and not split_test is None:
+        length = get_split_lengths(dataset, split_test)
+        dataset, test_dataset = random_split(dataset, length)
+        print(f'Optimization set has size {len(dataset)}')
+        print(f'Test set has size {len(test_dataset)}')
+
+        data_loader.shuffle = False
+        test_loader =  build_learning_object1(config, prompt,
+                                                LEARN_DATA_LOAD_KEY,
+                                                args=[test_dataset])
+    else:
+        print('Test data loader skipped')
+
+    # training & validation
+    train_loader = None
+    valid_loader = None
+
+    if not skip_train:
+        length = get_split_lengths(dataset, split_valid)
+        train_dataset, valid_dataset = random_split(dataset, length)
+        print(f'Training set has size {len(train_dataset)}')
+        print(f'Validation set has size {len(valid_dataset)}')
+
+        data_loader.shuffle = shuffle
+        train_loader =  build_learning_object1(config, prompt,
+                                                LEARN_DATA_LOAD_KEY,
+                                                args=[train_dataset])
+        data_loader.shuffle = False
+        valid_loader =  build_learning_object1(config, prompt,
+                                                LEARN_DATA_LOAD_KEY,
+                                                args=[valid_dataset])
+
+        data_loader.shuffle = shuffle
+    else:
+        print('Train and validation data loader skipped')
+
+    # hyperparams
+    hparams.update({ LEARN_DATA_LOAD_KEY : dict(data_loader) })
+
+    return train_loader, valid_loader, test_loader
+    
+def build_learning1(config, hparams, prompt, dataset, nsamples, model):
+    learning_hparams = {}
+
+    skip_hparams = {}
+    skip = build_skip(config, skip_hparams)
+    learning_hparams.update(skip_hparams)
+    print('Loaded skip options')
+
+    split_hparams = {}
+    split = build_split(config, split_hparams)
+    learning_hparams.update(split_hparams)
+    print('Loaded split options')
+
+    early_stop_hparams = {}
+    early_stop = build_early_stopping(config, prompt, early_stop_hparams)
+    learning_hparams.update(early_stop_hparams)
+    print('Loaded early stopping')
+
+    loss = search_config_key(config, LEARN_LOSS_KEY)
+    loss_hparams = {}
+    loss = build_loss(loss, prompt, loss_hparams)
+    learning_hparams[LEARN_LOSS_KEY] = loss_hparams
+    print('Loaded loss')
+
+    optimizer = search_config_key(config, LEARN_OPTIMIZER_KEY)
+    optimizer_hparams = {}
+    optimizer = build_optimizer(optimizer, prompt, optimizer_hparams, model)
+    learning_hparams[LEARN_OPTIMIZER_KEY] = optimizer_hparams
+    print('Loaded optimizer')
+
+    scheduler = search_config_key(config, LEARN_SCHEDULER_KEY)
+    scheduler_hparams = {}
+    scheduler = build_scheduler(scheduler, prompt, scheduler_hparams, optimizer)
+    learning_hparams[LEARN_SCHEDULER_KEY] = scheduler_hparams
+    print('Loaded scheduler')
+
+    loaders_hparams = {}
+    loaders = build_data_loaders(config, prompt, loaders_hparams,
+                                    dataset, nsamples, skip, split)
+    learning_hparams.update(loaders_hparams)
+    print('Loaded data loaders')
+
+    hparams.update(learning_hparams)
+
+    return early_stop, loss, optimizer, scheduler, loaders
+
 # logging builders
 
 def build_tensorboard(config, name, log_dir):
@@ -187,7 +445,7 @@ def build_tensorboard(config, name, log_dir):
 
     return logger
 
-def build_neptune(config, name):
+def build_neptune(config, name, id, descr, tags):
     if config is None:
         return None
 
@@ -206,22 +464,37 @@ def build_neptune(config, name):
         token = load_env_var(AIDENV_NEPT_TOKEN_ENV)
         project = load_env_var(AIDENV_NEPT_PROJECT_ENV)
 
-        # create kwargs
+        # neptune kwargs
+        kwargs['prefix'] = 'learning'
         kwargs['project'] = f'{user}/{project}'
         kwargs['name'] = name
-        kwargs['prefix'] = 'dlearn'
+        kwargs['custom_run_id'] = id
+        kwargs['description'] = descr
+        kwargs['tags'] = tags
+
         logger = NeptuneLogger(api_key=token, **kwargs)
 
     return logger
 
-def build_logging(config, name, log_dir):
+def build_logging(config, hparams, prompt, name, id, log_dir, descr):
+    # tensorboard
     tensorboard = search_config_key(config, LOG_TB_KEY)
     tensorboard = build_tensorboard(tensorboard, name, log_dir)
-    print('Loaded tensorboard configuration')
+    if not tensorboard is None:
+        # tensorboard.log_hyperparams(hparams)      # saving whole config file
+        print('Loaded tensorboard')
+
+    # neptune
+    tag = prompt[0]
+    for p in prompt[1:]:
+        tag = f'{tag}-{p}'
+    tags = [tag]            # only tag is cat prompt
 
     neptune = search_config_key(config, LOG_NEPT_KEY)
-    neptune = build_neptune(neptune, name)
-    print('Loaded neptune configuration')
+    neptune = build_neptune(neptune, name, id, descr, tags)
+    if not neptune is None:
+        neptune.log_hyperparams(hparams)
+        print('Loaded neptune')
 
     output = []
     if not tensorboard is None:
@@ -229,136 +502,12 @@ def build_logging(config, name, log_dir):
     if not neptune is None:
         output.append(neptune)
 
+    if len(output) == 0:
+        print('No logger has been found')
+
     return tuple(output)
 
-# core builders
-
-def build_dataset(config, prompt):
-    if config is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('dataset'))
-
-    dataset = build_dataset_object2(config, prompt)
-
-    # sampling
-    nsamples = search_config_key(config, CORE_DATASET_NSAMP_KEY)
-
-    return dataset, nsamples
-
-def build_model(config, prompt):
-    if config is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('model'))
-
-    model = build_model_object2(config, prompt)
-    
-    # load from file
-    checkpoint = search_config_key(config, CORE_MODEL_CKPT_KEY)
-    if not checkpoint is None:
-        print('Loading from checkpoint...')
-        model.load_from_checkpoint(checkpoint)
-        print('Checkpoint loaded')
-    
-    return model
-
-def build_core(config, prompt):
-    dataset = search_config_key(config, CORE_DATASET_KEY)
-    dataset, nsamples = build_dataset(dataset, prompt)
-    print('Loaded dataset')
-
-    model = search_config_key(config, CORE_MODEL_KEY)
-    model = build_model(model, prompt)
-    print('Loaded model')
-
-    return dataset, nsamples, model
-
-# learning builders
-
-def build_skip(config):
-    skip = search_config_key(config, LEARN_SKIP_KEY)
-
-    # default values
-    if skip is None:
-        skip = { LEARN_TRAIN_KEY : False,
-                 LEARN_TEST_KEY : True }
-    training = search_config_key(skip, LEARN_TRAIN_KEY)
-    if training is None:
-        training = False
-    test = search_config_key(skip, LEARN_TEST_KEY)
-    if test is None:
-        test = True
-
-    return training, test
-
-def build_split(config):
-    split = search_config_key(config, LEARN_SPLIT_KEY)
-    if split is None:
-         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_SPLIT_KEY))
-
-    validation = search_config_key(split, LEARN_VALID_KEY)
-    if validation is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_VALID_KEY))
-
-    test = search_config_key(split, LEARN_TEST_KEY)
-
-    return validation, test
-
-def build_data_loaders(config, prompt, dataset, nsamples, skip, split):
-    data_loader = search_config_key(config, LEARN_DATA_LOAD_KEY)
-    if data_loader is None:
-        raise ValueError(CONFIG_NOT_FOUND_MSG(LEARN_DATA_LOAD_KEY))
-
-    def get_split_lengths(d, s):
-        d_len = len(d)
-        len1 = int(d_len * (1.-s))
-        len2 = d_len - len1
-        return [len1, len2]
-
-    skip_train, skip_test = skip
-    split_valid, split_test = split
-
-    # sampling
-    if not nsamples is None:
-        print('Sampling the dataset')
-        indices = np.random.choice(len(dataset), nsamples, replace=False)
-        dataset = Subset(dataset, indices)
-
-    # test
-    test_loader = None
-
-    if not skip_test and not split_test is None:
-        length = get_split_lengths(dataset, split_test)
-        dataset, test_dataset = random_split(dataset, length)
-        test_loader =  build_learning_object1(config, prompt,
-                                                LEARN_DATA_LOAD_KEY,
-                                                args=[test_dataset])
-    else:
-        print('Test data loader skipped')
-
-    # training & validation
-    train_loader = None
-    valid_loader = None
-
-    if not skip_train:
-        length = get_split_lengths(dataset, split_valid)
-        train_dataset, valid_dataset = random_split(dataset, length)
-        train_loader =  build_learning_object1(config, prompt,
-                                                LEARN_DATA_LOAD_KEY,
-                                                args=[train_dataset])
-        config.shuffle = False
-        valid_loader =  build_learning_object1(config, prompt,
-                                                LEARN_DATA_LOAD_KEY,
-                                                args=[valid_dataset])
-    else:
-        print('Train and validation data loader skipped')
-
-    return train_loader, valid_loader, test_loader
-
-def build_early_stopping(config, prompt):
-    early_stopping = search_config_key(config, LEARN_EARLY_STOP_KEY)
-    if early_stopping is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_EARLY_STOP_KEY))
-
-    return build_learning_object1(config, prompt,
-                                    LEARN_EARLY_STOP_KEY)
+# learning2 builder
 
 def build_trainer(config, prompt, callbacks, loggers, log_dir):
     trainer = search_config_key(config, LEARN_TRAINER_KEY)
@@ -375,60 +524,12 @@ def build_trainer(config, prompt, callbacks, loggers, log_dir):
                                         'default_root_dir' : log_dir
                                     })
 
-def build_loss(config, prompt):
-    if config is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_LOSS_KEY))
-
-    return build_learning_object2(config, prompt)
-
-def build_optimizer(config, prompt, model):
-    if config is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_OPTIMIZER_KEY))
-
-    return build_learning_object2(config, prompt,
-                                    args=[model.parameters()])
-
-def build_scheduler(config, prompt, optimizer):
-    if config is None:
-        return None
-
-    return build_learning_object2(config, prompt,
-                                    args=[optimizer])
-    
-def build_learning(config, prompt, dataset, nsamples, model, loggers, log_dir):
-    skip = build_skip(config)
-    print('Loaded skip options')
-
-    split = build_split(config)
-    print('Loaded split options')
-
-    early_stop = build_early_stopping(config, prompt)
-    print('Loaded early stopping')
-
+def build_learning2(config, prompt, early_stop, loggers, log_dir):
     ckpt_path = os.path.join(log_dir, CHECKPOINT_DIR)
-    checkpoint_callback = ModelCheckpoint(dirpath=ckpt_path, save_top_k=-1)
+    ckpt_callback = ModelCheckpoint(dirpath=ckpt_path, save_top_k=-1)
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    callbacks = [ early_stop, checkpoint_callback, lr_monitor ]
+    callbacks = [ early_stop, ckpt_callback, lr_monitor ]
 
     trainer = build_trainer(config, prompt, callbacks, loggers, log_dir)
     print('Loaded trainer')
-    yield trainer
-
-    loss = search_config_key(config, LEARN_LOSS_KEY)
-    loss = build_loss(loss, prompt)
-    print('Loaded loss')
-    yield loss
-
-    optimizer = search_config_key(config, LEARN_OPTIMIZER_KEY)
-    optimizer = build_optimizer(optimizer, prompt, model)
-    print('Loaded optimizer')
-    yield optimizer
-
-    scheduler = search_config_key(config, LEARN_SCHEDULER_KEY)
-    scheduler = build_scheduler(scheduler, prompt, optimizer)
-    print('Loaded scheduler')
-    yield scheduler
-
-    loaders = build_data_loaders(config, prompt, dataset, nsamples, skip, split)
-    print('Loaded data loaders')
-    yield loaders
+    return trainer

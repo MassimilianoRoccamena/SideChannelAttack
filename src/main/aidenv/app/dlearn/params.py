@@ -4,6 +4,7 @@ BASE_KEY = 'base'
 BASE_ORIGIN_KEY = 'origin'
 BASE_PROMPT_KEY = 'prompt'
 BASE_NAME_KEY = 'name'
+BASE_DESCR_KEY = 'description'
 
 DETERM_KEY = 'determinism'
 DETERM_SEED_KEY = 'seed'

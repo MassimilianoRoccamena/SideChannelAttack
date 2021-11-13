@@ -8,9 +8,10 @@ from aidenv.app.dlearn.params import CORE_KEY
 from aidenv.app.dlearn.params import LEARN_KEY
 from aidenv.app.dlearn.config import build_base
 from aidenv.app.dlearn.config import build_determinism
-from aidenv.app.dlearn.config import build_logging
 from aidenv.app.dlearn.config import build_core
-from aidenv.app.dlearn.config import build_learning
+from aidenv.app.dlearn.config import build_learning1
+from aidenv.app.dlearn.config import build_logging
+from aidenv.app.dlearn.config import build_learning2
 
 # sections parsers
 
@@ -19,10 +20,10 @@ def parse_base(config):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(BASE_KEY))
 
-    prompt, name, log_dir = build_base(config)
+    prompt, name, id, log_dir, descr = build_base(config)
     
     print('Base configuration done')
-    return prompt, name, log_dir
+    return prompt, name, id, log_dir, descr
 
 def parse_determinism(config):
     config = search_config_key(config, DETERM_KEY)
@@ -33,59 +34,68 @@ def parse_determinism(config):
 
     print('Determinism configuration done')
 
-def parse_logging(config, name, log_dir):
-    config = search_config_key(config, LOG_KEY)
-    if config is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_KEY))
-
-    loggers = build_logging(config, name, log_dir)
-
-    print("Logging configuration done")
-    return loggers
-
-def parse_core(config, prompt):
+def parse_core(config, hparams, prompt):
     config = search_config_key(config, CORE_KEY)
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(CORE_KEY))
 
-    dataset, nsamples, model = build_core(config, prompt)
+    dataset, nsamples, model = build_core(config, hparams, prompt)
 
     print("Core configuration done")
     return dataset, nsamples, model
 
-def parse_learning(config, prompt, dataset, nsamples, model, loggers, log_dir):
+def parse_learning1(config, hparams, prompt, dataset, nsamples, model):
     config = search_config_key(config, LEARN_KEY)
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
 
-    learning = build_learning(config, prompt,
-                                dataset, nsamples,
-                                model, loggers, log_dir)
-
-    trainer = next(learning)
-    loss = next(learning)
-    optimizer = next(learning)
-    scheduler = next(learning)
+    early_stop, loss, optimizer, scheduler, loaders = \
+                        build_learning1(config, hparams, prompt,
+                                        dataset, nsamples, model)
 
     model.set_learning(loss, optimizer, scheduler=scheduler)
     model.mount(dataset)
 
-    loaders = next(learning)
+    print('Basic learning configuration done')
+    return early_stop, loaders
 
-    print('Learning configuration done')
-    return trainer, loaders
+def parse_logging(config, hparams, prompt, name, id, log_dir, descr):
+    config = search_config_key(config, LOG_KEY)
+    if config is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_KEY))
+
+    loggers = build_logging(config, hparams, prompt, name,
+                                id, log_dir, descr)
+
+    print("Logging configuration done")
+    return loggers
+
+def parse_learning2(config, prompt, early_stop, loggers, log_dir):
+    config = search_config_key(config, LEARN_KEY)
+    if config is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
+
+    trainer = build_learning2(config, prompt, early_stop,
+                                loggers, log_dir)
+
+    print('Trainer learning configuration done')
+    return trainer
 
 # main runners
 
 def run_train_test(trainer, model, train_loader, valid_loader, test_loader):
     if not (train_loader is None or valid_loader is None):
+        print('')
         trainer.fit(model, train_loader, valid_loader)
+        print('')
         print('Model training done')
     else:
         print('Model training skipped')
 
     if not test_loader is None:
+        print('')
         trainer.test(model, test_loader)
+        print('')
         print('Model testing done')
     else:
         print('Model testing skipped')
@@ -95,18 +105,19 @@ def run(*args):
     Entry point for dlearn environment
     args: program arguments
     '''
+    print(' ---=== AIDENV ===--- \n')
     print("Deep learning environment started")
-
     config = get_program_config()
+    hparams = {}
 
-    prompt, name, log_dir = parse_base(config)
+    prompt, name, id, log_dir, descr = parse_base(config)
     parse_determinism(config)
-    loggers = parse_logging(config, name, log_dir)
-
-    dataset, nsamples, model = parse_core(config, prompt)
-    trainer, loaders = parse_learning(config, prompt, dataset, nsamples,
-                                            model, loggers, log_dir)
+    dataset, nsamples, model = parse_core(config, hparams, prompt)
+    early_stop, loaders = parse_learning1(config, hparams, prompt,
+                                            dataset, nsamples, model)
+    loggers = parse_logging(config, hparams, prompt, name,
+                                id, log_dir, descr)
+    trainer = parse_learning2(config, prompt, early_stop, loggers, log_dir)
 
     run_train_test(trainer, model, *loaders)
-
     print('Deep learning environment finished')

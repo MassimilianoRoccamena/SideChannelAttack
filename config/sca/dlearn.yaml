@@ -8,7 +8,8 @@ base:
   - classification
   - frequency
 
-  name: Test
+  name: 'Test'
+  description: 'this is a test'
 
 # ---------------------------------------------------------------
 
@@ -17,18 +18,6 @@ determinism:
   seed: 314159
   seed_workers: True
   force: False
-
-# ---------------------------------------------------------------
-
-logging:
-
-  tensorboard:
-    enable: True
-
-  neptune:
-    enable: True
-    
-    log_model_checkpoints: False
 
 # ---------------------------------------------------------------
 
@@ -82,7 +71,7 @@ learning:
 
   skip:
     training:
-    test:
+    test: False
 
   split:
     validation: 0.1579
@@ -119,3 +108,18 @@ learning:
     params:
       step_size: 2
       gamma: 0.9
+
+# ---------------------------------------------------------------
+
+logging:
+
+  tensorboard:
+    enable: True
+
+  neptune:
+    enable: False
+    
+    log_model_checkpoints: False
+    # source_files:
+    # - '*.py'
+    # - '*.sh'
