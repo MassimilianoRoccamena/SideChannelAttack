@@ -1,3 +1,7 @@
+import itertools
+import numpy as np
+import torch
+
 from aidenv.api.dlearn.model.basic import DeepModel
 
 class LoggableObject:
@@ -26,7 +30,7 @@ class LoggableObject:
 
 class LoggableScalar(LoggableObject):
     '''
-    AbstractLoggable scalar number.
+    Abstract loggable scalar.
     '''
 
     def on_epoch_end(self, *args, **kwargs):
@@ -34,11 +38,44 @@ class LoggableScalar(LoggableObject):
 
 class LoggableLoss(LoggableScalar):
     '''
-    Loggable loss value.
+    Loggable loss.
     '''
 
     def __call__(self, *args, **kwargs):
         return kwargs['loss']
+
+class LoggableTensor(LoggableObject):
+    '''
+    Abstract loggable tensor.
+    '''
+
+    def __call__(self, *args, **kwargs):
+        val = args[0]
+        self.shape = val.shape
+        return { 'values' : torch.flatten(val) }
+
+    def build_tensor(self, outputs, prefix, log_name):
+        output = outputs[0]
+        log_val_name = f'{log_name}/values'
+
+        shape = self.shape
+        tensor = []
+
+        for indices in itertools.product(*[range(s) for s in shape]):
+            idx = 0
+            if len(shape) < 2:
+                idx = indices[0]
+            else:
+                idx = indices[1] + shape[1]*indices[0]
+                if len(shape) > 2:
+                    for e,i in enumerate(indices[2:]):
+                        idx += shape[:e+2]*i
+
+            tensor.append(output[f'{log_val_name}/{idx}'])
+        
+        tensor = torch.tensor(tensor)
+        tensor = tensor.view(*shape)
+        return tensor
 
 class LoggableFigure(LoggableObject):
     '''
@@ -67,9 +104,9 @@ class LoggableModel(DeepModel):
         '''
         super().__init__()
         self.loggables = { 'train' : {}, 'valid' : {}, 'test' : {} }
-        #self.loggables['train'].update({'train/loss' : LoggableLoss()})
-        #self.loggables['valid'].update({'valid/loss' : LoggableLoss()})
-        #self.loggables['test'].update({'test/loss' : LoggableLoss()})
+        self.loggables['train'].update({'loss' : LoggableLoss()})
+        self.loggables['valid'].update({'loss' : LoggableLoss()})
+        self.loggables['test'].update({'loss' : LoggableLoss()})
 
     # setup
 
@@ -94,7 +131,16 @@ class LoggableModel(DeepModel):
         logs = {}
         for log_name, loggable in self.loggables[prefix].items():
             log_name = f'{prefix}/{log_name}'
-            logs[log_name] = loggable(pred, target, loss=loss)
+            log = loggable(pred, target, loss=loss)
+
+            if type(log) is dict:
+                # tensor
+                for k,v in log.items():
+                    for i,e in enumerate(v):
+                        logs[f'{log_name}/{k}/{i}'] = e
+            else:
+                # scalar
+                logs[log_name] = log
 
         output = {}
         output.update(logs)
@@ -121,7 +167,11 @@ class LoggableModel(DeepModel):
 
     def compute_epoch_end(self, outputs, prefix):
         for log_name, loggable in self.loggables[prefix].items():
-            loggable.on_epoch_end(outputs, prefix=prefix, log_name=log_name)
+            if prefix != 'test':
+                loggable.on_epoch_end(outputs, prefix=prefix, log_name=log_name,
+                                        epoch=self.current_epoch)
+            else:
+                loggable.on_epoch_end(outputs, prefix=prefix, log_name=log_name)
 
     def training_epoch_end(self, outputs):
         self.compute_epoch_end(outputs, 'train')

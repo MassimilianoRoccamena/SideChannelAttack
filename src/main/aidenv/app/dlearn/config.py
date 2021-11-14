@@ -109,7 +109,7 @@ def build_base(config):
     if name is None:
         p = prompt
         if len(prompt) == 3:
-            name = f"{p[0]}{p[2]}{p[1]}"
+            name = f"{p[0]}{p[1]}{p[2]}"
         elif len(prompt) == 2:
             name = f"{p[0]}{p[1]}"
         else:
@@ -503,7 +503,7 @@ def build_logging(config, hparams, prompt, name, id, log_dir, descr):
         output.append(neptune)
 
     if len(output) == 0:
-        print('No logger has been found')
+        raise ValueError('You must specify at least one logger')
 
     return tuple(output)
 
