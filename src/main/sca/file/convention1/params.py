@@ -1,3 +1,5 @@
+NUM_TRACES = 500
+
 class PathReference:
     '''
     Container of data constant parameters used in filesystem
