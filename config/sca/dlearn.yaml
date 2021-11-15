@@ -77,20 +77,10 @@ learning:
     validation: 0.1579
     test: 0.05
 
-  data_loader:
-    batch_size: 20
-    num_workers: 8
-    shuffle: True
-
   early_stopping:
     monitor: 'valid/accuracy'
     patience: 5
     mode: 'max'
-
-  trainer:
-    gpus: 0
-    max_epochs: 20
-    check_val_every_n_epoch: 1
 
   loss:
     name: CrossEntropyLoss
@@ -108,6 +98,24 @@ learning:
     params:
       step_size: 2
       gamma: 0.9
+
+  data_loader:
+    batch_size: 20
+    num_workers: 8
+    shuffle: True
+
+  trainer:
+    gpus: 0
+    max_epochs: 20
+    check_val_every_n_epoch: 1
+    log_every_n_steps: 10
+
+  loggables:
+    - name: Accuracy
+      params:
+
+    - name: ConfusionMatrix
+      params:
 
 # ---------------------------------------------------------------
 

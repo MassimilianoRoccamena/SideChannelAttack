@@ -54,7 +54,6 @@ def parse_learning1(config, hparams, prompt, dataset, nsamples, model):
                                         dataset, nsamples, model)
 
     model.set_learning(loss, optimizer, scheduler=scheduler)
-    model.mount(dataset)
 
     print('Basic learning configuration done')
     return early_stop, loaders
@@ -70,13 +69,19 @@ def parse_logging(config, hparams, prompt, name, id, log_dir, descr):
     print("Logging configuration done")
     return loggers
 
-def parse_learning2(config, prompt, early_stop, loggers, log_dir):
+def parse_learning2(config, prompt, model, dataset, early_stop, loggers, log_dir):
     config = search_config_key(config, LEARN_KEY)
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
 
-    trainer = build_learning2(config, prompt, early_stop,
+    trainer, loggables = build_learning2(config, prompt, early_stop,
                                 loggers, log_dir)
+
+    model.add_loggables(loggables, 'train')
+    model.add_loggables(loggables, 'valid')
+    model.add_loggables(loggables, 'test')
+
+    model.mount(dataset)
 
     print('Trainer learning configuration done')
     return trainer
@@ -117,7 +122,8 @@ def run(*args):
                                             dataset, nsamples, model)
     loggers = parse_logging(config, hparams, prompt, name,
                                 id, log_dir, descr)
-    trainer = parse_learning2(config, prompt, early_stop, loggers, log_dir)
+    trainer = parse_learning2(config, prompt, model, dataset,
+                                early_stop, loggers, log_dir)
 
     run_train_test(trainer, model, *loaders)
     print('Deep learning environment finished')

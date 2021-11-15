@@ -1,97 +1,5 @@
-import itertools
-import numpy as np
-import torch
-
 from aidenv.api.dlearn.model.basic import DeepModel
-
-class LoggableObject:
-    '''
-    Abstract loggable object of a model.
-    '''
-
-    def set_model(self, model):
-        '''
-        Set parent model for the loggable object.
-        model: parent model
-        '''
-        self.model = model
-
-    def __call__(self, *args, **kwargs):
-        '''
-        Compute the value of the loggable.
-        '''
-        raise NotImplementedError
-
-    def on_epoch_end(self, *args, **kwargs):
-        '''
-        Handle model training epoch end.
-        '''
-        raise NotImplementedError
-
-class LoggableScalar(LoggableObject):
-    '''
-    Abstract loggable scalar.
-    '''
-
-    def on_epoch_end(self, *args, **kwargs):
-        pass
-
-class LoggableLoss(LoggableScalar):
-    '''
-    Loggable loss.
-    '''
-
-    def __call__(self, *args, **kwargs):
-        return kwargs['loss']
-
-class LoggableTensor(LoggableObject):
-    '''
-    Abstract loggable tensor.
-    '''
-
-    def __call__(self, *args, **kwargs):
-        val = args[0]
-        self.shape = val.shape
-        return { 'values' : torch.flatten(val) }
-
-    def build_tensor(self, outputs, prefix, log_name):
-        output = outputs[0]
-        log_val_name = f'{log_name}/values'
-
-        shape = self.shape
-        tensor = []
-
-        for indices in itertools.product(*[range(s) for s in shape]):
-            idx = 0
-            if len(shape) < 2:
-                idx = indices[0]
-            else:
-                idx = indices[1] + shape[1]*indices[0]
-                if len(shape) > 2:
-                    for e,i in enumerate(indices[2:]):
-                        idx += shape[:e+2]*i
-
-            tensor.append(output[f'{log_val_name}/{idx}'])
-        
-        tensor = torch.tensor(tensor)
-        tensor = tensor.view(*shape)
-        return tensor
-
-class LoggableFigure(LoggableObject):
-    '''
-    Abstract loggable figure.
-    '''
-
-    def on_epoch_end(self, *args, **kwargs):
-        self.model.logger.log_figure(*args, **kwargs)
-
-    def draw(self, *args, **kwargs):
-        '''
-        Draw the figure.
-        '''
-        raise NotImplementedError
-
-# model
+from aidenv.api.dlearn.learning import LoggableLoss
 
 class LoggableModel(DeepModel):
     '''
@@ -104,9 +12,9 @@ class LoggableModel(DeepModel):
         '''
         super().__init__()
         self.loggables = { 'train' : {}, 'valid' : {}, 'test' : {} }
-        self.loggables['train'].update({'loss' : LoggableLoss()})
-        self.loggables['valid'].update({'loss' : LoggableLoss()})
-        self.loggables['test'].update({'loss' : LoggableLoss()})
+        self.loggables['train'].update({'loss' : LoggableLoss(progr_bar=False)})
+        self.loggables['valid'].update({'loss' : LoggableLoss(progr_bar=False)})
+        self.loggables['test'].update({'loss' : LoggableLoss(progr_bar=False)})
 
     # setup
 
@@ -121,38 +29,22 @@ class LoggableModel(DeepModel):
     def mount(self, *args, **kwargs):
         for prefix, sublogs in self.loggables.items():
             for log_name, loggable in sublogs.items():
-                loggable.set_model(self)
+                loggable.mount(self, *args, **kwargs)
 
     # steps
 
     def compute_epoch_step(self, batch, prefix, include_loss=False):
         pred, target, loss = super().step_batch(batch)
 
-        logs = {}
+        outputs = {}
         for log_name, loggable in self.loggables[prefix].items():
             log_name = f'{prefix}/{log_name}'
-            log = loggable(pred, target, loss=loss)
-
-            if type(log) is dict:
-                # tensor
-                for k,v in log.items():
-                    for i,e in enumerate(v):
-                        logs[f'{log_name}/{k}/{i}'] = e
-            else:
-                # scalar
-                logs[log_name] = log
-
-        output = {}
-        output.update(logs)
-
-        self.log_dict(logs,
-                        on_step=True, on_epoch=True,
-                        sync_dist=True, prog_bar=True)
+            loggable.log(outputs, log_name, pred, target, loss)
 
         if include_loss:
-            output['loss'] = loss
-
-        return output
+            outputs['loss'] = loss
+        
+        return outputs
 
     def training_step(self, batch, batch_index):
         return self.compute_epoch_step(batch, 'train', include_loss=True)

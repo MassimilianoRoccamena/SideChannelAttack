@@ -29,12 +29,14 @@ LEARN_SPLIT_KEY = 'split'
 LEARN_TRAIN_KEY = 'training'
 LEARN_VALID_KEY = 'validation'
 LEARN_TEST_KEY = 'test'
-LEARN_DATA_LOAD_KEY = 'data_loader'
 LEARN_EARLY_STOP_KEY = 'early_stopping'
-LEARN_TRAINER_KEY = 'trainer'
 LEARN_LOSS_KEY = 'loss'
 LEARN_OPTIMIZER_KEY = 'optimizer'
 LEARN_SCHEDULER_KEY = 'scheduler'
+LEARN_DATA_LOAD_KEY = 'data_loader'
+LEARN_TRAINER_KEY = 'trainer'
+LEARN_LOG_KEY = 'loggables'
+LEARN_LOG_BAR_KEY = 'progr_bar'
 
 # env vars
 

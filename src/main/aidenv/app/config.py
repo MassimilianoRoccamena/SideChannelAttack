@@ -151,8 +151,7 @@ def build_object2(class_constr, prompt, module_name, class_name):
     class_name: name of the class inside the module
     '''
     return build_object(class_constr, prompt,
-                        module_name, upper_identifier(class_name,
-                                                    '_'))
+                        module_name, upper_identifier(class_name))
 
 # simple objects builders
 

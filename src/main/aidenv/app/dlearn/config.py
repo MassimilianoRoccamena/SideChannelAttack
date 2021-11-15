@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import Subset
@@ -9,7 +8,9 @@ from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.loggers import TensorBoardLogger, NeptuneLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
+from utils.string import lower_identifier
 from aidenv.app.params import CONFIG_NOT_FOUND_MSG
+from aidenv.app.params import CLASS_NAME_KEY
 from aidenv.app.params import DATASET_MODULE
 from aidenv.app.params import MODEL_MODULE
 from aidenv.app.params import LEARNING_MODULE
@@ -465,7 +466,7 @@ def build_neptune(config, name, id, descr, tags):
         project = load_env_var(AIDENV_NEPT_PROJECT_ENV)
 
         # neptune kwargs
-        kwargs['prefix'] = 'learning'
+        kwargs['prefix'] = 'experiment'
         kwargs['project'] = f'{user}/{project}'
         kwargs['name'] = name
         kwargs['custom_run_id'] = id
@@ -524,12 +525,30 @@ def build_trainer(config, prompt, callbacks, loggers, log_dir):
                                         'default_root_dir' : log_dir
                                     })
 
+def build_loggables(config, prompt):
+    if config is None:
+        return []
+
+    out = {}
+    for c in config:
+        cls_name = c[CLASS_NAME_KEY]
+        c[CLASS_NAME_KEY] = f'Loggable{cls_name}'
+
+        log_name = lower_identifier(cls_name)
+        out[log_name] = build_learning_object2(c, prompt)
+
+    return out
+
 def build_learning2(config, prompt, early_stop, loggers, log_dir):
     ckpt_path = os.path.join(log_dir, CHECKPOINT_DIR)
     ckpt_callback = ModelCheckpoint(dirpath=ckpt_path, save_top_k=-1)
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     callbacks = [ early_stop, ckpt_callback, lr_monitor ]
-
     trainer = build_trainer(config, prompt, callbacks, loggers, log_dir)
     print('Loaded trainer')
-    return trainer
+
+    loggables = search_config_key(config, LEARN_LOG_KEY)
+    loggables = build_loggables(loggables, prompt)
+    print('Loaded loggables')
+
+    return trainer, loggables

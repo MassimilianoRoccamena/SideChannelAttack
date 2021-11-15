@@ -1,7 +1,5 @@
 from aidenv.api.dlearn.config import build_model_kwarg
 from aidenv.api.dlearn.model.wrapper import WrapperModel
-from aidenv.api.dlearn.model.classification.logging import LoggableAccuracy
-from aidenv.api.dlearn.model.classification.logging import LoggableConfusionMatrix
 from aidenv.api.dlearn.module.classifier import SingleClassifier
 from aidenv.api.dlearn.module.classifier import MultiClassifier
 
@@ -22,19 +20,21 @@ class ClassifierModel(WrapperModel):
     def build_kwargs(cls, config, prompt):
         pass
 
+    def set_labels(self, labels):
+        '''
+        Set the classification labels.
+        labels: classification classes
+        '''
+        self.labels = labels
+
     def mount(self, *args, **kwargs):
         dataset = args[0]
         labels = dataset.all_labels()
 
+        super().mount(labels=labels)
+
+        self.labels = labels
         self.module.set_labels(labels)
-
-        class_logs = { 'accuracy' : LoggableAccuracy(),
-                       'confusion' : LoggableConfusionMatrix(len(labels)) }
-        self.add_loggables(class_logs, 'train')
-        self.add_loggables(class_logs, 'valid')
-        self.add_loggables(class_logs, 'test')
-
-        super().mount(dataset)
 
 class SingleClassifierModel(ClassifierModel):
     '''
