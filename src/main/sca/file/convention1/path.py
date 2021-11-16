@@ -60,11 +60,26 @@ class FileIdentifier:
         self.key_id = PathReference.key_id
         self.num_traces = PathReference.num_traces
 
+PARENT_DICT = {}
+
+def init_parent_dict():
+    '''
+    Retrieve parent directory in function of voltage and frequency
+    '''
+    parents = os.listdir(root_data_dir)
+    
+    for pname in parents:
+        suffix = pname[-19:]
+        voltage = suffix[:4]
+        frequency = suffix[-9:-3]
+        key = (voltage, frequency)
+        PARENT_DICT[key] = pname
+
+init_parent_dict()
+
 def parent_path(file_id):
     '''
     Build path up to parent directory of the file.
-    Used in the past because of previous file path had full path
-    function of (volt, freq) instead of only the file name.
     file_id: identifier of the file
     '''
     # <-- changed convention
@@ -73,7 +88,12 @@ def parent_path(file_id):
     #                    f'{volt_name(file_id.volt)}',
     #                    f'{freq_name(file_id.freq)}')
 
-    return root_data_dir
+    # <-- changed convention
+
+    # return root_data_dir
+
+    key = (file_id.voltage, file_id.frequency)
+    return os.path.join(root_data_dir, PARENT_DICT[key])
 
 def file_name(file_id):
     '''
