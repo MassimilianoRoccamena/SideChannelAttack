@@ -2,6 +2,7 @@ base:
 
   origin:
   - sca
+  - profiling
 
   prompt:
   - window

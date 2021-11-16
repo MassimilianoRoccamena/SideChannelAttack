@@ -20,10 +20,10 @@ def parse_base(config):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(BASE_KEY))
 
-    prompt, name, id, log_dir, descr = build_base(config)
+    origin, prompt, name, id, log_dir, descr = build_base(config)
     
     print('Base configuration done')
-    return prompt, name, id, log_dir, descr
+    return origin, prompt, name, id, log_dir, descr
 
 def parse_determinism(config):
     config = search_config_key(config, DETERM_KEY)
@@ -58,13 +58,13 @@ def parse_learning1(config, hparams, prompt, dataset, nsamples, model):
     print('Basic learning configuration done')
     return early_stop, loaders
 
-def parse_logging(config, hparams, prompt, name, id, log_dir, descr):
+def parse_logging(config, hparams, origin, prompt, name, id, log_dir, descr):
     config = search_config_key(config, LOG_KEY)
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_KEY))
 
-    loggers = build_logging(config, hparams, prompt, name,
-                                id, log_dir, descr)
+    loggers = build_logging(config, hparams, origin, prompt,
+                                name, id, log_dir, descr)
 
     print("Logging configuration done")
     return loggers
@@ -115,13 +115,13 @@ def run(*args):
     config = get_program_config()
     hparams = {}
 
-    prompt, name, id, log_dir, descr = parse_base(config)
+    origin, prompt, name, id, log_dir, descr = parse_base(config)
     parse_determinism(config)
     dataset, nsamples, model = parse_core(config, hparams, prompt)
     early_stop, loaders = parse_learning1(config, hparams, prompt,
                                             dataset, nsamples, model)
-    loggers = parse_logging(config, hparams, prompt, name,
-                                id, log_dir, descr)
+    loggers = parse_logging(config, hparams, origin, prompt,
+                                name, id, log_dir, descr)
     trainer = parse_learning2(config, prompt, model, dataset,
                                 early_stop, loggers, log_dir)
 

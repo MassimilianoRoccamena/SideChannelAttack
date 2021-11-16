@@ -2,9 +2,9 @@ import torch
 
 from aidenv.api.dlearn.config import build_dataset_kwarg
 from aidenv.api.dlearn.dataset import ClassificationDataset
-from sca.core.window.loader import WindowLoader1 as FileConvention1
-from sca.core.window.slicer import StridedSlicer as Strided
-from sca.core.window.reader import WindowReader
+from sca.profiling.window.loader import WindowLoader1 as FileConvention1
+from sca.profiling.window.slicer import StridedSlicer as Strided
+from sca.profiling.window.reader import WindowReader
 
 class WindowClassification(ClassificationDataset):
     '''

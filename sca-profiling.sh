@@ -1,0 +1,1 @@
+sh aidenv.sh $1 sca/profiling

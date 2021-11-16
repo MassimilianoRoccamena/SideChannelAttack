@@ -10,8 +10,6 @@ In the following sections are described the main coponents of application and ho
 
 This is the platform component of the application and it is used as a general framework for developing artifical agents. It provides to an ***aidenv program*** an execution platform called ***aidenv environment***. Currently there are the following environments:
 
-- ***mining*** *(small usage)*
-  - fetch and show info about something
 - ***dlearn***
   - train and/or test a deep learning model
 - ***mlearn*** *(not implemented)*
@@ -19,8 +17,8 @@ This is the platform component of the application and it is used as a general fr
 
 You can define an *aidenv program* by writing an ***aidenv configuration*** *yaml* file:
 
-- the field *base.origin* can be used to specify the package of the *aidenv program*
-- the field *base.prompt* can be used to specify the task inside the *aidenv program*
+- the field *base.origin* can be used to specify the core package of the *aidenv program*
+- the field *base.prompt* can be used to specify the task inside the *aidenv program* core package
 - all other fields are specific configurations of each *aidenv environment*
 
 The following environmental variable are used by *aidenv*:
@@ -49,15 +47,15 @@ sh aidenv.sh $environment_id $program_name $program_args
 
 ### *sca*
 
-It's the target component of the application which realizes the goals of the thesis. It's the only *aidenv program* inside the application.
+It's the target component of the application which realizes the goals of the thesis. It include two *aidenv program*, one for profiling and one for attacking
 
-You can  launch the component by running
+You can  launch the side channel profiling program by running
 
 ```bash
-sh sca.sh $environment_id
+sh sca-profiling.sh dlearn
 ```
 
-The only environment currently used by *sca* is *dlearn*
+The attacking program is currently not implemented
 
 ### Testing
 

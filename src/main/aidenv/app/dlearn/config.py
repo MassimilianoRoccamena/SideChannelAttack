@@ -145,7 +145,7 @@ def build_base(config):
     if prompt is None:
         descr = ''
 
-    return prompt, name, id, log_dir, descr
+    return origin[-1], prompt, name, id, log_dir, descr
 
 # determinism builders
 
@@ -477,7 +477,7 @@ def build_neptune(config, name, id, descr, tags):
 
     return logger
 
-def build_logging(config, hparams, prompt, name, id, log_dir, descr):
+def build_logging(config, hparams, origin, prompt, name, id, log_dir, descr):
     # tensorboard
     tensorboard = search_config_key(config, LOG_TB_KEY)
     tensorboard = build_tensorboard(tensorboard, name, log_dir)
@@ -486,8 +486,8 @@ def build_logging(config, hparams, prompt, name, id, log_dir, descr):
         print('Loaded tensorboard')
 
     # neptune
-    tag = prompt[0]
-    for p in prompt[1:]:
+    tag = origin
+    for p in prompt:
         tag = f'{tag}-{p}'
     tags = [tag]            # only tag is cat prompt
 

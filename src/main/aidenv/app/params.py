@@ -26,7 +26,7 @@ LEARNING_MODULE = 'learning'
 
 CORE_PACKAGE = None
 
-def set_core_package(origin, append_core=True):
+def set_core_package(origin, append_core=False):
     '''
     Set aidenv core package.
     origin: nodes of the path to the core package

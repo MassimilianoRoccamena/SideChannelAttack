@@ -2,9 +2,10 @@ import unittest
 import numpy as np
 
 from main.sca.file.convention1.params import NUM_TRACES
-from main.sca.core.window.loader import WindowLoader1
-from main.sca.core.window.slicer import StridedSlicer
-from main.sca.core.window.classification.dataset import MultiClassification
+from main.sca.core.profiling.window.loader import WindowLoader1
+from main.sca.core.profiling.window.slicer import StridedSlicer
+from main.sca.core.profiling.window.classification.dataset \
+    import MultiClassification
 
 class StridedMultiClassification1Test(unittest.TestCase):
     
