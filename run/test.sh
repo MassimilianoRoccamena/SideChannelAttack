@@ -1,4 +1,4 @@
-function test_program()
+test_program()
 {
     local environment_id=$1
     shift

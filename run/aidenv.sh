@@ -1,4 +1,4 @@
-function run_environment()
+run_environment()
 {
     # build args
     local environment_id=$1
@@ -14,7 +14,7 @@ function run_environment()
     python $script_path $program_args
 }
 
-function run_program()
+run_program()
 {
     # build args
     local environment_id=$1
