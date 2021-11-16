@@ -1,0 +1,1 @@
+sh run/test.sh dlearn 1 -v

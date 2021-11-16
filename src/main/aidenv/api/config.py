@@ -1,0 +1,1 @@
+from aidenv.app.config import CoreObject
