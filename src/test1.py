@@ -8,7 +8,7 @@ sys.path.append(SOURCE_PATH)
 
 import unittest
 from testing.sca.file.convention1.loader import TraceLoader1Test
-from testing.sca.core.profiling.window.classification.dataset \
+from testing.sca.profiling.window.classification.dataset \
     import StridedMultiClassification1Test
 
 if __name__ == '__main__':

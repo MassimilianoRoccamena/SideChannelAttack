@@ -2,6 +2,7 @@ import torch
 
 from aidenv.api.dlearn.config import build_dataset_kwarg
 from aidenv.api.dlearn.dataset import ClassificationDataset
+from sca.file.params import str_hex_bytes
 from sca.profiling.window.loader import WindowLoader1 as FileConvention1
 from sca.profiling.window.slicer import StridedSlicer as Strided
 from sca.profiling.window.reader import WindowReader
@@ -20,6 +21,10 @@ class WindowClassification(ClassificationDataset):
         key_values: desired key values
         num_traces: number of traces in each file
         '''
+        if key_values is None:
+            key_values = str_hex_bytes()
+            print('Using all key values')
+
         reader = WindowReader(loader, voltages, frequencies,
                                 key_values, num_traces)
         super().__init__(reader)

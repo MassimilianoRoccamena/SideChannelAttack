@@ -6,7 +6,7 @@ function test_program()
     shift
 
     . run/init.sh
-    init_environment $environment_id test$test_id
+    init_environment $environment_id test/test$test_id
 
     local test_path="src"
     local script_name="test$test_id.py"
