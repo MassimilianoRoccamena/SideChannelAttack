@@ -1,15 +1,15 @@
 base:
 
   origin:
-  - sca
-  - profiling
+    - sca
+    - profiling
 
   prompt:
-  - window
-  - classification
-  - frequency
+    - window
+    - classification
+    - frequency
 
-  name: 'Test'
+  name: Test
   description: 'this is a test'
 
 # ---------------------------------------------------------------
@@ -38,13 +38,13 @@ core:
               stride: 50
 
       voltages:
-      - '1.00'
+        - '1.00'
       frequencies:
-      - '48.000'
-      - '52.000'
+        - '48.000'
+        - '52.000'
       key_values:
-      - '00'
-      - '01'
+        - '00'
+        - '01'
       num_traces: 500
 
   model:
@@ -79,9 +79,9 @@ learning:
     test: 0.05
 
   early_stopping:
-    monitor: 'valid/accuracy'
+    monitor: valid/accuracy
     patience: 5
-    mode: 'max'
+    mode: max
 
   loss:
     name: CrossEntropyLoss
@@ -102,8 +102,8 @@ learning:
 
   data_loader:
     batch_size: 20
-    num_workers: 8
     shuffle: True
+    num_workers: 8
 
   trainer:
     gpus: 0
@@ -129,6 +129,8 @@ logging:
     enable: True
     
     log_model_checkpoints: False
+    tags:
+      - test
 
     # source_files:
     # - '*.py'

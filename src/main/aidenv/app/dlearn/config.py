@@ -311,6 +311,8 @@ def build_scheduler(config, prompt, hparams, optimizer):
     return build_learning_object2(config, prompt,
                                     args=[optimizer])
 
+INVALID_NSAMPLES_MSG = 'invalid nsamples type'
+
 def build_data_loaders(config, prompt, hparams, dataset, nsamples, skip, split):
     data_loader = search_config_key(config, LEARN_DATA_LOAD_KEY)
     if data_loader is None:
@@ -331,7 +333,12 @@ def build_data_loaders(config, prompt, hparams, dataset, nsamples, skip, split):
     # sampling
     if not nsamples is None:
         print('Sampling the dataset')
-        indices = np.random.choice(len(dataset), nsamples, replace=False)
+        if type(nsamples) is int:
+            indices = np.random.choice(len(dataset), nsamples, replace=False)
+        elif type(nsamples) is float:
+            indices = np.random.choice(len(dataset), int(len(dataset)*nsamples), replace=False)
+        else:
+            raise RuntimeError(INVALID_NSAMPLES_MSG)
         dataset = Subset(dataset, indices)
 
     # test
@@ -356,9 +363,9 @@ def build_data_loaders(config, prompt, hparams, dataset, nsamples, skip, split):
 
     if not skip_train:
         length = get_split_lengths(dataset, split_valid)
+        print(f'Training set has size {length[0]}')
+        print(f'Validation set has size {length[0]}')
         train_dataset, valid_dataset = random_split(dataset, length)
-        print(f'Training set has size {len(train_dataset)}')
-        print(f'Validation set has size {len(valid_dataset)}')
 
         data_loader.shuffle = shuffle
         train_loader =  build_learning_object1(config, prompt,
@@ -471,7 +478,7 @@ def build_neptune(config, name, id, descr, tags):
         kwargs['name'] = f'{name}_{id}'
         kwargs['custom_run_id'] = id
         kwargs['description'] = descr
-        kwargs['tags'] = tags
+        kwargs['tags'] = tags + list(kwargs['tags'])
 
         logger = NeptuneLogger(api_key=token, **kwargs)
 

@@ -1,16 +1,16 @@
 base:
 
   origin:
-  - sca
-  - profiling
+    - sca
+    - profiling
 
   prompt:
-  - window
-  - classification
-  - frequency
+    - window
+    - classification
+    - frequency
 
-  name: 'Test'
-  description: 'remote deployment test with gpu'
+  name: Experiment1
+  description: 'on gpu with entire dataset'
 
 # ---------------------------------------------------------------
 
@@ -25,7 +25,7 @@ determinism:
 core:
 
   dataset:
-    num_samples: 1000
+    num_samples: 0.001
 
     params:
       loader:
@@ -34,20 +34,20 @@ core:
           slicer:
             name: Strided
             params:
-              window_size: 1000
-              stride: 50
+              window_size: 5000
+              stride: 200
 
       voltages:
-      - '1.00'
+        - '1.00'
       frequencies:
-      - '45.000'
-      - '46.875'
-      - '48.000'
-      - '50.000'
-      - '52.000'
-      - '54.000'
-      - '55.000'
-      - '56.000'
+        - '45.000'
+        - '46.875'
+        - '48.000'
+        - '50.000'
+        - '52.000'
+        - '54.000'
+        - '55.000'
+        - '56.000'
       key_values:
       num_traces: 500
 
@@ -59,8 +59,8 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_dim: 100
-          base_filters: 10
+          encoding_dim: 200
+          base_filters: 20
           kernel_size: 4
           stride: 1
           groups: 1
@@ -79,13 +79,13 @@ learning:
     test: True
 
   split:
-    validation: 0.1579
+    validation: 0.15
     test: 0.05
 
   early_stopping:
-    monitor: 'valid/accuracy'
-    patience: 5
-    mode: 'max'
+    monitor: valid/loss
+    patience: 10
+    mode: min
 
   loss:
     name: CrossEntropyLoss
@@ -102,19 +102,19 @@ learning:
     name: StepLR
     params:
       step_size: 2
-      gamma: 0.9
+      gamma: 0.95
 
   data_loader:
-    batch_size: 20
+    batch_size: 32
     shuffle: True
     num_workers: 4
     pin_memory: True
 
   trainer:
     gpus: 1
-    max_epochs: 10
+    max_epochs: 100
     check_val_every_n_epoch: 1
-    log_every_n_steps: 10
+    log_every_n_steps: 100
 
   loggables:
     - name: Accuracy
@@ -134,6 +134,8 @@ logging:
     enable: True
     
     log_model_checkpoints: False
+    tags:
+      - unstable
 
     # source_files:
     # - '*.py'
