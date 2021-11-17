@@ -1,1 +1,1 @@
-sh run/test.sh dlearn 1 -v
+sh run/test.sh dlearn 1 $@

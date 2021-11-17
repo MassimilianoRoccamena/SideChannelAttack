@@ -468,7 +468,7 @@ def build_neptune(config, name, id, descr, tags):
         # neptune kwargs
         kwargs['prefix'] = 'experiment'
         kwargs['project'] = f'{user}/{project}'
-        kwargs['name'] = name
+        kwargs['name'] = f'{name}_{id}'
         kwargs['custom_run_id'] = id
         kwargs['description'] = descr
         kwargs['tags'] = tags

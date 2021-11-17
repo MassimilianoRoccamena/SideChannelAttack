@@ -21,7 +21,9 @@ class DeepModel(LightningModule, CoreModel):
         '''
         x, y = batch
         y_hat = self(x)
-        return y_hat, y, self.loss(y_hat, y)
+        return y_hat.detach().cpu(), \
+                y.detach().cpu(), \
+                self.loss(y_hat, y)
 
     def configure_optimizers(self):
         if self.scheduler is None:

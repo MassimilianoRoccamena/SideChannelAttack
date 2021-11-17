@@ -1,1 +1,0 @@
-sh aidenv.sh $1 sca/attacking

@@ -7,8 +7,8 @@ def str_hex_bytes():
     '''
     Returns hex values of a byte.
     '''
-    half_val = [str(n) for n in 10]
-    half_val.appen(['a','b','c','d','f'])
+    half_val = [str(n) for n in range(10)]
+    half_val = half_val + ['a','b','c','d','e','f']
     out = []
 
     for high in half_val:

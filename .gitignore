@@ -116,9 +116,12 @@ dmypy.json
 # Neptune stuff
 .neptune/
 
-# default AIDENV configurations
+# aidenv configurations
 *.conf
 
-# local AIDENV in/out folders
+# aidenv local in/out folders
 .input/
 .output/
+
+# docker-run
+.runconfigs

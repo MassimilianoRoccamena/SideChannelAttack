@@ -10,7 +10,7 @@ base:
   - frequency
 
   name: 'Test'
-  description: 'remote deployment test with gpu'
+  description: 'this is a test'
 
 # ---------------------------------------------------------------
 
@@ -40,15 +40,11 @@ core:
       voltages:
       - '1.00'
       frequencies:
-      - '45.000'
-      - '46.875'
       - '48.000'
-      - '50.000'
       - '52.000'
-      - '54.000'
-      - '55.000'
-      - '56.000'
       key_values:
+      - '00'
+      - '01'
       num_traces: 500
 
   model:
@@ -106,13 +102,12 @@ learning:
 
   data_loader:
     batch_size: 20
+    num_workers: 8
     shuffle: True
-    num_workers: 4
-    pin_memory: True
 
   trainer:
-    gpus: 1
-    max_epochs: 10
+    gpus: 0
+    max_epochs: 20
     check_val_every_n_epoch: 1
     log_every_n_steps: 10
 
