@@ -171,7 +171,7 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
         labels = args[1]
         epoch = kwargs['epoch']
 
-        matrix = matrix / matrix.sum(axis=0)            # normalize
+        # matrix = matrix / matrix.sum(axis=0)            # normalize
         matrix = np.nan_to_num(matrix, copy=True)
 
         labels = ['\n'.join(wrap(l, 10)) for l in labels]
@@ -188,8 +188,8 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
         df = pd.DataFrame(matrix, index=labels, columns=labels)
         sn.heatmap(df, ax=ax, annot=True, cmap='Blues')
 
-        ax.set_xlabel('Truth', fontweight='bold')
-        ax.set_ylabel('Prediction', fontweight='bold')
+        ax.set_xlabel('Prediction', fontweight='bold', labelpad=10)
+        ax.set_ylabel('Truth', fontweight='bold', labelpad=10)
         plt.tight_layout()
         return fig
 

@@ -59,14 +59,14 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_dim: 200
-          base_filters: 20
-          kernel_size: 4
+          encoding_dim: 160
+          base_filters: 16
+          kernel_size: 5
           stride: 1
           groups: 1
-          n_block: 10
+          n_block: 7
           downsample_gap: 2
-          increasefilter_gap: 4
+          increasefilter_gap: 3
           use_bn: True
           use_do: True
 
@@ -94,18 +94,18 @@ learning:
   optimizer:
     name: SGD
     params:
-      lr: 0.01
+      lr: 0.02
       momentum: 0.9
       weight_decay: 1e-4
 
   scheduler:
     name: StepLR
     params:
-      step_size: 2
-      gamma: 0.95
+      step_size: 1
+      gamma: 0.9
 
   data_loader:
-    batch_size: 32
+    batch_size: 64
     shuffle: True
     num_workers: 4
     pin_memory: True
@@ -115,6 +115,8 @@ learning:
     max_epochs: 100
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
+    limit_train_batches: 0.035
+    limit_val_batches: 0.035
 
   loggables:
     - name: Accuracy
@@ -122,6 +124,7 @@ learning:
 
     - name: ConfusionMatrix
       params:
+        normalize: 'true'
 
 # ---------------------------------------------------------------
 
@@ -136,6 +139,7 @@ logging:
     log_model_checkpoints: False
     tags:
       - unstable
+      - resnet
 
     # source_files:
     # - '*.py'

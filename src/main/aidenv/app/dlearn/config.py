@@ -364,7 +364,7 @@ def build_data_loaders(config, prompt, hparams, dataset, nsamples, skip, split):
     if not skip_train:
         length = get_split_lengths(dataset, split_valid)
         print(f'Training set has size {length[0]}')
-        print(f'Validation set has size {length[0]}')
+        print(f'Validation set has size {length[1]}')
         train_dataset, valid_dataset = random_split(dataset, length)
 
         data_loader.shuffle = shuffle
