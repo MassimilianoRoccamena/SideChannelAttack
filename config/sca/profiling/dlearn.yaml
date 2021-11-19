@@ -9,8 +9,8 @@ base:
     - classification
     - frequency
 
-  name: Experiment1
-  description: 'on gpu with entire dataset'
+  name: Experiment2
+  description: 'from strided to random slicing'
 
 # ---------------------------------------------------------------
 
@@ -25,17 +25,17 @@ determinism:
 core:
 
   dataset:
-    num_samples: 0.001
+    num_samples: 0.53 # 0.001
 
     params:
       loader:
         name: FileConvention1
         params:
           slicer:
-            name: Strided
+            name: Random
             params:
-              window_size: 5000
-              stride: 200
+              window_size: 2000
+              num_windows: 1
 
       voltages:
         - '1.00'
@@ -59,14 +59,14 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_dim: 160
-          base_filters: 16
+          encoding_dim: 120
+          base_filters: 20
           kernel_size: 5
           stride: 1
           groups: 1
-          n_block: 7
+          n_block: 8
           downsample_gap: 2
-          increasefilter_gap: 3
+          increasefilter_gap: 4
           use_bn: True
           use_do: True
 
@@ -84,7 +84,7 @@ learning:
 
   early_stopping:
     monitor: valid/loss
-    patience: 10
+    patience: 5
     mode: min
 
   loss:
@@ -94,20 +94,20 @@ learning:
   optimizer:
     name: SGD
     params:
-      lr: 0.02
+      lr: 0.01
       momentum: 0.9
       weight_decay: 1e-4
 
   scheduler:
     name: StepLR
     params:
-      step_size: 1
+      step_size: 2
       gamma: 0.9
 
   data_loader:
-    batch_size: 64
+    batch_size: 32
     shuffle: True
-    num_workers: 4
+    num_workers: 0
     pin_memory: True
 
   trainer:
@@ -115,8 +115,8 @@ learning:
     max_epochs: 100
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
-    limit_train_batches: 0.035
-    limit_val_batches: 0.035
+    limit_train_batches: 0.04 # 0.035
+    limit_val_batches: 0.04 # 0.035
 
   loggables:
     - name: Accuracy
@@ -138,8 +138,9 @@ logging:
     
     log_model_checkpoints: False
     tags:
-      - unstable
       - resnet
+      - window-1000
+      - random-slice
 
     # source_files:
     # - '*.py'

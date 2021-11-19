@@ -1,4 +1,5 @@
 from math import ceil
+import torch
 
 from aidenv.api.config import CoreObject
 from sca.file.params import TRACE_SIZE
@@ -39,6 +40,20 @@ class TraceSlicer(CoreObject):
 
     def __getitem__(self, index):
         return self.slice(index)
+
+class RandomSlicer(TraceSlicer):
+    '''
+    Trace window random slicer.
+    '''
+
+    def slice(self, window_index):
+        if window_index < 0:
+            window_index = self.num_windows - window_index
+
+        self.validate_window_index(window_index)
+
+        start = torch.randint(0, TRACE_SIZE-self.window_size, (1,))[0]
+        return start, start+self.window_size-1
 
 class StridedSlicer(TraceSlicer):
     '''
