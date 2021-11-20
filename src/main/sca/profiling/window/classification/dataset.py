@@ -13,21 +13,21 @@ class WindowClassification(ClassificationDataset):
     Abstract classification dataset of trace windows.
     '''
 
-    def __init__(self, loader, voltages, frequencies, key_values, num_traces):
+    def __init__(self, loader, voltages, frequencies, key_values, trace_indices):
         '''
         Create new window classification dataset.
         loader: window loader
         voltages: desired voltages
         frequencies: desired frequencies
         key_values: desired key values
-        num_traces: number of traces in each file
+        trace_indices: list of trace indices of a file
         '''
         if key_values is None:
             key_values = str_hex_bytes()
             print('Using all key values')
 
         reader = WindowReader(loader, voltages, frequencies,
-                                key_values, num_traces)
+                                key_values, trace_indices)
         super().__init__(reader)
 
     @classmethod

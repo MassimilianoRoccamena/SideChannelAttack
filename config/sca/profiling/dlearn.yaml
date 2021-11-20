@@ -9,8 +9,8 @@ base:
     - classification
     - frequency
 
-  name: Experiment2
-  description: 'from strided to random slicing'
+  name: Experiment3
+  description: 'now splitting on traces in files'
 
 # ---------------------------------------------------------------
 
@@ -25,7 +25,19 @@ determinism:
 core:
 
   dataset:
-    num_samples: 0.53 # 0.001
+    size: 0.53 # 0.001
+
+    training:
+      skip: False
+      size: 0.8
+
+    validation:
+      size: 0.15
+
+    test:
+      skip: False
+
+    chunks: 500
 
     params:
       loader:
@@ -34,22 +46,17 @@ core:
           slicer:
             name: Random
             params:
-              window_size: 2000
+              window_size: 1000
               num_windows: 1
 
       voltages:
         - '1.00'
       frequencies:
-        - '45.000'
-        - '46.875'
         - '48.000'
-        - '50.000'
         - '52.000'
-        - '54.000'
-        - '55.000'
-        - '56.000'
       key_values:
-      num_traces: 500
+        - '00'
+        - '01'
 
   model:
     checkpoint:
@@ -59,37 +66,32 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_dim: 120
-          base_filters: 20
-          kernel_size: 5
+          encoding_dim: 80
+          base_filters: 32
+          kernel_size: 10
           stride: 1
           groups: 1
-          n_block: 8
+          n_block: 6
           downsample_gap: 2
           increasefilter_gap: 4
-          use_bn: True
-          use_do: True
+          # use_bn: True
+          # use_ido: True
+          # ido_val: 0.5
+          # use_fdo: True
+          # fdo_val: 0.5
 
 # ---------------------------------------------------------------
 
 learning:
 
-  skip:
-    training:
-    test: True
-
-  split:
-    validation: 0.15
-    test: 0.05
+  loss:
+    name: CrossEntropyLoss
+    params:
 
   early_stopping:
     monitor: valid/loss
     patience: 5
     mode: min
-
-  loss:
-    name: CrossEntropyLoss
-    params:
 
   optimizer:
     name: SGD
@@ -111,12 +113,12 @@ learning:
     pin_memory: True
 
   trainer:
-    gpus: 1
-    max_epochs: 100
+    gpus: 0
+    max_epochs: 2
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
-    limit_train_batches: 0.04 # 0.035
-    limit_val_batches: 0.04 # 0.035
+    limit_train_batches: 0.2 # 0.035
+    limit_val_batches: 0.2 # 0.035
 
   loggables:
     - name: Accuracy
@@ -134,7 +136,7 @@ logging:
     enable: True
 
   neptune:
-    enable: True
+    enable: False
     
     log_model_checkpoints: False
     tags:

@@ -3,7 +3,6 @@ from datetime import datetime
 import numpy as np
 import torch
 from torch.utils.data import Subset
-from torch.utils.data import random_split
 from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.loggers import TensorBoardLogger, NeptuneLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
@@ -37,14 +36,15 @@ def build_dataset_object1(config, prompt):
     '''
     return build_core_object1(config, prompt, DATASET_MODULE)
 
-def build_dataset_object2(config, prompt):
+def build_dataset_object2(config, prompt, kwargs={}):
     '''
     Build an expanded dataset object.
     This object exploits core prompt for locating the class name.
     config: configuration object
     prompt: nodes of the path from the core package
     '''
-    return build_core_object2(config, prompt, DATASET_MODULE, True)
+    return build_core_object2(config, prompt, DATASET_MODULE, True,
+                                kwargs)
 
 def build_model_object1(config, prompt):
     '''
@@ -54,14 +54,15 @@ def build_model_object1(config, prompt):
     '''
     return build_core_object1(config, prompt, MODEL_MODULE)
 
-def build_model_object2(config, prompt):
+def build_model_object2(config, prompt, kwargs={}):
     '''
     Build an expanded model object.
     This object exploits core prompt for locating the class name.
     config: configuration object
     prompt: nodes of the path from the core package
     '''
-    return build_core_object2(config, prompt, MODEL_MODULE, False)
+    return build_core_object2(config, prompt, MODEL_MODULE, False,
+                                kwargs)
 
 def build_learning_object1(config, prompt, class_name, args=[], kwargs={}):
     '''
@@ -175,19 +176,140 @@ def build_determinism(config):
 
 # core builders
 
-def build_dataset(config, prompt, hparams):
+def build_training(config, hparams):
+    train = search_config_key(config, CORE_DATASET_TRAIN_KEY)
+    if train is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('training'))
+
+    train_params = {}
+
+    # skip
+    skip = search_config_key(train, CORE_DATASET_SKIP_KEY)
+    if skip is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('training skip'))
+
+    train_params.update({CORE_DATASET_SKIP_KEY : skip})
+
+    # size
+    if not skip:
+        size = search_config_key(train, CORE_DATASET_SIZE_KEY)
+        if size is None:
+            raise KeyError(CONFIG_NOT_FOUND_MSG('training size'))
+
+        train_params.update({CORE_DATASET_SIZE_KEY : size})
+
+    # hparams
+    hparams.update({CORE_DATASET_TRAIN_KEY : train_params})
+    
+    return skip, size
+
+def build_validation(config, hparams):
+    valid = search_config_key(config, CORE_DATASET_VALID_KEY)
+    if valid is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('validation'))
+
+    # size
+    size = search_config_key(valid, CORE_DATASET_SIZE_KEY)
+    if size is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('validation size'))
+    
+    # hyperparams
+    hparams.update({ CORE_DATASET_VALID_KEY : 
+                     { CORE_DATASET_SIZE_KEY : size }})
+
+    return size
+
+def build_test(config, hparams):
+    test = search_config_key(config, CORE_DATASET_TEST_KEY)
+    if test is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('test'))
+
+    # skip
+    skip = search_config_key(test, CORE_DATASET_SKIP_KEY)
+    if skip is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG('test skip'))
+    
+    # hyperparams
+    hparams.update({ CORE_DATASET_TEST_KEY : 
+                     { CORE_DATASET_SKIP_KEY : skip }})
+
+    return skip
+
+INVALID_SKIPS_MSG = 'both training and test cannot be skipped'
+INVALID_TRAIN_VALID_MSG = 'sum of sizes of train/valid is greater than chunks count'
+INVALID_TEST_MSG = 'size of test is 0'
+INVALID_SUBSET_MSG = 'dataset subset size type can only be int or float'
+
+def build_datasets(config, prompt, hparams):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG('dataset'))
 
-    dataset = build_dataset_object2(config, prompt)
+    # subset
+    subset_size = search_config_key(config, CORE_DATASET_SIZE_KEY)
 
-    # sampling
-    nsamples = search_config_key(config, CORE_DATASET_NSAMP_KEY)
+    # training
+    skip_train, train_size = build_training(config, hparams)
 
+    # validation
+    valid_size = build_validation(config, hparams)
+
+    # test
+    skip_test = build_test(config, hparams)
+    
+    # chunks
+    chunks = search_config_key(config, CORE_DATASET_CHUNKS_KEY)
+    trace_indices = np.arange(0, chunks)
+    np.random.shuffle(trace_indices)
+
+    # datasets
+    if skip_train and skip_test:
+        raise ValueError(INVALID_SKIPS_MSG)
+
+    train_set = None
+    valid_set = None
+    test_set = None
+
+    if not skip_train:
+        train_chunks = int(chunks * train_size)
+        valid_chunks = int(chunks * valid_size)
+
+        if (train_chunks + valid_chunks) > chunks:
+            raise ValueError(INVALID_TRAIN_VALID_MSG)
+        elif skip_test and (train_chunks + valid_chunks) < chunks:
+            train_chunks += chunks - train_chunks - valid_chunks
+
+        train_indices = trace_indices[:train_chunks]
+        train_set = build_dataset_object2(config, prompt,
+                                            kwargs={'trace_indices':train_indices})
+        valid_indices = trace_indices[train_chunks:train_chunks+valid_chunks]
+        valid_set = build_dataset_object2(config, prompt,
+                                            kwargs={'trace_indices':valid_indices})
+    else:
+        train_chunks = 0
+        valid_chunks = 0
+        print('Training will be skipped')
+
+    if not skip_test:
+        test_chunks = chunks - train_chunks - valid_chunks
+
+        if test_chunks == 0:
+            raise ValueError(INVALID_TEST_MSG)
+
+        test_indices = trace_indices[-test_chunks:]
+        test_set = build_dataset_object2(config, prompt,
+                                            kwargs={'trace_indices':test_indices})
+    else:
+        print('Testing will be skipped')
+
+    print(f'Training set has size {len(train_set)}')
+    print(f'Validation set has size {len(valid_set)}')
+    print(f'Test set has size {len(test_set)}')
+    
     # hyperparams
     hparams.update(dict(config))
 
-    return dataset, nsamples
+    datasets = (train_set, valid_set, test_set)
+    return datasets, subset_size
 
 def build_model(config, prompt, hparams):
     if config is None:
@@ -212,7 +334,7 @@ def build_core(config, hparams, prompt):
 
     dataset = search_config_key(config, CORE_DATASET_KEY)
     dataset_hparams = {}
-    dataset, nsamples = build_dataset(dataset, prompt, dataset_hparams)
+    datasets, subset_size = build_datasets(dataset, prompt, dataset_hparams)
     core_hparams[CORE_DATASET_KEY] = dataset_hparams
     print('Loaded dataset')
 
@@ -224,50 +346,18 @@ def build_core(config, hparams, prompt):
 
     hparams.update(core_hparams)
 
-    return dataset, nsamples, model
+    return datasets, subset_size, model
 
 # learning1 builders
 
-def build_skip(config, hparams):
-    skip = search_config_key(config, LEARN_SKIP_KEY)
-
-    # default
-    if skip is None:
-        skip = { LEARN_TRAIN_KEY : False,
-                 LEARN_TEST_KEY : True }
-    training = search_config_key(skip, LEARN_TRAIN_KEY)
-    if training is None:
-        training = False
-    test = search_config_key(skip, LEARN_TEST_KEY)
-    if test is None:
-        test = True
+def build_loss(config, prompt, hparams):
+    if config is None:
+        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_LOSS_KEY))
 
     # hyperparams
-    hparams.update({ LEARN_SKIP_KEY : 
-                     { LEARN_TRAIN_KEY : training,
-                       LEARN_TEST_KEY : test }})
+    hparams.update(dict(config))
 
-    return training, test
-
-def build_split(config, hparams):
-    split = search_config_key(config, LEARN_SPLIT_KEY)
-
-    # default
-    if split is None:
-         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_SPLIT_KEY))
-
-    validation = search_config_key(split, LEARN_VALID_KEY)
-    if validation is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_VALID_KEY))
-
-    test = search_config_key(split, LEARN_TEST_KEY)
-
-    # hyperparams
-    hparams.update({ LEARN_SPLIT_KEY : 
-                     { LEARN_VALID_KEY : validation,
-                       LEARN_TEST_KEY : test }})
-
-    return validation, test
+    return build_learning_object2(config, prompt)
 
 def build_early_stopping(config, prompt, hparams):
     early_stopping = search_config_key(config, LEARN_EARLY_STOP_KEY)
@@ -281,15 +371,6 @@ def build_early_stopping(config, prompt, hparams):
 
     return build_learning_object1(config, prompt,
                                     LEARN_EARLY_STOP_KEY)
-
-def build_loss(config, prompt, hparams):
-    if config is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_LOSS_KEY))
-
-    # hyperparams
-    hparams.update(dict(config))
-
-    return build_learning_object2(config, prompt)
 
 def build_optimizer(config, prompt, hparams, model):
     if config is None:
@@ -311,103 +392,90 @@ def build_scheduler(config, prompt, hparams, optimizer):
     return build_learning_object2(config, prompt,
                                     args=[optimizer])
 
-INVALID_NSAMPLES_MSG = 'invalid nsamples type'
-
-def build_data_loaders(config, prompt, hparams, dataset, nsamples, skip, split):
+def build_data_loaders(config, prompt, hparams, datasets, subset_size):
     data_loader = search_config_key(config, LEARN_DATA_LOAD_KEY)
     if data_loader is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG(LEARN_DATA_LOAD_KEY))
 
     shuffle = data_loader.shuffle
+    train_set, valid_set, test_set = datasets
 
-    # split lengths
-    def get_split_lengths(d, s):
-        d_len = len(d)
-        len1 = int(d_len * (1.-s))
-        len2 = d_len - len1
-        return [len1, len2]
+    # subset
+    subset_int = None
 
-    skip_train, skip_test = skip
-    split_valid, split_test = split
-
-    # sampling
-    if not nsamples is None:
-        print('Sampling the dataset')
-        if type(nsamples) is int:
-            indices = np.random.choice(len(dataset), nsamples, replace=False)
-        elif type(nsamples) is float:
-            indices = np.random.choice(len(dataset), int(len(dataset)*nsamples), replace=False)
+    def subset_dataset(dataset):
+        if subset_int:
+            indices = np.random.choice(len(dataset), subset_size, replace=False)
         else:
-            raise RuntimeError(INVALID_NSAMPLES_MSG)
-        dataset = Subset(dataset, indices)
+            indices = np.random.choice(len(dataset),
+                                        int(len(dataset)*subset_size), replace=False)
+        return Subset(dataset, indices)
 
-    # test
-    test_loader = None
+    if not subset_size is None:
+        subset_int = None
 
-    if not skip_test and not split_test is None:
-        length = get_split_lengths(dataset, split_test)
-        dataset, test_dataset = random_split(dataset, length)
-        print(f'Optimization set has size {len(dataset)}')
-        print(f'Test set has size {len(test_dataset)}')
+        if type(subset_size) is int:
+            subset_int = True
+        elif type(subset_size) is float:
+            subset_int = False
+        else:
+            raise RuntimeError(INVALID_SUBSET_MSG)
 
-        data_loader.shuffle = False
-        test_loader =  build_learning_object1(config, prompt,
-                                                LEARN_DATA_LOAD_KEY,
-                                                args=[test_dataset])
-    else:
-        print('Test data loader skipped')
+        print('Using a subset of the dataset')
 
-    # training & validation
+        if not train_set is None:
+            train_set = subset_dataset(train_set)
+            valid_set = subset_dataset(valid_set)
+        
+        if not test_set is None:
+            test_set = subset_dataset(test_set)
+
+        print(f'Training set has size {len(train_set)}')
+        print(f'Validation set has size {len(valid_set)}')
+        print(f'Test set has size {len(test_set)}')
+
+    # training
     train_loader = None
-    valid_loader = None
-
-    if not skip_train:
-        length = get_split_lengths(dataset, split_valid)
-        print(f'Training set has size {length[0]}')
-        print(f'Validation set has size {length[1]}')
-        train_dataset, valid_dataset = random_split(dataset, length)
-
-        data_loader.shuffle = shuffle
+    if not train_set is None:
         train_loader =  build_learning_object1(config, prompt,
                                                 LEARN_DATA_LOAD_KEY,
-                                                args=[train_dataset])
+                                                args=[train_set])
+
+    # validation
+    valid_loader = None
+    if not valid_set is None:
         data_loader.shuffle = False
         valid_loader =  build_learning_object1(config, prompt,
                                                 LEARN_DATA_LOAD_KEY,
-                                                args=[valid_dataset])
+                                                args=[valid_set])
 
-        data_loader.shuffle = shuffle
-    else:
-        print('Train and validation data loader skipped')
+    # test
+    test_loader = None
+    if not test_set is None:
+        data_loader.shuffle = False
+        test_loader =  build_learning_object1(config, prompt,
+                                                LEARN_DATA_LOAD_KEY,
+                                                args=[test_set])
 
     # hyperparams
+    data_loader.shuffle = shuffle
     hparams.update({ LEARN_DATA_LOAD_KEY : dict(data_loader) })
 
     return train_loader, valid_loader, test_loader
     
-def build_learning1(config, hparams, prompt, dataset, nsamples, model):
+def build_learning1(config, hparams, prompt, datasets, subset_size, model):
     learning_hparams = {}
-
-    skip_hparams = {}
-    skip = build_skip(config, skip_hparams)
-    learning_hparams.update(skip_hparams)
-    print('Loaded skip options')
-
-    split_hparams = {}
-    split = build_split(config, split_hparams)
-    learning_hparams.update(split_hparams)
-    print('Loaded split options')
-
-    early_stop_hparams = {}
-    early_stop = build_early_stopping(config, prompt, early_stop_hparams)
-    learning_hparams.update(early_stop_hparams)
-    print('Loaded early stopping')
 
     loss = search_config_key(config, LEARN_LOSS_KEY)
     loss_hparams = {}
     loss = build_loss(loss, prompt, loss_hparams)
     learning_hparams[LEARN_LOSS_KEY] = loss_hparams
     print('Loaded loss')
+
+    early_stop_hparams = {}
+    early_stop = build_early_stopping(config, prompt, early_stop_hparams)
+    learning_hparams.update(early_stop_hparams)
+    print('Loaded early stopping')
 
     optimizer = search_config_key(config, LEARN_OPTIMIZER_KEY)
     optimizer_hparams = {}
@@ -422,8 +490,7 @@ def build_learning1(config, hparams, prompt, dataset, nsamples, model):
     print('Loaded scheduler')
 
     loaders_hparams = {}
-    loaders = build_data_loaders(config, prompt, loaders_hparams,
-                                    dataset, nsamples, skip, split)
+    loaders = build_data_loaders(config, prompt, loaders_hparams, datasets, subset_size)
     learning_hparams.update(loaders_hparams)
     print('Loaded data loaders')
 
@@ -496,7 +563,7 @@ def build_logging(config, hparams, origin, prompt, name, id, log_dir, descr):
     tag = origin
     for p in prompt:
         tag = f'{tag}-{p}'
-    tags = [tag]            # only tag is cat prompt
+    tags = [tag]            # only tag is cat origin+prompt
 
     neptune = search_config_key(config, LOG_NEPT_KEY)
     neptune = build_neptune(neptune, name, id, descr, tags)

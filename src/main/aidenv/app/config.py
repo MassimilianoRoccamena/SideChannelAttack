@@ -232,7 +232,7 @@ def build_core_object1(config, prompt, module_name):
     return build_object1(lambda cls: cls.from_config(params, prompt),
                             prompt[:-1], module_name, name)
 
-def build_core_object2(config, prompt, module_name, prompt_suffix):
+def build_core_object2(config, prompt, module_name, prompt_suffix, kwargs):
     '''
     Build an expanded core object.
     This object exploits core prompt for locating the class name.
@@ -245,7 +245,8 @@ def build_core_object2(config, prompt, module_name, prompt_suffix):
     config: configuration object
     prompt: nodes of the path from the core package
     module_name: name of the module file inside the core location
-    prompt_duffix: if true append part of prompt to class name
+    prompt_suffix: if true append part of prompt to class name
+    kwargs: kwargs passed to constructor
     '''
     name = search_config_key(config, CLASS_NAME_KEY)
     
@@ -259,5 +260,8 @@ def build_core_object2(config, prompt, module_name, prompt_suffix):
     params = search_config_key(config, CLASS_PARAMS_KEY)
     if params is None:
         params = {}
+    params = dict(params)
+    params.update(kwargs)
+
     return build_object1(lambda cls: cls.from_config(params, prompt),
                             prompt[:-1], module_name, class_name)

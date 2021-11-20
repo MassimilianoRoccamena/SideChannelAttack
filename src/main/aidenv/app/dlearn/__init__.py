@@ -39,23 +39,23 @@ def parse_core(config, hparams, prompt):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(CORE_KEY))
 
-    dataset, nsamples, model = build_core(config, hparams, prompt)
+    datasets, subset_size, model = build_core(config, hparams, prompt)
 
     print("Core configuration done")
-    return dataset, nsamples, model
+    return datasets, subset_size, model
 
-def parse_learning1(config, hparams, prompt, dataset, nsamples, model):
+def parse_learning1(config, hparams, prompt, datasets, subset_size, model):
     config = search_config_key(config, LEARN_KEY)
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
 
     early_stop, loss, optimizer, scheduler, loaders = \
                         build_learning1(config, hparams, prompt,
-                                        dataset, nsamples, model)
+                                        datasets, subset_size, model)
 
     model.set_learning(loss, optimizer, scheduler=scheduler)
 
-    print('Basic learning configuration done')
+    print('Learning 1 configuration done')
     return early_stop, loaders
 
 def parse_logging(config, hparams, origin, prompt, name, id, log_dir, descr):
@@ -69,7 +69,7 @@ def parse_logging(config, hparams, origin, prompt, name, id, log_dir, descr):
     print("Logging configuration done")
     return loggers
 
-def parse_learning2(config, prompt, model, dataset, early_stop, loggers, log_dir):
+def parse_learning2(config, prompt, datasets, model, early_stop, loggers, log_dir):
     config = search_config_key(config, LEARN_KEY)
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
@@ -81,9 +81,9 @@ def parse_learning2(config, prompt, model, dataset, early_stop, loggers, log_dir
     model.add_loggables(loggables, 'valid')
     model.add_loggables(loggables, 'test')
 
-    model.mount(dataset)
+    model.mount(datasets[0])
 
-    print('Trainer learning configuration done')
+    print('Learning 2 configuration done')
     return trainer
 
 # main runners
@@ -117,12 +117,12 @@ def run(*args):
 
     origin, prompt, name, id, log_dir, descr = parse_base(config)
     parse_determinism(config)
-    dataset, nsamples, model = parse_core(config, hparams, prompt)
+    datasets, subset_size, model = parse_core(config, hparams, prompt)
     early_stop, loaders = parse_learning1(config, hparams, prompt,
-                                            dataset, nsamples, model)
+                                            datasets, subset_size, model)
     loggers = parse_logging(config, hparams, origin, prompt,
                                 name, id, log_dir, descr)
-    trainer = parse_learning2(config, prompt, model, dataset,
+    trainer = parse_learning2(config, prompt, datasets, model,
                                 early_stop, loggers, log_dir)
 
     run_train_test(trainer, model, *loaders)

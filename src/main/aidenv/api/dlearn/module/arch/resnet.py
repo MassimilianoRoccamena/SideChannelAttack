@@ -71,7 +71,7 @@ class ResidualBlock(CoreModule):
     ResNet basic residual block
     """
     
-    def __init__(self, in_channels, out_channels, kernel_size, stride, groups, downsample, use_bn, use_do, is_first_block=False):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, groups, downsample, use_bn, use_do, do_val, is_first_block=False):
         super().__init__()
         
         self.in_channels = in_channels
@@ -87,11 +87,12 @@ class ResidualBlock(CoreModule):
         self.is_first_block = is_first_block
         self.use_bn = use_bn
         self.use_do = use_do
+        self.do_val = do_val
 
         # the first conv
         self.bn1 = nn.BatchNorm1d(in_channels)
         self.relu1 = nn.ReLU()
-        self.do1 = nn.Dropout(p=0.5)
+        self.do1 = nn.Dropout(p=do_val)
         self.conv1 = Conv1dPadSame(
             in_channels=in_channels, 
             out_channels=out_channels, 
@@ -102,7 +103,7 @@ class ResidualBlock(CoreModule):
         # the second conv
         self.bn2 = nn.BatchNorm1d(out_channels)
         self.relu2 = nn.ReLU()
-        self.do2 = nn.Dropout(p=0.5)
+        self.do2 = nn.Dropout(p=do_val)
         self.conv2 = Conv1dPadSame(
             in_channels=out_channels, 
             out_channels=out_channels, 
@@ -164,15 +165,17 @@ class ResNetEncoder(CoreModule):
 
     def __init__(self, encoding_dim, base_filters, kernel_size, stride, groups, n_block,
                     in_channels=1, downsample_gap=2, increasefilter_gap=4,
-                    use_bn=True, use_do=True, use_fdo=True, verbose=False):
+                    use_bn=True, use_ido=True, ido_val=0.5, use_fdo=True, fdo_val=0.5, verbose=False):
         '''
         Create new ResNet encoder module.
-        encoding_dim: dim of encoder latent space
+        encoding_dim: dimension of encoder latent space
         base_filters: number of filters in the first several Conv layer, it will double at every 4 layers
         kernel_size: width of kernel
         stride: stride of kernel moving
         groups: set larget to 1 as ResNeXt
         n_block: number of blocks
+        ido_val: inner blocks dropout value
+        fdo_val: final layer dropout value
         '''
         super().__init__()
         self.encoding_dim = encoding_dim
@@ -183,8 +186,10 @@ class ResNetEncoder(CoreModule):
         self.stride = stride
         self.groups = groups
         self.use_bn = use_bn
-        self.use_do = use_do
+        self.use_ido = use_ido
+        self.ido_val = ido_val
         self.use_fdo = use_fdo
+        self.fdo_val = fdo_val
 
         self.downsample_gap = downsample_gap # 2 for base model
         self.increasefilter_gap = increasefilter_gap # 4 for base model
@@ -228,14 +233,15 @@ class ResNetEncoder(CoreModule):
                 groups = self.groups, 
                 downsample=downsample, 
                 use_bn = self.use_bn, 
-                use_do = self.use_do, 
+                use_do = self.use_ido,
+                do_val = self.ido_val, 
                 is_first_block=is_first_block)
             self.basicblock_list.append(tmp_block)
 
         # final prediction
         self.final_bn = nn.BatchNorm1d(out_channels)
         self.final_relu = nn.ReLU(inplace=True)
-        self.fdo = nn.Dropout(p=0.5)
+        self.fdo = nn.Dropout(p=self.fdo_val)
         self.dense = nn.Linear(out_channels, encoding_dim)
         
     def forward(self, x):

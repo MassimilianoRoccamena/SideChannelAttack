@@ -7,21 +7,21 @@ class WindowReader(FileReader):
 
     INVALID_INDEX_MSG = 'invalid reader index'
 
-    def __init__(self, loader, voltages, frequencies, key_values, num_traces):
+    def __init__(self, loader, voltages, frequencies, key_values, trace_indices):
         '''
         Create new reader of trace windows.
         loader: window loader
         voltages: desired voltages
         frequencies: desired frequencies
         key_values: desired key values
-        num_traces: number of traces in each file
+        trace_indices: list of trace indices of a file
         '''
         self.loader = loader
         self.voltages = voltages
         self.frequencies = frequencies
         self.key_values = key_values
         self.num_files = len(voltages) * len(frequencies) * len(key_values)
-        self.num_traces = num_traces
+        self.trace_indices = trace_indices
         self.file_id = None
         self.trace_index = None
         self.window_index = None
@@ -67,9 +67,10 @@ class WindowReader(FileReader):
         self.file_id = loader.build_file_id(volt, freq, kval)
 
         # trace
-        size = int((group[1]-group[0]) / self.num_traces)
-        trace_idx, group = subindex_group(reader_index, self.num_traces, size, group[0])
-        self.trace_index = trace_idx
+        num_traces = len(self.trace_indices)
+        size = int((group[1]-group[0]) / num_traces)
+        trace_idx, group = subindex_group(reader_index, num_traces, size, group[0])
+        self.trace_index = self.trace_indices[trace_idx]
 
         # window
         slicer = loader.slicer
@@ -85,4 +86,4 @@ class WindowReader(FileReader):
         return loader.load_window_of_some_traces([self.trace_index], self.window_index)
 
     def __len__(self):
-        return self.num_files * self.num_traces * len(self.loader.slicer)
+        return self.num_files * len(self.trace_indices) * len(self.loader.slicer)

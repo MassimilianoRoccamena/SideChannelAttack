@@ -1,5 +1,5 @@
 from math import ceil
-import torch
+import numpy as np
 
 from aidenv.api.config import CoreObject
 from sca.file.params import TRACE_SIZE
@@ -52,7 +52,7 @@ class RandomSlicer(TraceSlicer):
 
         self.validate_window_index(window_index)
 
-        start = torch.randint(0, TRACE_SIZE-self.window_size, (1,))[0]
+        start = np.random.randint(0, high=TRACE_SIZE-self.window_size)
         return start, start+self.window_size-1
 
 class StridedSlicer(TraceSlicer):
