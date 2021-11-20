@@ -70,19 +70,19 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_dim: 80
-          base_filters: 32
-          kernel_size: 15
+          encoding_dim: 240
+          base_filters: 16
+          kernel_size: 10
           stride: 1
           groups: 1
-          n_block: 6
+          n_block: 15
           downsample_gap: 2
           increasefilter_gap: 4
           # use_bn: True
           # use_ido: True
-          # ido_val: 0.5
+          ido_val: 0.3
           # use_fdo: True
-          # fdo_val: 0.5
+          fdo_val: 0.7
 
 # ---------------------------------------------------------------
 
@@ -111,9 +111,9 @@ learning:
       gamma: 0.9
 
   data_loader:
-    batch_size: 32
+    batch_size: 64
     shuffle: True
-    num_workers: 0
+    num_workers: 2
     pin_memory: True
 
   trainer:
