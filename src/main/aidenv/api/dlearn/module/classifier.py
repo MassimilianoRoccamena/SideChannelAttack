@@ -27,21 +27,25 @@ class SingleClassifier(CoreModule, Classifier):
         '''
         super().__init__()
         self.encoder = encoder
-        self.linear = None
+        self.scoring = None
         self.softmax = nn.Softmax()
         self.set_labels(labels)
+
+    def set_input_shape(self, input_shape):
+        self.encoder.set_input_shape(input_shape)
+        super().set_input_shape(input_shape)
 
     def set_labels(self, labels):
         super().set_labels(labels)
         if labels is None:
-            self.linear = None
+            self.scoring = None
         else:
-            self.linear = nn.Linear(self.encoder.encoding_dim,
+            self.scoring = nn.Linear(self.encoder.encoding_size,
                                         len(labels))
 
     def forward(self, x):
         y = self.encoder(x)
-        y = self.linear(y)
+        y = self.scoring(y)
         y = self.softmax(y)
         return y
 

@@ -1,10 +1,15 @@
-from torch.nn import Module
+from torch.nn import Module as TorchModule
 
 from aidenv.api.config import CoreObject
 
-class CoreModule(Module, CoreObject):
+class CoreModule(TorchModule, CoreObject):
     '''
-    Abstract core neural module
+    Abstract core neural module.
     '''
 
-    pass
+    def set_input_shape(self, input_shape):
+        '''
+        Set module input shape.
+        input_size: input shape of the module
+        '''
+        self.input_shape = input_shape

@@ -9,7 +9,11 @@ class DeepDataset(TorchDataset, CoreDataset):
     Abstract deep learning dataset.
     '''
 
-    pass
+    def data_shape(self):
+        '''
+        Returns shape of each data point
+        '''
+        raise NotImplementedError
 
 # classification
 

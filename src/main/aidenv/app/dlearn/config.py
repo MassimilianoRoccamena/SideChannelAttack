@@ -240,7 +240,7 @@ INVALID_TRAIN_VALID_MSG = 'sum of sizes of train/valid is greater than chunks co
 INVALID_TEST_MSG = 'size of test is 0'
 INVALID_SUBSET_MSG = 'dataset subset size type can only be int or float'
 
-def build_datasets(config, prompt, hparams):
+def build_dataset(config, prompt, hparams):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG('dataset'))
 
@@ -334,7 +334,7 @@ def build_core(config, hparams, prompt):
 
     dataset = search_config_key(config, CORE_DATASET_KEY)
     dataset_hparams = {}
-    datasets, subset_size = build_datasets(dataset, prompt, dataset_hparams)
+    datasets, subset_size = build_dataset(dataset, prompt, dataset_hparams)
     core_hparams[CORE_DATASET_KEY] = dataset_hparams
     print('Loaded dataset')
 

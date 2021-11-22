@@ -9,8 +9,8 @@ base:
     - classification
     - frequency
 
-  name: Experiment3
-  description: 'now splitting on traces in files'
+  name: Experiment5
+  description: 'no description'
 
 # ---------------------------------------------------------------
 
@@ -25,7 +25,7 @@ determinism:
 core:
 
   dataset:
-    size: 0.1 # 0.001
+    size: 0.1
 
     training:
       skip: False
@@ -46,7 +46,7 @@ core:
           slicer:
             name: Random
             params:
-              window_size: 1000
+              window_size: 500
               num_windows: 1
 
       voltages:
@@ -62,6 +62,8 @@ core:
         - '56.000'
       key_values:
 
+      channels_first: True
+
   model:
     checkpoint:
 
@@ -70,19 +72,29 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_dim: 240
-          base_filters: 16
+          encoding_size: 160
+          base_filters: 32
           kernel_size: 10
           stride: 1
           groups: 1
-          n_block: 15
+          n_block: 8
           downsample_gap: 2
           increasefilter_gap: 4
-          # use_bn: True
-          # use_ido: True
-          ido_val: 0.3
-          # use_fdo: True
-          fdo_val: 0.7
+          use_batch_norm: True
+          use_inner_do: True
+          inner_do_val: 0.5
+          use_final_do: True
+          final_do_val: 0.5
+
+        #name: LSTM
+        #params:
+        #  batch_first: True
+        #  encoding_size: 160
+        #  use_final_do: True
+        #  final_do_val: 0.2
+        #  hidden_size: 240
+        #  num_layers: 1
+        #  dropout: 0
 
 # ---------------------------------------------------------------
 
@@ -94,7 +106,7 @@ learning:
 
   early_stopping:
     monitor: valid/loss
-    patience: 5
+    patience: 10
     mode: min
 
   optimizer:
@@ -121,8 +133,8 @@ learning:
     max_epochs: 60
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
-    limit_train_batches: 0.244 # 0.035
-    limit_val_batches: 0.244 # 0.035
+    limit_train_batches: 0.244
+    limit_val_batches: 0.244
 
   loggables:
     - name: Accuracy
@@ -145,7 +157,7 @@ logging:
     log_model_checkpoints: False
     tags:
       - resnet
-      - window-1000
+      - window-500
       - random-slice
       - split-on-chunks
 

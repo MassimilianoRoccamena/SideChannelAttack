@@ -13,7 +13,7 @@ class WindowClassification(ClassificationDataset):
     Abstract classification dataset of trace windows.
     '''
 
-    def __init__(self, loader, voltages, frequencies, key_values, trace_indices):
+    def __init__(self, loader, voltages, frequencies, key_values, trace_indices, channels_first=True):
         '''
         Create new window classification dataset.
         loader: window loader
@@ -21,6 +21,7 @@ class WindowClassification(ClassificationDataset):
         frequencies: desired frequencies
         key_values: desired key values
         trace_indices: list of trace indices of a file
+        channels_first: shape convention of data
         '''
         if key_values is None:
             key_values = str_hex_bytes()
@@ -29,6 +30,11 @@ class WindowClassification(ClassificationDataset):
         reader = WindowReader(loader, voltages, frequencies,
                                 key_values, trace_indices)
         super().__init__(reader)
+
+        self.channels_first = channels_first
+
+    def data_shape(self):
+        return (1,) # only one channel
 
     @classmethod
     @build_dataset_kwarg('loader')
@@ -40,7 +46,10 @@ class WindowClassification(ClassificationDataset):
         Extends input as a 1 channel sequence.
         '''
         x = torch.Tensor(x)
-        return  x.view(1, *x.size())
+        if self.channels_first:
+            return  x.view(1, *x.size())
+        else:
+            return  x.view(*x.size(), 1)
 
 class SingleClassification(WindowClassification):
     '''

@@ -76,11 +76,9 @@ def parse_learning2(config, prompt, datasets, model, early_stop, loggers, log_di
 
     trainer, loggables = build_learning2(config, prompt, early_stop,
                                 loggers, log_dir)
-
     model.add_loggables(loggables, 'train')
     model.add_loggables(loggables, 'valid')
     model.add_loggables(loggables, 'test')
-
     model.mount(datasets[0])
 
     print('Learning 2 configuration done')
@@ -122,8 +120,8 @@ def run(*args):
                                             datasets, subset_size, model)
     loggers = parse_logging(config, hparams, origin, prompt,
                                 name, id, log_dir, descr)
-    trainer = parse_learning2(config, prompt, datasets, model,
-                                early_stop, loggers, log_dir)
+    trainer = parse_learning2(config, prompt, datasets,
+                                model, early_stop, loggers, log_dir)
 
     run_train_test(trainer, model, *loaders)
     print('Deep learning environment finished')

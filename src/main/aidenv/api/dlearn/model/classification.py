@@ -30,8 +30,7 @@ class ClassifierModel(WrapperModel):
     def mount(self, *args, **kwargs):
         dataset = args[0]
         labels = dataset.all_labels()
-
-        super().mount(labels=labels)
+        super().mount(dataset, labels=labels)
 
         self.labels = labels
         self.module.set_labels(labels)

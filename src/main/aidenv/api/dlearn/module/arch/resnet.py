@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from aidenv.api.dlearn.module.config import CoreModule
+from aidenv.api.dlearn.module.encoder import EncoderModule
     
 class Conv1dPadSame(nn.Module):
     """
@@ -66,7 +66,7 @@ class MaxPool1dPadSame(nn.Module):
         
         return net
     
-class ResidualBlock(CoreModule):
+class ResidualBlock(nn.Module):
     """
     ResNet basic residual block
     """
@@ -151,24 +151,25 @@ class ResidualBlock(CoreModule):
 
         return out
     
-class ResNetEncoder(CoreModule):
+class ResNetEncoder(EncoderModule):
     """
     1D ResNet encoder
     
     Input:
-        X: (n_samples, n_channel, n_length)
+        X: (n_samples, n_channels, n_length)
         Y: (n_samples)
         
     Output:
         out: (n_samples)
     """
 
-    def __init__(self, encoding_dim, base_filters, kernel_size, stride, groups, n_block,
+    def __init__(self, encoding_size, base_filters, kernel_size, stride, groups, n_block,
                     in_channels=1, downsample_gap=2, increasefilter_gap=4,
-                    use_bn=True, use_ido=True, ido_val=0.5, use_fdo=True, fdo_val=0.5, verbose=False):
+                    use_batch_norm=True, use_inner_do=True, inner_do_val=0.5, use_final_do=True,
+                    final_do_val=0.5, verbose=False):
         '''
         Create new ResNet encoder module.
-        encoding_dim: dimension of encoder latent space
+        encoding_size: dimension of encoder latent space
         base_filters: number of filters in the first several Conv layer, it will double at every 4 layers
         kernel_size: width of kernel
         stride: stride of kernel moving
@@ -177,22 +178,23 @@ class ResNetEncoder(CoreModule):
         ido_val: inner blocks dropout value
         fdo_val: final layer dropout value
         '''
-        super().__init__()
-        self.encoding_dim = encoding_dim
-
         self.verbose = verbose
         self.n_block = n_block
         self.kernel_size = kernel_size
         self.stride = stride
         self.groups = groups
-        self.use_bn = use_bn
-        self.use_ido = use_ido
-        self.ido_val = ido_val
-        self.use_fdo = use_fdo
-        self.fdo_val = fdo_val
+        self.use_bn = use_batch_norm
+        self.use_ido = use_inner_do
+        self.ido_val = inner_do_val
+        self.use_fdo = use_final_do
+        self.fdo_val = final_do_val
 
         self.downsample_gap = downsample_gap # 2 for base model
         self.increasefilter_gap = increasefilter_gap # 4 for base model
+
+        # encoding layer
+        super().__init__(encoding_size, self.use_fdo,
+                            final_do_val=self.fdo_val)
 
         # first block
         self.first_block_conv = Conv1dPadSame(in_channels=in_channels, out_channels=base_filters, kernel_size=self.kernel_size, stride=1)
@@ -241,8 +243,7 @@ class ResNetEncoder(CoreModule):
         # final prediction
         self.final_bn = nn.BatchNorm1d(out_channels)
         self.final_relu = nn.ReLU(inplace=True)
-        self.fdo = nn.Dropout(p=self.fdo_val)
-        self.dense = nn.Linear(out_channels, encoding_dim)
+        self.set_final_size(out_channels)    
         
     def forward(self, x):
         out = x
@@ -273,9 +274,10 @@ class ResNetEncoder(CoreModule):
         out = out.mean(-1)
         if self.verbose:
             print('average global pooling', out.shape)
-        if self.use_fdo:
-            out = self.fdo(out)
-        out = self.dense(out)
+
+        # encoding
+        out = super().forward(out)
+
         if self.verbose:
             print('encoder output', out.shape)
         
