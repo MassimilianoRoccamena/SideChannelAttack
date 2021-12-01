@@ -38,3 +38,31 @@ class EncoderModule(CoreModule):
         if self.use_final_do:
             x = self.final_do(x)
         return self.encoding(x)
+
+class WrapperEncoder(EncoderModule):
+    '''
+    Encoder module wrapping a neural module as encoder.
+    '''
+
+    def __init__(self, **kwargs):
+        encoding_size = kwargs.pop('encoding_size')
+        use_final_do = kwargs.pop('use_final_do')
+        final_size = kwargs.pop('final_size')
+        final_do_val = kwargs.pop('final_do_val')
+        super().__init__(encoding_size, use_final_do,
+                            final_size=final_size, final_do_val=final_do_val)
+        
+        self.kwargs = kwargs
+
+    def encoder_module(self, input_shape):
+        '''
+        Create wrapped module object.
+        '''
+        raise NotImplementedError
+
+    def set_input_shape(self, input_shape):
+        if input_shape is None:
+            self.module = None
+        else:
+            self.module = self.encoder_module(input_shape)
+        super().set_input_shape(input_shape)

@@ -151,7 +151,7 @@ class ResidualBlock(nn.Module):
 
         return out
     
-class ResNetEncoder(EncoderModule):
+class ResNet(EncoderModule):
     """
     1D ResNet encoder
     

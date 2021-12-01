@@ -1,29 +1,43 @@
+import torch
 from torch.nn import LSTM
 
-from aidenv.api.dlearn.module.encoder import EncoderModule
+from aidenv.api.dlearn.module.encoder import WrapperEncoder
 
-class LSTMEncoder(EncoderModule):
+class LSTMEncoder(WrapperEncoder):
     '''
     LSTM encoder.
     '''
 
+    def encoder_module(self, input_shape):
+        return LSTM(*input_shape, **self.kwargs)
+
+class LSTM1(LSTMEncoder):
+    '''
+    LSTM with encoding function of only the last output.
+    '''
+
     def __init__(self, **kwargs):
-        encoding_size = kwargs.pop('encoding_size')
-        use_final_do = kwargs.pop('use_final_do')
-        final_do_val = kwargs.pop('final_do_val')
-        super().__init__(encoding_size, use_final_do,
-                            final_size=kwargs['hidden_size'], final_do_val=final_do_val)
-
-        self.kwargs = kwargs
-
-    def set_input_shape(self, input_shape):
-        if input_shape is None:
-            self.module = None
-        else:
-            self.module = LSTM(*input_shape, **self.kwargs)
-        super().set_input_shape(input_shape)
+        kwargs['final_size'] = kwargs['hidden_size']
+        super().__init__(**kwargs)
 
     def forward(self, x):
-        y = self.module(x)[1][0][-1]
+        outputs, last_states = self.module(x)
+        y = outputs[:,-1,:]
         y = super().forward(y)
         return y
+
+#class LSTM2(LSTMEncoder):
+#    '''
+#    LSTM with encoding function of the entire output last output.
+#    '''
+#
+#    def __init__(self, **kwargs):
+#        kwargs['final_size'] = kwargs['hidden_size'] * 500
+#        super().__init__(**kwargs)
+#    
+#    def forward(self, x):
+#        #y = self.module(x)[1][0][-1]
+#        outputs, last_states = self.module(x)
+#        y = torch.flatten(outputs, start_dim=1)
+#        y = super().forward(y)
+#        return y

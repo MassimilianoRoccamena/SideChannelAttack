@@ -9,8 +9,8 @@ base:
     - classification
     - frequency
 
-  name: Experiment5
-  description: 'no description'
+  name: Experiment6
+  description: 'classification of two critical frequencies'
 
 # ---------------------------------------------------------------
 
@@ -25,7 +25,7 @@ determinism:
 core:
 
   dataset:
-    size: 0.1
+    size: 0.2 # 0.1
 
     training:
       skip: False
@@ -46,20 +46,20 @@ core:
           slicer:
             name: Random
             params:
-              window_size: 500
+              window_size: 1000
               num_windows: 1
 
       voltages:
         - '1.00'
       frequencies:
-        - '45.000'
+        #- '45.000'
         - '46.875'
-        - '48.000'
+        #- '48.000'
         - '50.000'
-        - '52.000'
-        - '54.000'
-        - '55.000'
-        - '56.000'
+        #- '52.000'
+        #- '54.000'
+        #- '55.000'
+        #- '56.000'
       key_values:
 
       channels_first: True
@@ -72,12 +72,12 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_size: 160
+          encoding_size: 40
           base_filters: 32
-          kernel_size: 10
+          kernel_size: 20
           stride: 1
           groups: 1
-          n_block: 8
+          n_block: 20
           downsample_gap: 2
           increasefilter_gap: 4
           use_batch_norm: True
@@ -86,15 +86,25 @@ core:
           use_final_do: True
           final_do_val: 0.5
 
-        #name: LSTM
+        #name: LSTM1
+        #params:
+        #  batch_first: True
+        #  encoding_size: 80
+        #  use_final_do: False
+        #  final_do_val: 0.3
+        #  hidden_size: 240
+        #  num_layers: 1
+        #  dropout: 0
+
+        #name: Transformer
         #params:
         #  batch_first: True
         #  encoding_size: 160
         #  use_final_do: True
         #  final_do_val: 0.2
-        #  hidden_size: 240
-        #  num_layers: 1
-        #  dropout: 0
+        #  dim_feedforward: 500
+        #  nhead: 1
+        #  dropout: 0.1
 
 # ---------------------------------------------------------------
 
@@ -103,6 +113,15 @@ learning:
   loss:
     name: CrossEntropyLoss
     params:
+      #weight:
+      #  - 1.0
+      #  - 3.0
+      #  - 1.0
+      #  - 3.0
+      #  - 1.0
+      #  - 1.0
+      #  - 1.0
+      #  - 1.0
 
   early_stopping:
     monitor: valid/loss
@@ -115,6 +134,9 @@ learning:
       lr: 0.01
       momentum: 0.9
       weight_decay: 1e-4
+    #name: Adam
+    #params:
+
 
   scheduler:
     name: StepLR
@@ -130,11 +152,12 @@ learning:
 
   trainer:
     gpus: 1
-    max_epochs: 60
+    max_epochs: 70
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
     limit_train_batches: 0.244
     limit_val_batches: 0.244
+    track_grad_norm: 2
 
   loggables:
     - name: Accuracy
@@ -157,9 +180,11 @@ logging:
     log_model_checkpoints: False
     tags:
       - resnet
-      - window-500
+      - window-1000
       - random-slice
       - split-on-chunks
+      - critical frequencies
+      - size-2x
 
     # source_files:
     # - '*.py'
