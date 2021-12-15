@@ -2,6 +2,7 @@ import numpy as np
 
 from aidenv.api.dlearn.config import build_dataset_kwarg
 from sca.file.convention1.loader import TraceLoader1
+from sca.file.convention2.loader import TraceLoader2
 
 class WindowLoader:
     '''
@@ -32,6 +33,16 @@ class WindowLoader:
 class WindowLoader1(WindowLoader, TraceLoader1):
     '''
     Loader of power trace windows using filesystem convention 1.
+    '''
+
+    def load_window_of_some_traces(self, trace_indices, window_index):
+        start, end = self.slicer[window_index]
+        time_idx = np.arange(start, end+1)
+        return self.load_some_projected_traces(trace_indices, time_idx)[0][0]
+
+class WindowLoader2(WindowLoader, TraceLoader2):
+    '''
+    Loader of power trace windows using filesystem convention 2.
     '''
 
     def load_window_of_some_traces(self, trace_indices, window_index):

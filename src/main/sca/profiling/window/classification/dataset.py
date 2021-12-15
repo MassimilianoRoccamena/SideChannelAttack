@@ -4,6 +4,7 @@ from aidenv.api.dlearn.config import build_dataset_kwarg
 from aidenv.api.dlearn.dataset import ClassificationDataset
 from sca.file.params import str_hex_bytes
 from sca.profiling.window.loader import WindowLoader1 as FileConvention1
+from sca.profiling.window.loader import WindowLoader2 as FileConvention2
 from sca.profiling.window.slicer import StridedSlicer as Strided
 from sca.profiling.window.slicer import RandomSlicer as Random
 from sca.profiling.window.reader import WindowReader

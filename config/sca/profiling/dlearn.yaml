@@ -9,8 +9,8 @@ base:
     - classification
     - frequency
 
-  name: Experiment6
-  description: 'classification of two critical frequencies'
+  name: Run0
+  description: 'new data, added 1 freq, fixed same freqs bug'
 
 # ---------------------------------------------------------------
 
@@ -25,7 +25,7 @@ determinism:
 core:
 
   dataset:
-    size: 0.2 # 0.1
+    size: 0.1
 
     training:
       skip: False
@@ -52,14 +52,15 @@ core:
       voltages:
         - '1.00'
       frequencies:
-        #- '45.000'
+        - '45.000'
         - '46.875'
-        #- '48.000'
+        - '48.000'
         - '50.000'
-        #- '52.000'
-        #- '54.000'
-        #- '55.000'
-        #- '56.000'
+        #- '50.125'
+        - '52.000'
+        - '54.000'
+        - '55.000'
+        - '56.000'
       key_values:
 
       channels_first: True
@@ -72,12 +73,12 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_size: 40
-          base_filters: 32
+          encoding_size: 90
+          base_filters: 18
           kernel_size: 20
-          stride: 1
+          stride: 2
           groups: 1
-          n_block: 20
+          n_block: 7
           downsample_gap: 2
           increasefilter_gap: 4
           use_batch_norm: True
@@ -125,7 +126,7 @@ learning:
 
   early_stopping:
     monitor: valid/loss
-    patience: 10
+    patience: 7
     mode: min
 
   optimizer:
@@ -175,16 +176,16 @@ logging:
     enable: True
 
   neptune:
-    enable: True
+    enable: False
     
     log_model_checkpoints: False
     tags:
       - resnet
       - window-1000
-      - random-slice
-      - split-on-chunks
-      - critical frequencies
-      - size-2x
+      - random-slicer
+      #- split-on-chunks
+      #- critical frequencies
+      #- size-2x
 
     # source_files:
     # - '*.py'
