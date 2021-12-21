@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sn
-from torchmetrics import Accuracy, ConfusionMatrix
+from torchmetrics import Accuracy, Precision, Recall, F1, ConfusionMatrix
 
 # basic
 
@@ -69,14 +69,6 @@ class LoggableScalar(LoggableObject):
 
     def on_epoch_end(self, *args, **kwargs):
         pass
-
-class LoggableLoss(LoggableScalar):
-    '''
-    Loggable loss.
-    '''
-
-    def __call__(self, *args, **kwargs):
-        return kwargs['loss']
 
 class LoggableTensor(LoggableObject):
     '''
@@ -140,6 +132,14 @@ class LoggableFigure(LoggableObject):
 
 # metrics
 
+class LoggableLoss(LoggableScalar):
+    '''
+    Loggable loss.
+    '''
+
+    def __call__(self, *args, **kwargs):
+        return kwargs['loss']
+
 class LoggableAccuracy(LoggableScalar):
     '''
     Loggable accuracy.
@@ -148,6 +148,42 @@ class LoggableAccuracy(LoggableScalar):
     def mount(self, *args, **kwargs):
         super().mount(*args, **kwargs)
         self.metric = Accuracy(*self.args, **self.kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.metric(*args)
+
+class LoggablePrecision(LoggableScalar):
+    '''
+    Loggable precision.
+    '''
+
+    def mount(self, *args, **kwargs):
+        super().mount(*args, **kwargs)
+        self.metric = Precision(*self.args, **self.kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.metric(*args)
+
+class LoggableRecall(LoggableScalar):
+    '''
+    Loggable recall.
+    '''
+
+    def mount(self, *args, **kwargs):
+        super().mount(*args, **kwargs)
+        self.metric = Recall(*self.args, **self.kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.metric(*args)
+
+class LoggableF1(LoggableScalar):
+    '''
+    Loggable accuracy.
+    '''
+
+    def mount(self, *args, **kwargs):
+        super().mount(*args, **kwargs)
+        self.metric = F1(*self.args, **self.kwargs)
 
     def __call__(self, *args, **kwargs):
         return self.metric(*args)

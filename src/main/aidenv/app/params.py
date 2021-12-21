@@ -18,6 +18,7 @@ AIDENV_PROGRAM_ENV = 'AIDENV_PROGRAM'
 
 # modules
 
+TASK_MODULE = 'task'
 DATASET_MODULE = 'dataset'
 MODEL_MODULE = 'model'
 LEARNING_MODULE = 'learning'

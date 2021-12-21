@@ -2,7 +2,6 @@ import os
 from datetime import datetime
 import numpy as np
 import torch
-from torch.utils.data import Subset
 from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.loggers import TensorBoardLogger, NeptuneLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
@@ -137,9 +136,9 @@ def build_base(config):
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
 
-    print(f'Log directory is {log_dir}')
+    print(f'Log directory path is {log_dir}')
     log_program(get_program_config(), log_dir)
-    print('Stored program configuration')
+    print('Saved program configuration')
 
     # description
     descr = search_config_key(config, BASE_DESCR_KEY)
@@ -176,64 +175,34 @@ def build_determinism(config):
 
 # core builders
 
-def build_training(config, hparams):
-    train = search_config_key(config, CORE_DATASET_TRAIN_KEY)
+def build_skip(config, hparams):
+    skip = search_config_key(config, CORE_DATASET_TRAIN_KEY)
+    skip_params = {}
+
+    if skip is None:
+        skip_params[CORE_DATASET_TRAIN_KEY] = False
+        skip_params[CORE_DATASET_TEST_KEY] = False
+        hparams.update({CORE_DATASET_SKIP_KEY : skip_params})
+        return False, False
+
+    # train
+    train = search_config_key(skip, CORE_DATASET_TRAIN_KEY)
     if train is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('training'))
+        skip_params[CORE_DATASET_TRAIN_KEY] = False
+    else:
+        skip_params[CORE_DATASET_TRAIN_KEY] = train
 
-    train_params = {}
-
-    # skip
-    skip = search_config_key(train, CORE_DATASET_SKIP_KEY)
-    if skip is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('training skip'))
-
-    train_params.update({CORE_DATASET_SKIP_KEY : skip})
-
-    # size
-    if not skip:
-        size = search_config_key(train, CORE_DATASET_SIZE_KEY)
-        if size is None:
-            raise KeyError(CONFIG_NOT_FOUND_MSG('training size'))
-
-        train_params.update({CORE_DATASET_SIZE_KEY : size})
-
-    # hparams
-    hparams.update({CORE_DATASET_TRAIN_KEY : train_params})
-    
-    return skip, size
-
-def build_validation(config, hparams):
-    valid = search_config_key(config, CORE_DATASET_VALID_KEY)
-    if valid is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('validation'))
-
-    # size
-    size = search_config_key(valid, CORE_DATASET_SIZE_KEY)
-    if size is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('validation size'))
-    
-    # hyperparams
-    hparams.update({ CORE_DATASET_VALID_KEY : 
-                     { CORE_DATASET_SIZE_KEY : size }})
-
-    return size
-
-def build_test(config, hparams):
-    test = search_config_key(config, CORE_DATASET_TEST_KEY)
+    # test
+    test = search_config_key(skip, CORE_DATASET_TEST_KEY)
     if test is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('test'))
+        skip_params[CORE_DATASET_TRAIN_KEY] = False
+    else:
+        skip_params[CORE_DATASET_TEST_KEY] = test
 
-    # skip
-    skip = search_config_key(test, CORE_DATASET_SKIP_KEY)
-    if skip is None:
-        raise KeyError(CONFIG_NOT_FOUND_MSG('test skip'))
-    
     # hyperparams
-    hparams.update({ CORE_DATASET_TEST_KEY : 
-                     { CORE_DATASET_SKIP_KEY : skip }})
+    hparams.update({CORE_DATASET_SKIP_KEY : skip_params})
 
-    return skip
+    return train, test
 
 INVALID_SKIPS_MSG = 'both training and test cannot be skipped'
 INVALID_TRAIN_VALID_MSG = 'sum of sizes of train/valid is greater than chunks count'
@@ -244,24 +213,7 @@ def build_dataset(config, prompt, hparams):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG('dataset'))
 
-    # subset
-    subset_size = search_config_key(config, CORE_DATASET_SIZE_KEY)
-
-    # training
-    skip_train, train_size = build_training(config, hparams)
-
-    # validation
-    valid_size = build_validation(config, hparams)
-
-    # test
-    skip_test = build_test(config, hparams)
-    
-    # chunks
-    chunks = search_config_key(config, CORE_DATASET_CHUNKS_KEY)
-    trace_indices = np.arange(0, chunks)
-    np.random.shuffle(trace_indices)
-
-    # datasets
+    skip_train, skip_test = build_skip(config, hparams)
     if skip_train and skip_test:
         raise ValueError(INVALID_SKIPS_MSG)
 
@@ -270,34 +222,16 @@ def build_dataset(config, prompt, hparams):
     test_set = None
 
     if not skip_train:
-        train_chunks = int(chunks * train_size)
-        valid_chunks = int(chunks * valid_size)
-
-        if (train_chunks + valid_chunks) > chunks:
-            raise ValueError(INVALID_TRAIN_VALID_MSG)
-        elif skip_test and (train_chunks + valid_chunks) < chunks:
-            train_chunks += chunks - train_chunks - valid_chunks
-
-        train_indices = trace_indices[:train_chunks]
         train_set = build_dataset_object2(config, prompt,
-                                            kwargs={'trace_indices':train_indices})
-        valid_indices = trace_indices[train_chunks:train_chunks+valid_chunks]
+                                            kwargs={'set_name':'train'})
         valid_set = build_dataset_object2(config, prompt,
-                                            kwargs={'trace_indices':valid_indices})
+                                            kwargs={'set_name':'valid'})
     else:
-        train_chunks = 0
-        valid_chunks = 0
         print('Training will be skipped')
 
     if not skip_test:
-        test_chunks = chunks - train_chunks - valid_chunks
-
-        if test_chunks == 0:
-            raise ValueError(INVALID_TEST_MSG)
-
-        test_indices = trace_indices[-test_chunks:]
         test_set = build_dataset_object2(config, prompt,
-                                            kwargs={'trace_indices':test_indices})
+                                            kwargs={'set_name':'test'})
     else:
         print('Testing will be skipped')
 
@@ -305,11 +239,9 @@ def build_dataset(config, prompt, hparams):
     print(f'Validation set has size {len(valid_set)}')
     print(f'Test set has size {len(test_set)}')
     
-    # hyperparams
     hparams.update(dict(config))
-
     datasets = (train_set, valid_set, test_set)
-    return datasets, subset_size
+    return datasets
 
 def build_model(config, prompt, hparams):
     if config is None:
@@ -317,16 +249,13 @@ def build_model(config, prompt, hparams):
 
     model = build_model_object2(config, prompt)
     
-    # checkpoint
     checkpoint = search_config_key(config, CORE_MODEL_CKPT_KEY)
     if not checkpoint is None:
         print('Loading from checkpoint...')
         model.load_from_checkpoint(checkpoint)
         print('Checkpoint loaded')
 
-    # hyperparams
     hparams.update(dict(config))
-    
     return model
 
 def build_core(config, hparams, prompt):
@@ -334,7 +263,7 @@ def build_core(config, hparams, prompt):
 
     dataset = search_config_key(config, CORE_DATASET_KEY)
     dataset_hparams = {}
-    datasets, subset_size = build_dataset(dataset, prompt, dataset_hparams)
+    datasets = build_dataset(dataset, prompt, dataset_hparams)
     core_hparams[CORE_DATASET_KEY] = dataset_hparams
     print('Loaded dataset')
 
@@ -346,7 +275,7 @@ def build_core(config, hparams, prompt):
 
     hparams.update(core_hparams)
 
-    return datasets, subset_size, model
+    return datasets, model
 
 # learning1 builders
 
@@ -354,21 +283,15 @@ def build_loss(config, prompt, hparams):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_LOSS_KEY))
 
-    # hyperparams
     hparams.update(dict(config))
-
     return build_learning_object2(config, prompt)
 
 def build_early_stopping(config, prompt, hparams):
     early_stopping = search_config_key(config, LEARN_EARLY_STOP_KEY)
-
-    # default
     if early_stopping is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_EARLY_STOP_KEY))
 
-    # hyperparams
     hparams.update({ LEARN_EARLY_STOP_KEY: dict(early_stopping) })
-
     return build_learning_object1(config, prompt,
                                     LEARN_EARLY_STOP_KEY)
 
@@ -376,9 +299,7 @@ def build_optimizer(config, prompt, hparams, model):
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_OPTIMIZER_KEY))
 
-    # hyperparams
     hparams.update(dict(config))
-
     return build_learning_object2(config, prompt,
                                     args=[model.parameters()])
 
@@ -386,53 +307,17 @@ def build_scheduler(config, prompt, hparams, optimizer):
     if config is None:
         return None
 
-    # hyperparams
     hparams.update(dict(config))
-
     return build_learning_object2(config, prompt,
                                     args=[optimizer])
 
-def build_data_loaders(config, prompt, hparams, datasets, subset_size):
+def build_data_loaders(config, prompt, hparams, datasets):
     data_loader = search_config_key(config, LEARN_DATA_LOAD_KEY)
     if data_loader is None:
         raise ValueError(CONFIG_NOT_FOUND_MSG(LEARN_DATA_LOAD_KEY))
 
     shuffle = data_loader.shuffle
     train_set, valid_set, test_set = datasets
-
-    # subset
-    subset_int = None
-
-    def subset_dataset(dataset):
-        if subset_int:
-            indices = np.random.choice(len(dataset), subset_size, replace=False)
-        else:
-            indices = np.random.choice(len(dataset),
-                                        int(len(dataset)*subset_size), replace=False)
-        return Subset(dataset, indices)
-
-    if not subset_size is None:
-        subset_int = None
-
-        if type(subset_size) is int:
-            subset_int = True
-        elif type(subset_size) is float:
-            subset_int = False
-        else:
-            raise RuntimeError(INVALID_SUBSET_MSG)
-
-        print('Using a subset of the dataset')
-
-        if not train_set is None:
-            train_set = subset_dataset(train_set)
-            valid_set = subset_dataset(valid_set)
-        
-        if not test_set is None:
-            test_set = subset_dataset(test_set)
-
-        print(f'Training set has size {len(train_set)}')
-        print(f'Validation set has size {len(valid_set)}')
-        print(f'Test set has size {len(test_set)}')
 
     # training
     train_loader = None
@@ -457,13 +342,11 @@ def build_data_loaders(config, prompt, hparams, datasets, subset_size):
                                                 LEARN_DATA_LOAD_KEY,
                                                 args=[test_set])
 
-    # hyperparams
     data_loader.shuffle = shuffle
     hparams.update({ LEARN_DATA_LOAD_KEY : dict(data_loader) })
-
     return train_loader, valid_loader, test_loader
     
-def build_learning1(config, hparams, prompt, datasets, subset_size, model):
+def build_learning1(config, hparams, prompt, datasets, model):
     learning_hparams = {}
 
     loss = search_config_key(config, LEARN_LOSS_KEY)
@@ -490,7 +373,7 @@ def build_learning1(config, hparams, prompt, datasets, subset_size, model):
     print('Loaded scheduler')
 
     loaders_hparams = {}
-    loaders = build_data_loaders(config, prompt, loaders_hparams, datasets, subset_size)
+    loaders = build_data_loaders(config, prompt, loaders_hparams, datasets)
     learning_hparams.update(loaders_hparams)
     print('Loaded data loaders')
 
@@ -534,12 +417,10 @@ def build_neptune(config, name, id, descr, tags):
         raise KeyError(CONFIG_NOT_FOUND_MSG(LOG_ENABLE_KEY))
 
     if enable:
-        # load env vars
         user = load_env_var(AIDENV_NEPT_USER_ENV)
         token = load_env_var(AIDENV_NEPT_TOKEN_ENV)
         project = load_env_var(AIDENV_NEPT_PROJECT_ENV)
 
-        # neptune kwargs
         kwargs['prefix'] = 'experiment'
         kwargs['project'] = f'{user}/{project}'
         kwargs['name'] = f'{name}_{id}'

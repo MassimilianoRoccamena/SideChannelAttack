@@ -5,8 +5,6 @@ from aidenv.api.dlearn.dataset import ClassificationDataset
 from sca.file.params import str_hex_bytes
 from sca.profiling.window.loader import WindowLoader1 as FileConvention1
 from sca.profiling.window.loader import WindowLoader2 as FileConvention2
-from sca.profiling.window.slicer import StridedSlicer as Strided
-from sca.profiling.window.slicer import RandomSlicer as Random
 from sca.profiling.window.reader import WindowReader
 
 class WindowClassification(ClassificationDataset):
@@ -14,24 +12,14 @@ class WindowClassification(ClassificationDataset):
     Abstract classification dataset of trace windows.
     '''
 
-    def __init__(self, loader, voltages, frequencies, key_values, trace_indices, channels_first=True):
+    def __init__(self, loader, data_path, set_name=None, channels_first=True):
         '''
         Create new window classification dataset.
-        loader: window loader
-        voltages: desired voltages
-        frequencies: desired frequencies
-        key_values: desired key values
-        trace_indices: list of trace indices of a file
+        dataa_path: path of the data folder
         channels_first: shape convention of data
         '''
-        if key_values is None:
-            key_values = str_hex_bytes()
-            print('Using all key values')
-
-        reader = WindowReader(loader, voltages, frequencies,
-                                key_values, trace_indices)
+        reader = WindowReader(loader, data_path, set_name)
         super().__init__(reader)
-
         self.channels_first = channels_first
 
     def data_shape(self):
@@ -42,9 +30,10 @@ class WindowClassification(ClassificationDataset):
     def build_kwargs(cls, config, prompt):
         pass
 
-    def tensor_x(self, x):
+    def channels_reshape(self, x):
         '''
-        Extends input as a 1 channel sequence.
+        Reshape input as a 1 channel sequence.
+        x: pytorch tensor
         '''
         x = torch.Tensor(x)
         if self.channels_first:
@@ -59,7 +48,7 @@ class SingleClassification(WindowClassification):
 
     def __getitem__(self, index):
         x = self.reader[index]
-        x = self.tensor_x(x)
+        x = self.channels_reshape(x)
         labels = self.all_labels()
         label = self.current_label()
         y = labels.index(label)
@@ -80,7 +69,7 @@ class MultiClassification(WindowClassification):
 
     def __getitem__(self, index):
         x = self.reader[index]
-        x = self.tensor_x(x)
+        x = self.channels_reshape(x)
         labels = self.all_labels()
         label = self.current_label()
         y0 = labels[0].index(label[0])

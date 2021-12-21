@@ -4,7 +4,7 @@ from sca.file.convention2.path import file_path
 
 class TraceLoader2(OurTraceLoader):
     '''
-    Loader of our power traces using filesystem convention 2.
+    Loader of our power traces from raw file using filesystem convention 2.
     '''
 
     def __init__(self, file_id=None):

@@ -1,52 +1,52 @@
-import json
-import os
-import pandas as pd
-
-from utils.persistence import load_json
 from aidenv.api.reader import FileReader
+
+from sca.file.params import str_hex_bytes
 
 class WindowReader(FileReader):
     '''
-    Reader of trace windows from data lookup file(s). Reading ordering is driven
-    by rows ordering in the lookup file(s).
+    Reader of trace windows from raw file. Reading ordering is driven by
+    joint values of voltage, frequency, key_value, plain_text, trace_window.
     '''
 
     INVALID_INDEX_MSG = 'invalid reader index'
 
-    def __init__(self, loader, data_path, set_name):
+    def __init__(self, loader, voltages, frequencies, key_values, plain_indices):
         '''
         Create new reader of trace windows.
         loader: trace windows loader
-        data_path: path of data
-        set_name:: name of one data partition
+        voltages: device voltages
+        frequencies: device frequencies
+        key_values: key values of the encryption
+        plain_indices: plain texts indices of the encryption
         '''
         self.loader = loader
         self.file_id = None
 
-        self.data_path = data_path
-        self.set_name = set_name
-
-        params_path = os.path.join(data_path, 'params.json')
-        params = load_json(params_path)
-        if params['mapping']['enabled']:
-            self.mapping_enabled = True
-            self.mapping_bucket = params['mapping']['bucket_size']
-        else:
-            self.mapping_enabled = False
-
-        self.num_samples = params['datalen'][set_name]
-
-        self.voltages = params['voltages']
+        self.voltages = voltages
         self.voltage = None
-        self.frequencies = params['frequencies']
+
+        self.frequencies = frequencies
         self.frequency = None
-        self.key_values = params['key_values']
+
+        if key_values is None:
+            key_values = str_hex_bytes()
+            print('Using all key values')
+        self.key_values = key_values
         self.key_value = None
+        
+        self.num_files = len(voltages) * len(frequencies) * len(key_values)
+
+        self.plain_indices = plain_indices
         self.plain_index = None
         self.plain_text = None
+
+        self.num_windows = len(self.loader.slicer)
+        self.window_index = None
         self.window_start = None
         self.window_end = None
         self.trace_window = None
+
+        self.num_samples = self.num_files * len(self.plain_indices) * self.num_windows
 
     def validate_reader_index(self, reader_index):
         '''
@@ -58,8 +58,8 @@ class WindowReader(FileReader):
 
     def translate_reader_index(self, reader_index):
         '''
-        Translate a reader index into informations for loading the window from dataframe file,
-        index ordering is dataframe index.
+        Translate a reader index into informations for loading the window from raw file,
+        index ordering is (voltage, frequency, key value, trace, window).
         reader_index: reader index of a window
         '''
         self.validate_reader_index(reader_index)
@@ -88,32 +88,39 @@ class WindowReader(FileReader):
         loader = self.loader
         self.file_id = loader.build_file_id(self.voltage, self.frequency, self.key_value)
 
-        # load row from dataframe
-        used_cols = ['plain_index','window_start','window_end']
-        cols_types = {'plain_index':'int','window_start':'int','window_end':'int'}
-        
-        if self.mapping_enabled:
-            bucket_idx = int(reader_index/self.mapping_bucket)
-            df_path = os.path.join(self.data_path, f'{self.set_name}{bucket_idx}.csv')
-            skiprows = reader_index - bucket_idx*self.mapping_bucket
-        else:
-            df_path = os.path.join(self.data_path, f'{self.set_name}.csv')
-            skiprows = reader_index
+        # plain text
+        num_plains = len(self.plain_indices)
+        size = int((group[1]-group[0]) / num_plains)
+        plain_idx, group = subindex_group(reader_index, num_plains, size, group[0])
+        self.plain_index = self.plain_indices[plain_idx]
 
-        data = pd.read_csv(df_path, dtype=cols_types, usecols=used_cols,
-                            skiprows=range(1,1+skiprows), nrows=1)
-        data = data.iloc[[0]]
-        self.plain_index = data[used_cols[0]][0]
-        self.window_start = data[used_cols[1]][0]
-        self.window_end = data[used_cols[2]][0]
+        # window
+        size = int((group[1]-group[0]) / self.num_windows)
+        window_idx, group = subindex_group(reader_index, self.num_windows, size, group[0])
+        self.window_index = window_idx
+
+    def format_plain_text(self, plain_text):
+        '''
+        Format plain text into a hexadecimal string.
+        '''
+        self.plain_text = ''
+        for plain_byte in plain_text:
+            plain_byte = '{:02x}'.format(plain_byte)
+            self.plain_text = f'{self.plain_text}{plain_byte}'
 
     def read_sample(self, reader_index):
+        '''
+        Read a window of a trace using the file loader.
+        reader_index: reader index of a window
+        '''
         self.translate_reader_index(reader_index)
         loader = self.loader
         loader.set_file_id(self.file_id)
-        trace_window, plain_text = loader.load_trace_window(self.plain_index, self.window_start, self.window_end)
+        trace_window, plain_text = loader.load_window_of_some_traces([self.plain_index], self.window_index)
+        self.window_start = loader.window_start
+        self.window_end = loader.window_end
         self.trace_window = trace_window
-        self.plain_text = plain_text
+        self.format_plain_text(plain_text)
         return trace_window
 
     def __len__(self):

@@ -12,7 +12,8 @@ class FileReader:
 
     def read_sample(self, reader_index):
         '''
-        Read a sample from file using a reader index.
+        Read a dataset sample from a file using the file loader and a reader index, keeping
+        track all informations of the last sample read.
         reader_index: reader index of a sample
         '''
         raise NotImplementedError

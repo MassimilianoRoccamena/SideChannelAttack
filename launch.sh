@@ -1,1 +1,0 @@
-sh run/aidenv.sh dlearn sca/$1

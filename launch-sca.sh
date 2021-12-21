@@ -1,0 +1,1 @@
+sh run/aidenv.sh $1 sca/$2

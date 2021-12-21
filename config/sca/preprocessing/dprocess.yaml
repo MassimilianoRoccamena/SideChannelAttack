@@ -1,0 +1,66 @@
+base:
+
+  origin:
+    - sca
+    - preprocessing
+
+  prompt:
+    - window
+    - preparation
+    - basic
+
+  name: Windows1
+  description: 'creation of traces windows datasets from raw files'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+  task:
+    params:
+
+      loader:
+        name: FileConvention1
+        params:
+          slicer:
+            name: Random
+            params:
+              window_size: 1000
+              num_windows: 1
+
+      voltages:
+        - '1.00'
+      frequencies:
+        #- '45.000'
+        #- '46.875'
+        - '48.000'
+        #- '50.000'
+        #- '50.125'
+        - '52.000'
+        #- '54.000'
+        #- '55.000'
+        #- '56.000'
+      key_values:
+        - '00'
+        - '01'
+      num_plain_texts: 500
+
+      size: 1.0 #0.1
+
+      partitioning:
+        mapping:
+          enabled: True
+          bucket_size: 100
+
+        sets:
+          - name: train
+            size: 0.75
+          - name: valid
+            size: 0.15
+          - name: test
+            size: 0.1

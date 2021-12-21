@@ -9,7 +9,7 @@ base:
     - classification
     - frequency
 
-  name: Run0
+  name: Stage0
   description: 'new data, added 1 freq, fixed same freqs bug'
 
 # ---------------------------------------------------------------
@@ -25,44 +25,16 @@ determinism:
 core:
 
   dataset:
-    size: 0.1
-
-    training:
-      skip: False
-      size: 0.8
-
-    validation:
-      size: 0.15
-
-    test:
-      skip: False
-
-    chunks: 500
+    skip:
+      train: False
+      test: False
 
     params:
       loader:
         name: FileConvention1
         params:
-          slicer:
-            name: Random
-            params:
-              window_size: 1000
-              num_windows: 1
 
-      voltages:
-        - '1.00'
-      frequencies:
-        - '45.000'
-        - '46.875'
-        - '48.000'
-        - '50.000'
-        #- '50.125'
-        - '52.000'
-        - '54.000'
-        - '55.000'
-        - '56.000'
-      key_values:
-
+      data_path: .output/dprocess/Windows1/Mapped
       channels_first: True
 
   model:
@@ -78,7 +50,7 @@ core:
           kernel_size: 20
           stride: 2
           groups: 1
-          n_block: 7
+          n_block: 2 #7
           downsample_gap: 2
           increasefilter_gap: 4
           use_batch_norm: True
@@ -152,8 +124,8 @@ learning:
     pin_memory: True
 
   trainer:
-    gpus: 1
-    max_epochs: 70
+    gpus: 0
+    max_epochs: 2 #70
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
     limit_train_batches: 0.244
@@ -162,6 +134,15 @@ learning:
 
   loggables:
     - name: Accuracy
+      params:
+
+    - name: Precision
+      params:
+
+    - name: Recall
+      params:
+    
+    - name: F1
       params:
 
     - name: ConfusionMatrix
