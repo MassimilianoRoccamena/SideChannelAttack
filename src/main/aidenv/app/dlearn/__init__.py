@@ -74,12 +74,10 @@ def parse_learning2(config, prompt, datasets, model, early_stop, loggers, log_di
     if config is None:
         raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
 
-    trainer, loggables = build_learning2(config, prompt, early_stop,
-                                loggers, log_dir)
-    model.add_loggables(loggables, 'train')
-    model.add_loggables(loggables, 'valid')
-    model.add_loggables(loggables, 'test')
-    model.mount(datasets[0])
+    trainer, loggables, sets = build_learning2(config, prompt, early_stop,
+                                                loggers, log_dir)
+    model.add_loggables(loggables, sets)
+    model.mount(datasets[0], log_dir)
 
     print('Learning 2 configuration done')
     return trainer

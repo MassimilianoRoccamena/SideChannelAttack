@@ -134,20 +134,31 @@ learning:
 
   loggables:
     - name: Accuracy
+      sets:
       params:
 
     - name: Precision
+      sets:
       params:
 
     - name: Recall
+      sets:
       params:
     
     - name: F1
+      sets:
       params:
 
     - name: ConfusionMatrix
+      sets:
       params:
         normalize: 'true'
+
+    - name: Inference
+      sets:
+        - 'test'
+      params:
+        log_encoding: True
 
 # ---------------------------------------------------------------
 

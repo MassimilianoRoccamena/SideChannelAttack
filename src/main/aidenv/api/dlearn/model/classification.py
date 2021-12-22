@@ -8,12 +8,12 @@ class ClassifierModel(WrapperModel):
     Abstract model wrapping a classifier.
     '''
 
-    def __init__(self, encoder):
+    def __init__(self, classifier):
         '''
         Create new classifier model.
-        encoder: encoder module
+        classifier: classifier module
         '''
-        super().__init__(encoder)
+        super().__init__(classifier)
 
     @classmethod
     @build_model_kwarg('encoder')
@@ -30,10 +30,14 @@ class ClassifierModel(WrapperModel):
     def mount(self, *args, **kwargs):
         dataset = args[0]
         labels = dataset.all_labels()
-        super().mount(dataset, labels=labels)
-
+        super().mount(*args, labels=labels)
         self.labels = labels
         self.module.set_labels(labels)
+
+    def step_batch(self, batch):
+        loss, target, prediction = super().step_batch(batch)
+        encoding = self.module.encoder.input_encoded
+        return loss, target, prediction, encoding
 
 class SingleClassifierModel(ClassifierModel):
     '''

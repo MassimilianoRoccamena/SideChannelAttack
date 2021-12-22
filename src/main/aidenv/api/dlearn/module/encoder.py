@@ -37,7 +37,8 @@ class EncoderModule(CoreModule):
     def forward(self, x):
         if self.use_final_do:
             x = self.final_do(x)
-        return self.encoding(x)
+        self.input_encoded = self.encoding(x)
+        return self.input_encoded
 
 class WrapperEncoder(EncoderModule):
     '''

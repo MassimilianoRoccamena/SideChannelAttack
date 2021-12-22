@@ -484,15 +484,22 @@ def build_loggables(config, prompt):
     if config is None:
         return []
 
-    out = {}
+    loggables = {}
+    sets = {}
     for c in config:
         cls_name = c[CLASS_NAME_KEY]
         c[CLASS_NAME_KEY] = f'Loggable{cls_name}'
 
         log_name = lower_identifier(cls_name)
-        out[log_name] = build_learning_object2(c, prompt)
+        loggables[log_name] = build_learning_object2(c, prompt)
+        ss = search_config_key(c, LEARN_SETS_KEY)
+        if ss is None:
+            ss = ['train','valid','test']
+        else:
+            ss = list(ss)
+        sets[log_name] = ss
 
-    return out
+    return loggables, sets
 
 def build_learning2(config, prompt, early_stop, loggers, log_dir):
     ckpt_path = os.path.join(log_dir, CHECKPOINT_DIR)
@@ -503,7 +510,7 @@ def build_learning2(config, prompt, early_stop, loggers, log_dir):
     print('Loaded trainer')
 
     loggables = search_config_key(config, LEARN_LOG_KEY)
-    loggables = build_loggables(loggables, prompt)
+    loggables, sets = build_loggables(loggables, prompt)
     print('Loaded loggables')
 
-    return trainer, loggables
+    return trainer, loggables, sets

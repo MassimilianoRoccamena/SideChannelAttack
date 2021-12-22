@@ -1,5 +1,7 @@
+import os
 import itertools
 import numpy as np
+import pandas as pd
 import torch
 
 from textwrap import wrap
@@ -39,11 +41,11 @@ class LoggableObject:
 
     def __call__(self, *args, **kwargs):
         '''
-        Compute the payload of the pbject.
+        Compute the payload of the object.
         '''
         raise NotImplementedError
     
-    def log(self, outputs, log_name, prediction, target, loss):
+    def log(self, outputs, log_name, *step_results):
         '''
         Log the payload of the object.
         '''
@@ -60,7 +62,10 @@ class LoggableScalar(LoggableObject):
     Abstract loggable scalar.
     '''
 
-    def log(self, outputs, log_name, prediction, target, loss):
+    def log(self, outputs, log_name, *step_results):
+        loss = step_results[0]
+        target = step_results[1]
+        prediction = step_results[2]
         payload = self(prediction, target, loss=loss)
 
         self.model.log(log_name, payload, on_step=True, on_epoch=True,
@@ -80,7 +85,10 @@ class LoggableTensor(LoggableObject):
         self.shape = val.shape
         return { 'values' : torch.flatten(val) }
 
-    def log(self, outputs, log_name, prediction, target, loss):
+    def log(self, outputs, log_name, *step_results):
+        loss = step_results[0]
+        target = step_results[1]
+        prediction = step_results[2]
         log = self(prediction, target, loss=loss)
         payload = {}
 
@@ -248,3 +256,52 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
         step = self.model.current_epoch
 
         super().on_epoch_end(log_name, figure, step=step)
+
+class LoggableInference(LoggableObject):
+    '''
+    Loggable model inference (on test set).
+    '''
+
+    def mount(self, *args, **kwargs):
+        super().mount(*args, **kwargs)
+        self.log_encoding = self.kwargs['log_encoding']
+        log_dir = os.path.join(self.model.log_dir, 'inference.csv')
+        self.file = open(log_dir, 'w')
+        self.file_init = True
+
+    def __call__(self, *args, **kwargs):
+        target = args[0]
+        prediction = args[1]
+        encoding = args[2]
+        batch_size = prediction.size(dim=0)
+        prediction_size = prediction.size(dim=1)
+        encoding_size = encoding.size(dim=1)
+
+        if self.file_init:
+            header = 'target'
+            for i in range(prediction_size):
+                header = f'{header},prediction{i}'
+            if self.log_encoding:
+                for i in range(encoding_size):
+                    header = f'{header},encoding{i}'
+            print(header, file=self.file)
+            self.file_init = False
+
+        sample_line = f'{target[0]}'
+        for b in range(batch_size):
+            for i in range(prediction_size):
+                sample_line = f'{sample_line},{prediction[b,i]}'
+            if self.log_encoding:
+                for i in range(encoding_size):
+                    sample_line = f'{sample_line},{encoding[b,i]}'
+            print(sample_line, file=self.file)
+
+    def log(self, outputs, log_name, *step_results):
+        loss = step_results[0]
+        target = step_results[1]
+        prediction = step_results[2]
+        encoding = step_results[3]
+        self(target, prediction, encoding)
+
+    def on_epoch_end(self, *args, **kwargs):
+        self.file.close()

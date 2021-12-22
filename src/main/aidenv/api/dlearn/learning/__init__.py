@@ -16,6 +16,7 @@ from aidenv.api.dlearn.learning.logging import LoggablePrecision
 from aidenv.api.dlearn.learning.logging import LoggableRecall
 from aidenv.api.dlearn.learning.logging import LoggableF1
 from aidenv.api.dlearn.learning.logging import LoggableConfusionMatrix
+from aidenv.api.dlearn.learning.logging import LoggableInference
 
 class CrossEntropyLoss(nn.CrossEntropyLoss):
     def __init__(self, *args, **kwargs):

@@ -33,6 +33,7 @@ LEARN_SCHEDULER_KEY = 'scheduler'
 LEARN_DATA_LOAD_KEY = 'data_loader'
 LEARN_TRAINER_KEY = 'trainer'
 LEARN_LOG_KEY = 'loggables'
+LEARN_SETS_KEY = 'sets'
 LEARN_LOG_BAR_KEY = 'progr_bar'
 
 # env vars

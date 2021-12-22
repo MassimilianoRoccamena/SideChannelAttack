@@ -17,13 +17,13 @@ class DeepModel(LightningModule, CoreModel):
 
     def step_batch(self, batch):
         '''
-        Compute (predicted,target,loss) on a batch.
+        Compute for a batch: prediction, target, loss.
         '''
         x, y = batch
         y_hat = self(x)
-        return y_hat.detach().cpu(), \
+        return self.loss(y_hat, y), \
                 y.detach().cpu(), \
-                self.loss(y_hat, y)
+                y_hat.detach().cpu()
 
     def configure_optimizers(self):
         if self.scheduler is None:

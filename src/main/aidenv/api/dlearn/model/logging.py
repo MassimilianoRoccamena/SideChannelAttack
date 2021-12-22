@@ -12,19 +12,24 @@ class LoggableModel(DeepModel):
         '''
         super().__init__()
         self.loggables = { 'train' : {}, 'valid' : {}, 'test' : {} }
-        self.loggables['train'].update({'loss' : LoggableLoss(progr_bar=False)})
-        self.loggables['valid'].update({'loss' : LoggableLoss(progr_bar=False)})
-        self.loggables['test'].update({'loss' : LoggableLoss(progr_bar=False)})
+        loss_log_name = 'loss'
+        self.add_loggables({loss_log_name : LoggableLoss(progr_bar=False)},
+                            {loss_log_name : ['train', 'valid', 'test']})
+        #self.loggables['train'].update({'loss' : LoggableLoss(progr_bar=False)})
+        #self.loggables['valid'].update({'loss' : LoggableLoss(progr_bar=False)})
+        #self.loggables['test'].update({'loss' : LoggableLoss(progr_bar=False)})
 
     # setup
 
-    def add_loggables(self, loggables, prefix):
+    def add_loggables(self, loggables, sets):
         '''
         Add loggable objects to the moddel.
         loggables: named dict of loggable objects
         prefix: prefix of the log name
         '''
-        self.loggables[prefix].update(loggables)
+        for name,loggable in loggables.items():
+            for set_ in sets[name]:
+                self.loggables[set_].update({name : loggable})
 
     def mount(self, *args, **kwargs):
         for prefix, sublogs in self.loggables.items():
@@ -34,13 +39,14 @@ class LoggableModel(DeepModel):
     # steps
 
     def compute_epoch_step(self, batch, prefix, include_loss=False):
-        pred, target, loss = super().step_batch(batch)
+        step_results = self.step_batch(batch)
 
         outputs = {}
         for log_name, loggable in self.loggables[prefix].items():
             log_name = f'{prefix}/{log_name}'
-            loggable.log(outputs, log_name, pred, target, loss)
+            loggable.log(outputs, log_name, *step_results)
 
+        loss = step_results[0]
         if include_loss:
             outputs['loss'] = loss
         
