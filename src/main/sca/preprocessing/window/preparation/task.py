@@ -18,6 +18,7 @@ class BasicPreparation(DataProcess):
     '''
 
     INVALID_SUBSET_MSG = 'invalid dataset size type'
+    DATA_HEADER = 'voltage,frequency,key_value,plain_index,plain_text,window_start,window_end'
 
     def __init__(self, loader, voltages, frequencies, key_values,
                     num_plain_texts, size, partitioning, full_info=False, log_dir=None):
@@ -77,8 +78,8 @@ class BasicPreparation(DataProcess):
             print(f'Set has {len(partition_plain_idx)} plain texts')
 
             # build and save data
-            reader = WindowReader(self.loader, self.voltages, self.frequencies, self.key_values, partition_plain_idx)
-            partition_read_idx = np.random.choice(len(reader), int(len(reader)*self.size), replace=False) # subset
+            partition_reader = WindowReader(self.loader, self.voltages, self.frequencies, self.key_values, partition_plain_idx)
+            partition_read_idx = np.random.choice(len(partition_reader), int(len(partition_reader)*self.size), replace=False) # subset
             num_samples = len(partition_read_idx)
             datalen_params[partition_name] = num_samples
             print(f'Set has {num_samples} data points')
@@ -86,13 +87,14 @@ class BasicPreparation(DataProcess):
 
             def save_row(f, reader_idx):
                 sample_idx = partition_read_idx[reader_idx]
-                reader.read_sample(sample_idx)
-                curr_line_left = f'{reader.voltage},{reader.frequency},{reader.key_value},{reader.plain_index}'
-                curr_line_right = f'{reader.plain_text},{reader.window_start},{reader.window_end}'
+                voltage, frequency, key_value, plain_index, \
+                     plain_text, window_start, window_end = partition_reader[sample_idx]
+                curr_line_left = f'{voltage},{frequency},{key_value},{plain_index}'
+                curr_line_right = f'{plain_text},{window_start},{window_end}'
                 print(f'{curr_line_left},{curr_line_right}', file=f)
             
             # populate dataframe(s)
-            header_line = 'voltage,frequency,key_value,plain_index,plain_text,window_start,window_end'
+            header_line = BasicPreparation.DATA_HEADER
             if mapping_enabled:
                 data_path = lambda buck: os.path.join(self.log_dir, f'{partition_name}{buck}.csv')
                 bucket_idx = 0

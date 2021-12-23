@@ -287,8 +287,10 @@ class LoggableInference(LoggableObject):
             print(header, file=self.file)
             self.file_init = False
 
-        sample_line = f'{target[0]}'
         for b in range(batch_size):
+            label = self.model.labels[target[b]]
+            sample_line = f'{label}'
+
             for i in range(prediction_size):
                 sample_line = f'{sample_line},{prediction[b,i]}'
             if self.log_encoding:

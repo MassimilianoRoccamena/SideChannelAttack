@@ -1,4 +1,3 @@
-import json
 import os
 import pandas as pd
 
@@ -12,17 +11,19 @@ class WindowReader(FileReader):
     '''
 
     INVALID_INDEX_MSG = 'invalid reader index'
+    USED_COLS = ['voltage','frequency','key_value','plain_index','window_start','window_end']
+    USED_COLS_TYPE = {USED_COLS[0]:'string', USED_COLS[1]:'string',
+                        USED_COLS[2]:'string', USED_COLS[3]:'int',
+                        USED_COLS[4]:'int', USED_COLS[5]:'int'}
 
     def __init__(self, loader, data_path, set_name):
         '''
-        Create new reader of trace windows.
+        Create new lookup reader of trace windows.
         loader: trace windows loader
         data_path: path of data
         set_name:: name of one data partition
         '''
         self.loader = loader
-        self.file_id = None
-
         self.data_path = data_path
         self.set_name = set_name
 
@@ -35,18 +36,9 @@ class WindowReader(FileReader):
             self.mapping_enabled = False
 
         self.num_samples = params['datalen'][set_name]
-
         self.voltages = params['voltages']
-        self.voltage = None
         self.frequencies = params['frequencies']
-        self.frequency = None
         self.key_values = params['key_values']
-        self.key_value = None
-        self.plain_index = None
-        self.plain_text = None
-        self.window_start = None
-        self.window_end = None
-        self.trace_window = None
 
     def validate_reader_index(self, reader_index):
         '''
@@ -64,33 +56,8 @@ class WindowReader(FileReader):
         '''
         self.validate_reader_index(reader_index)
 
-        def subindex_group(idx, count, size, min):
-            groups = [[min + x*size, min + (x+1)*size] for x in range(count)]
-            for i, group in enumerate(groups):
-                if idx < group[1]:
-                    return i, group
-        
-        # voltage
-        size = int(len(self) / len(self.voltages))
-        volt_idx, group = subindex_group(reader_index, len(self.voltages), size, 0)
-        self.voltage = self.voltages[volt_idx]
-
-        # frequency
-        size = int((group[1]-group[0]) / len(self.frequencies))
-        freq_idx, group = subindex_group(reader_index, len(self.frequencies), size, group[0])
-        self.frequency = self.frequencies[freq_idx]
-
-        # key value
-        size = int((group[1]-group[0]) / len(self.key_values))
-        kval_idx, group = subindex_group(reader_index, len(self.key_values), size, group[0])
-        self.key_value = self.key_values[kval_idx]
-
-        loader = self.loader
-        self.file_id = loader.build_file_id(self.voltage, self.frequency, self.key_value)
-
-        # load row from dataframe
-        used_cols = ['plain_index','window_start','window_end']
-        cols_types = {'plain_index':'int','window_start':'int','window_end':'int'}
+        used_cols = WindowReader.USED_COLS
+        cols_types = WindowReader.USED_COLS_TYPE
         
         if self.mapping_enabled:
             bucket_idx = int(reader_index/self.mapping_bucket)
@@ -103,18 +70,24 @@ class WindowReader(FileReader):
         data = pd.read_csv(df_path, dtype=cols_types, usecols=used_cols,
                             skiprows=range(1,1+skiprows), nrows=1)
         data = data.iloc[[0]]
-        self.plain_index = data[used_cols[0]][0]
-        self.window_start = data[used_cols[1]][0]
-        self.window_end = data[used_cols[2]][0]
+        voltage = data[used_cols[0]][0]
+        frequency = data[used_cols[1]][0]
+        key_value = data[used_cols[2]][0]
+        plain_index = data[used_cols[3]][0]
+        window_start = data[used_cols[4]][0]
+        window_end = data[used_cols[5]][0]
+
+        file_id = self.loader.build_file_id(voltage, frequency, key_value)
+        file_path = self.loader.build_file_path(file_id)
+
+        return file_path, voltage, frequency, key_value, plain_index, window_start, window_end
 
     def read_sample(self, reader_index):
-        self.translate_reader_index(reader_index)
-        loader = self.loader
-        loader.set_file_id(self.file_id)
-        trace_window, plain_text = loader.load_trace_window(self.plain_index, self.window_start, self.window_end)
-        self.trace_window = trace_window
-        self.plain_text = plain_text
-        return trace_window
+        file_path, voltage, frequency, key_value, \
+            plain_index, window_start, window_end = self.translate_reader_index(reader_index)
+        trace_window, plain_text = self.loader.load_trace_window(file_path, plain_index,
+                                                                    window_start, window_end)
+        return voltage, frequency, key_value, plain_text, trace_window
 
     def __len__(self):
         return self.num_samples

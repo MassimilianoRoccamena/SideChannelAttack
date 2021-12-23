@@ -28,12 +28,6 @@ class Classification:
         '''
         raise NotImplementedError
 
-    def current_label(self):
-        '''
-        Label of the current sample
-        '''
-        raise NotImplementedError
-
 class ClassificationDataset(DeepDataset, Classification):
     ''''
     Abstract classification dataset.

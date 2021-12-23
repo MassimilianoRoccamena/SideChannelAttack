@@ -1,25 +1,13 @@
 from sca.file.loader import OurTraceLoader
-from sca.file.convention2.path import FileIdentifier
-from sca.file.convention2.path import file_path
+from sca.file.convention2.path import FileIdentifier, file_path
 
 class TraceLoader2(OurTraceLoader):
     '''
     Loader of our power traces from raw file using filesystem convention 2.
     '''
 
-    def __init__(self, file_id=None):
-        '''
-        Create new loader of traces using convention 2.
-        file_id: file identifier
-        '''
-        self.set_file_id(file_id)
-
-    def set_file_id(self, file_id):
-        self.file_id = file_id
-        if file_id is None:
-            self.set_file_path(None)
-        else:
-            self.set_file_path(file_path(file_id))
-
     def build_file_id(self, *args):
         return FileIdentifier(*args)
+
+    def build_file_path(self, file_id):
+        return file_path(file_id)

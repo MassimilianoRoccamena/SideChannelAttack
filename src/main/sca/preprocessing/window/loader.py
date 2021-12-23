@@ -15,26 +15,24 @@ class WindowLoader:
         slicer: trace slicer
         '''
         self.slicer = slicer
-        self.window_start = None
-        self.window_end = None
 
     @classmethod
     @build_task_kwarg('slicer')
     def build_kwargs(cls, config, prompt):
         pass
 
-    def load_window_of_some_traces(self, plain_indices, window_index):
+    def load_trace_window(self, file_path, plain_index, window_index):
         '''
-        Load a window (and corresponding plain text) of some traces from a raw file.
-        plain_indices: plain text indices of a file
+        Load a window (and corresponding start,end indices and plain text) of a trace
+        from a raw file.
+        file_path: path of the file
+        plain_index: plain text index of a file
         window_index: window index of a trace
         '''
         start, end = self.slicer[window_index]
-        self.window_start = start
-        self.window_end = end
         time_idx = np.arange(start, end+1)
-        traces, plain_texts = self.load_some_projected_traces(plain_indices, time_idx)
-        return traces[0], plain_texts[0]
+        traces, plain_texts = self.load_some_projected_traces(file_path, [plain_index], time_idx)
+        return start, end, traces[0], plain_texts[0]
 
 class WindowLoader1(WindowLoader, TraceLoader1):
     '''

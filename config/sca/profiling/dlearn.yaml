@@ -9,8 +9,8 @@ base:
     - classification
     - frequency
 
-  name: Stage0
-  description: 'new data, added 1 freq, fixed same freqs bug'
+  name: Test0
+  description: 'updated software, new data (added 1 freq, fixed same freqs bug), testing'
 
 # ---------------------------------------------------------------
 
@@ -50,7 +50,7 @@ core:
           kernel_size: 20
           stride: 2
           groups: 1
-          n_block: 2 #7
+          n_block: 3 #7
           downsample_gap: 2
           increasefilter_gap: 4
           use_batch_norm: True
@@ -98,7 +98,7 @@ learning:
 
   early_stopping:
     monitor: valid/loss
-    patience: 7
+    patience: 3 #7
     mode: min
 
   optimizer:
@@ -109,7 +109,6 @@ learning:
       weight_decay: 1e-4
     #name: Adam
     #params:
-
 
   scheduler:
     name: StepLR
@@ -125,7 +124,7 @@ learning:
 
   trainer:
     gpus: 0
-    max_epochs: 2 #70
+    max_epochs: 10 #70
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
     limit_train_batches: 0.244
@@ -168,7 +167,7 @@ logging:
     enable: True
 
   neptune:
-    enable: False
+    enable: True
     
     log_model_checkpoints: False
     tags:

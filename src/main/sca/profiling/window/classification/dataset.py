@@ -47,10 +47,10 @@ class SingleClassification(WindowClassification):
     '''
 
     def __getitem__(self, index):
-        x = self.reader[index]
-        x = self.channels_reshape(x)
+        voltage, frequency, key_value, plain_text, trace_window = self.reader[index]
+        x = self.channels_reshape(trace_window)
         labels = self.all_labels()
-        label = self.current_label()
+        label = frequency
         y = labels.index(label)
         return x, y
 
@@ -68,10 +68,10 @@ class MultiClassification(WindowClassification):
                  self.reader.file_id.frequency )
 
     def __getitem__(self, index):
-        x = self.reader[index]
-        x = self.channels_reshape(x)
+        voltage, frequency, key_value, plain_text, trace_window = self.reader[index]
+        x = self.channels_reshape(trace_window)
         labels = self.all_labels()
-        label = self.current_label()
+        label = (voltage, frequency)
         y0 = labels[0].index(label[0])
         y1 = labels[1].index(label[1])
         return x, (y0, y1)
@@ -84,9 +84,6 @@ class VoltageClassification(SingleClassification):
     def all_labels(self):
         return self.reader.voltages
 
-    def current_label(self):
-        return self.reader.file_id.voltage
-
 class FrequencyClassification(SingleClassification):
     '''
     Dataset composed of power trace windows labelled with frequency
@@ -94,6 +91,3 @@ class FrequencyClassification(SingleClassification):
 
     def all_labels(self):
         return self.reader.frequencies
-
-    def current_label(self):
-        return self.reader.file_id.frequency
