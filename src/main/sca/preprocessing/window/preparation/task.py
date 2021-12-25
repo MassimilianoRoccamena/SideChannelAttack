@@ -6,6 +6,7 @@ from tqdm.auto import trange
 from utils.persistence import save_json
 from aidenv.api.dprocess.config import build_task_kwarg
 from aidenv.api.dprocess.task import DataProcess
+from sca.file.params import str_hex_bytes
 from sca.preprocessing.window.loader import WindowLoader1 as FileConvention1
 from sca.preprocessing.window.loader import WindowLoader2 as FileConvention2
 from sca.preprocessing.window.slicer import StridedSlicer as Strided
@@ -28,6 +29,8 @@ class BasicPreparation(DataProcess):
         self.loader = loader
         self.voltages = list(voltages)
         self.frequencies = list(frequencies)
+        if key_values is None:
+            key_values = str_hex_bytes()
         self.key_values = list(key_values)
         self.num_plain_texts = num_plain_texts
         self.size = size

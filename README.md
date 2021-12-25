@@ -6,10 +6,12 @@ Thesis work by Massimiliano Roccamena
 
 In the following sections are described the main coponents of application and how to interact with them
 
-### *aidenv*
+### AIDENV
 
-This is the platform component of the application and it is used as a general framework for developing artifical agents. It provides to an ***aidenv program*** an execution platform called ***aidenv environment***. Currently there are the following environments:
+This is the platform component of the application and it is a basic small framework for developing artifical agents. It provides to an ***aidenv program*** an execution platform called ***aidenv environment***. Currently there are the following environments:
 
+- ***dprocess***
+  - execute computations on some data
 - ***dlearn***
   - train and/or test a deep learning model
 - ***mlearn*** *(not implemented)*
@@ -45,17 +47,23 @@ You can launch *aidenv* by specifying an *aidenv environment* identifier, an *ai
 sh aidenv.sh $environment_id $program_name $program_args
 ```
 
-### *sca*
+### SCA
 
-It's the target component of the application which realizes the goals of the thesis. It include two *aidenv program*, one for profiling and one for attacking
+It's the target component of the application which realizes the goals of the thesis. It include three *aidenv program*
 
-You can  launch the side channel profiling program by running
+In order to execute the component, first launch the raw data preprocessing program to create lookup data for the training
 
 ```bash
-sh sca-profiling.sh dlearn
+sh launch-preprocessing.sh
 ```
 
-The attacking program is currently not implemented
+Then you can launch the profiling program to fit a classifier for trace frequency realignment for a given device architecture
+
+```bash
+sh launch-profiling.sh
+```
+
+The attacking program is currently not implemented (pre-fitted template attack on alligned power traces)
 
 ### Testing
 

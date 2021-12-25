@@ -10,7 +10,7 @@ base:
     - basic
 
   name: Windows1
-  description: 'creation of traces windows datasets from raw files'
+  description: 'creation of lookup data'
 
 # ---------------------------------------------------------------
 
@@ -25,7 +25,7 @@ core:
     params:
 
       loader:
-        name: FileConvention1
+        name: FileConvention2
         params:
           slicer:
             name: Random
@@ -36,26 +36,26 @@ core:
       voltages:
         - '1.00'
       frequencies:
-        #- '45.000'
-        #- '46.875'
+        - '45.000'
+        - '46.875'
         - '48.000'
-        #- '50.000'
-        #- '50.125'
+        - '50.000'
+        - '50.125'
         - '52.000'
-        #- '54.000'
-        #- '55.000'
-        #- '56.000'
+        - '54.000'
+        - '55.000'
+        - '56.000'
       key_values:
-        - '00'
-        - '01'
+        #- '00'
+        #- '01'
       num_plain_texts: 500
 
-      size: 1.0 #0.1
+      size: 0.1
 
       partitioning:
         mapping:
           enabled: True
-          bucket_size: 100
+          bucket_size: 1000
 
         sets:
           - name: train

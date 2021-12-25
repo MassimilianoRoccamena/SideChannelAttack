@@ -9,7 +9,7 @@ base:
     - classification
     - frequency
 
-  name: Test0
+  name: Stage0
   description: 'updated software, new data (added 1 freq, fixed same freqs bug), testing'
 
 # ---------------------------------------------------------------
@@ -31,10 +31,10 @@ core:
 
     params:
       loader:
-        name: FileConvention1
+        name: FileConvention2
         params:
 
-      data_path: .output/dprocess/Windows1/Mapped
+      data_path: /data/output/dprocess/Windows1/Mapped
       channels_first: True
 
   model:
@@ -45,19 +45,19 @@ core:
       encoder:
         name: ResNet
         params:
-          encoding_size: 90
-          base_filters: 18
-          kernel_size: 20
-          stride: 2
+          encoding_size: 70
+          base_filters: 90
+          kernel_size: 50
+          stride: 5
           groups: 1
-          n_block: 3 #7
+          n_block: 3
           downsample_gap: 2
           increasefilter_gap: 4
           use_batch_norm: True
           use_inner_do: True
-          inner_do_val: 0.5
+          inner_do_val: 0.2
           use_final_do: True
-          final_do_val: 0.5
+          final_do_val: 0.2
 
         #name: LSTM1
         #params:
@@ -98,7 +98,7 @@ learning:
 
   early_stopping:
     monitor: valid/loss
-    patience: 3 #7
+    patience: 7
     mode: min
 
   optimizer:
@@ -123,8 +123,8 @@ learning:
     pin_memory: True
 
   trainer:
-    gpus: 0
-    max_epochs: 10 #70
+    gpus: 1
+    max_epochs: 70
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
     limit_train_batches: 0.244
