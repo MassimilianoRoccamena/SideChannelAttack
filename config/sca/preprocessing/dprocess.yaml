@@ -9,8 +9,8 @@ base:
     - preparation
     - basic
 
-  name: Windows1
-  description: 'creation of lookup data'
+  name: Windows2
+  description: 'creation of lookup data, size 200 window'
 
 # ---------------------------------------------------------------
 
@@ -30,7 +30,7 @@ core:
           slicer:
             name: Random
             params:
-              window_size: 1000
+              window_size: 200
               num_windows: 1
 
       voltages:
