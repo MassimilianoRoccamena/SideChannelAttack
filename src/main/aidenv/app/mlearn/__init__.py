@@ -6,5 +6,5 @@ def run(*args):
     Entry point for dprocess environment.
     args: program arguments
     '''
-    set_environment_name('dprocess')
-    run_task('Data processing', *args)
+    set_environment_name('mlearn')
+    run_task('Machine learning', *args)

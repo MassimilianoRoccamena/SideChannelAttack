@@ -1,0 +1,31 @@
+base:
+
+  origin:
+    - sca
+    - attacking
+    - discriminator
+
+  name: Discriminator1
+  id: 0
+
+  description: 'fit of the discriminative distribution of key given the trace, using MLE'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+
+  name: KeyDiscriminator
+  params:
+
+    loader:
+      name: FileConvention2
+      params:
+
+    generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\mlearn\Template1\Target
+    plain_bounds: [400, 500]

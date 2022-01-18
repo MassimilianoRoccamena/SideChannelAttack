@@ -1,7 +1,7 @@
 import unittest
 
 from main.sca.file.params import TRACE_SIZE
-from main.sca.file.params import TEXT_SIZE
+from main.sca.file.params import NUM_TEXT_BYTES
 from main.sca.file.convention1.params import NUM_TRACES
 from main.sca.file.convention1.loader import TraceLoader1
 from main.sca.file.convention1.path import FileIdentifier, file_path
@@ -17,7 +17,7 @@ class TraceLoader1Test(unittest.TestCase):
 
         self.assertEqual(traces.shape, (NUM_TRACES, TRACE_SIZE),
                             'wrong traces shape')
-        self.assertEqual(texts.shape, (NUM_TRACES, TEXT_SIZE),
+        self.assertEqual(texts.shape, (NUM_TRACES, NUM_TEXT_BYTES),
                             'wrong texts shape')
 
     def test_some_shape(self):
@@ -26,7 +26,7 @@ class TraceLoader1Test(unittest.TestCase):
 
         self.assertEqual(traces.shape, (len(trace_idx), TRACE_SIZE),
                             'wrong traces shape')
-        self.assertEqual(texts.shape, (len(trace_idx), TEXT_SIZE),
+        self.assertEqual(texts.shape, (len(trace_idx), NUM_TEXT_BYTES),
                             'wrong texts shape')
 
     def test_some_projected_shape(self):
@@ -38,5 +38,5 @@ class TraceLoader1Test(unittest.TestCase):
 
         self.assertEqual(traces.shape, (len(trace_idx), n),
                             'wrong traces shape')
-        self.assertEqual(texts.shape, (len(trace_idx), TEXT_SIZE),
+        self.assertEqual(texts.shape, (len(trace_idx), NUM_TEXT_BYTES),
                             'wrong texts shape')

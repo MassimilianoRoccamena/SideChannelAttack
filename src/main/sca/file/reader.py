@@ -2,15 +2,15 @@ from aidenv.api.reader import FileReader
 
 from sca.file.params import str_hex_bytes
 
-class WindowReader(FileReader):
+class TraceReader(FileReader):
     '''
-    Reader of trace windows from raw file. Reading ordering is driven by
-    joint values of voltage, frequency, key_value, plain_text, trace_window.
+    Reader of power traces from raw file. Reading ordering is driven by
+    joint values of voltage, frequency, key_value, plain_text.
     '''
 
     def __init__(self, loader, voltages, frequencies, key_values, plain_indices):
         '''
-        Create new raw reader of trace windows.
+        Create new raw reader of power traces.
         loader: trace windows loader
         voltages: device voltages
         frequencies: device frequencies
@@ -27,9 +27,8 @@ class WindowReader(FileReader):
             print('Using all key values')
         self.key_values = key_values
         self.plain_indices = plain_indices
-        self.num_windows = len(self.loader.slicer)
 
-        self.num_samples = self.num_files * len(plain_indices) * self.num_windows
+        self.num_samples = self.num_files * len(plain_indices)
 
     def translate_reader_index(self, reader_index):
         self.validate_reader_index(reader_index)
@@ -54,31 +53,14 @@ class WindowReader(FileReader):
         plain_idx, group = self.subindex_group(reader_index, num_plains, size, group[0])
         plain_index = self.plain_indices[plain_idx]
 
-        size = int((group[1]-group[0]) / self.num_windows)
-        window_idx, group = self.subindex_group(reader_index, self.num_windows, size, group[0])
-        window_index = window_idx
-
-        return file_path, voltage, frequency, key_value, plain_index, window_index
-
-    def format_plain_text(self, plain_text):
-        '''
-        Format plain text into a hexadecimal string.
-        plain_text: binary values of the plain text.
-        '''
-        out = ''
-        for plain_byte in plain_text:
-            plain_byte = '{:02x}'.format(plain_byte)
-            out = f'{out}{plain_byte}'
-        return out
+        return file_path, voltage, frequency, key_value, plain_index
 
     def read_sample(self, reader_index):
-        file_path, voltage, frequency, key_value, \
-            plain_index, window_index = self.translate_reader_index(reader_index)
-        window_start, window_end, \
-            trace_window, plain_text, key = self.loader.load_trace_window(file_path,
-                                                                    plain_index, window_index)
-        plain_text = self.format_plain_text(plain_text)
-        return voltage, frequency, key_value, plain_index, plain_text, window_start, window_end
+        file_path, voltage, frequency, \
+            key_value, plain_index = self.translate_reader_index(reader_index)
+        trace_window, plain_text, key = self.loader.load_some_traces(file_path, [plain_index])
+
+        return voltage, frequency, key_value, plain_index, trace_window[0], plain_text, key
 
     def __len__(self):
         return self.num_samples

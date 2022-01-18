@@ -1,3 +1,5 @@
+# OUT OF DATE
+
 test_program()
 {
     local environment_id=$1

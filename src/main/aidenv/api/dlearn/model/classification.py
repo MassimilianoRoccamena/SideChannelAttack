@@ -17,7 +17,7 @@ class ClassifierModel(WrapperModel):
 
     @classmethod
     @build_model_kwarg('encoder')
-    def build_kwargs(cls, config, prompt):
+    def build_kwargs(cls, config):
         pass
 
     def set_labels(self, labels):

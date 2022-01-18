@@ -1,0 +1,46 @@
+base:
+
+  origin:
+    - sca
+    - profiling
+    - generator
+
+  name: Generator1
+  id: 0
+
+  description: 'fit of the generative distribution of a trace given key, using pca + multivariate gaussian'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+
+  name: TraceGenerator
+  params:
+
+    loader:
+      name: FileConvention2
+      params:
+      
+    voltages:
+      - '1.00'
+    frequencies:
+      #- '45.000'
+      #- '46.875'
+      - '48.000'
+      #- '50.000'
+      #- '50.125'
+      - '52.000'
+      #- '54.000'
+      #- '55.000'
+      #- '56.000'
+    key_values:
+      - '00'
+      - '01'
+    plain_bounds: [0, 400]
+    reduced_dim: 2

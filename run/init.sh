@@ -39,11 +39,9 @@ init_neptune()
 
 init_program()
 {
-    local environment_id=$1
-    local program_name=$2
-    local program_path="$CONFIG_PATH/$program_name"
-    local file_name="$environment_id.$PROGRAM_CONFIG_EXT"
-    export AIDENV_PROGRAM="$program_path/$file_name"
+    local relative_path=$1
+    local absolute_path="$CONFIG_PATH/$relative_path"
+    export AIDENV_PROGRAM="$absolute_path.$PROGRAM_CONFIG_EXT"
 }
 
 init_environment()
@@ -53,7 +51,6 @@ init_environment()
 
     init_neptune
 
-    local environment_id=$1
-    local program_name=$2
-    init_program $environment_id $program_name
+    local program_path=$1
+    init_program $program_path
 }

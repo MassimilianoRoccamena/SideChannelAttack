@@ -1,0 +1,66 @@
+base:
+
+  origin:
+    - sca
+    - preprocessing
+    - window
+    - lookup
+
+  name: WindowLookup1
+  id: 0
+
+  description: 'creation of window lookup data'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+
+  name: LookupCreation
+  params:
+
+    loader:
+      name: FileConvention2
+      params:
+        slicer:
+          name: Random
+          params:
+            window_size: 200
+            num_windows: 1
+
+    voltages:
+      - '1.00'
+    frequencies:
+      #- '45.000'
+      #- '46.875'
+      - '48.000'
+      #- '50.000'
+      #- '50.125'
+      - '52.000'
+      #- '54.000'
+      #- '55.000'
+      #- '56.000'
+    key_values:
+      - '00'
+      - '01'
+    plain_bounds: [0, 400]
+
+    size: 0.1
+
+    partitioning:
+      mapping:
+        enabled: True
+        bucket_size: 50 #1000
+
+      sets:
+        - name: train
+          size: 0.75
+        - name: valid
+          size: 0.15
+        - name: test
+          size: 0.1

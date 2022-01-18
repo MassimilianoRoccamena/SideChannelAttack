@@ -24,14 +24,14 @@ class TraceLoader(FileLoader):
 
     def load_all_traces(self, file_path):
         '''
-        Load the whole full traces (and their plain texts) from a raw file.
+        Load the whole full traces (with plain texts + key) from a raw file.
         file_path: path of the file
         '''
         raise NotImplementedError
 
     def load_some_traces(self, file_path, plain_indices):
         '''
-        Load some full traces (and their plain texts) from a raw file.
+        Load some full traces (with plain texts + key) from a raw file.
         file_path: path of the file
         plain_indices: plain text indices of a file
         '''
@@ -39,7 +39,7 @@ class TraceLoader(FileLoader):
 
     def load_some_projected_traces(self, file_path, plain_indices, time_indices):
         '''
-        Load some temporal projected traces (and their plain texts) from a raw file.
+        Load some temporal projected traces (with plain texts + key) from a raw file.
         file_path: path of the file
         plain_indices: plain text indices of a file
         time_indices: temporal indices of a trace
@@ -53,7 +53,7 @@ class OurTraceLoader(TraceLoader):
     
     HEADER_SIZE = 26
 
-    INVALID_FILE_CHANN_TYPE = lambda f : 'file {f} has invalid channel type'
+    INVALID_FILE_CHANN_TYPE = lambda f : f'file {f} has invalid channel type'
     INVALID_PLAIN_INDICES_MSG = 'invalid plain text indices'
     INVALID_TIME_INDICES_MSG = 'invalid temporal indices'
 
@@ -109,10 +109,10 @@ class OurTraceLoader(TraceLoader):
                 traces[i,:] = np.frombuffer(buffer=f.read(trace_size*channel_dtype.itemsize), dtype=channel_dtype)
                 plain_texts[i,:] = np.frombuffer(buffer=f.read(text_len* plain_texts.itemsize), dtype=plain_texts.dtype)
             
-        return traces, plain_texts
+        return traces, plain_texts, key
 
     def load_some_traces(self, file_path, plain_indices):
-        num_traces, trace_size, text_len, channel_dtype, row_len, _ = self.read_file_base(file_path)
+        num_traces, trace_size, text_len, channel_dtype, row_len, key = self.read_file_base(file_path)
 
         idx = np.array(plain_indices)
         self.validate_trace_indices(num_traces, idx)
@@ -129,7 +129,7 @@ class OurTraceLoader(TraceLoader):
                 plain_texts[j,:] = np.frombuffer(buffer=f.read(text_len*plain_texts.itemsize), dtype=plain_texts.dtype)
                 j = j + 1
 
-        return traces, plain_texts
+        return traces, plain_texts, key
     
     def load_some_projected_traces(self, file_path, plain_indices, time_indices):
         num_traces, trace_size, text_len, channel_dtype, row_len, key = self.read_file_base(file_path)
@@ -156,4 +156,4 @@ class OurTraceLoader(TraceLoader):
                 f.seek(OurTraceLoader.HEADER_SIZE + row_len* plain_indices[i] + trace_size*channel_dtype.itemsize , 0)
                 plain_texts[i,:] = np.frombuffer(buffer=f.read(text_len* plain_texts.itemsize), dtype=plain_texts.dtype)
         
-        return traces, plain_texts
+        return traces, plain_texts, key

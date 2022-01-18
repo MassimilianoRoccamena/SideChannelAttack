@@ -1,6 +1,6 @@
 import numpy as np
 
-from aidenv.api.dprocess.config import build_task_kwarg
+from aidenv.api.basic.config import build_task_kwarg
 from sca.file.convention1.loader import TraceLoader1
 from sca.file.convention2.loader import TraceLoader2
 
@@ -18,7 +18,7 @@ class WindowLoader:
 
     @classmethod
     @build_task_kwarg('slicer')
-    def build_kwargs(cls, config, prompt):
+    def build_kwargs(cls, config):
         pass
 
     def load_trace_window(self, file_path, plain_index, window_index):
@@ -31,8 +31,8 @@ class WindowLoader:
         '''
         start, end = self.slicer[window_index]
         time_idx = np.arange(start, end+1)
-        traces, plain_texts = self.load_some_projected_traces(file_path, [plain_index], time_idx)
-        return start, end, traces[0], plain_texts[0]
+        traces, plain_texts, key = self.load_some_projected_traces(file_path, [plain_index], time_idx)
+        return start, end, traces[0], plain_texts[0], key
 
 class WindowLoader1(WindowLoader, TraceLoader1):
     '''
