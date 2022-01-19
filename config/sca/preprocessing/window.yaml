@@ -50,7 +50,7 @@ core:
       - '01'
     plain_bounds: [0, 400]
 
-    size: 0.1
+    size: #0.1
 
     partitioning:
       mapping:

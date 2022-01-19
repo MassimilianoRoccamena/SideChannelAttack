@@ -27,5 +27,5 @@ core:
       name: FileConvention2
       params:
 
-    generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\mlearn\Template1\Target
+    generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\Generator1\0
     plain_bounds: [400, 500]

@@ -45,7 +45,7 @@ class LookupCreation(DataProcess):
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         if size is None:
-            size = 1.0
+            self.size = 1.0
         else:
             self.size = size
         self.partitioning = partitioning

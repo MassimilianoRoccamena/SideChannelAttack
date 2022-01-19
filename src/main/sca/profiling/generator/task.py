@@ -6,7 +6,7 @@ from scipy.stats import multivariate_normal
 from sklearn.decomposition import PCA
 
 from utils.persistence import save_pickle, save_json, save_numpy
-from utils.math import kahan_sum, pca_transform
+from utils.math import BYTE_HW_LEN, kahan_sum, pca_transform
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
@@ -37,7 +37,7 @@ class TraceGenerator(MachineLearningTask):
         if key_values is None:
             key_values = str_hex_bytes()
         self.key_values = list(key_values)
-        self.hw_len = math.ceil(math.log2(len(key_values))) + 1
+        self.hw_len = BYTE_HW_LEN
         self.plain_bounds = list(plain_bounds)
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]

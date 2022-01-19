@@ -1,6 +1,7 @@
 import numpy as np
 
 BYTE_SIZE = 256
+BYTE_HW_LEN = 9
 
 def kahan_sum(sum_, c, element):
     assert sum_.shape == c.shape

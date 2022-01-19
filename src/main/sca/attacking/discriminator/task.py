@@ -5,11 +5,11 @@ import numpy as np
 from scipy.stats import multivariate_normal
 
 from utils.persistence import load_pickle, load_json, save_json, load_numpy, save_numpy
-from utils.math import BYTE_SIZE, pca_transform
+from utils.math import BYTE_SIZE, BYTE_HW_LEN, pca_transform
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
-from sca.file.params import TRACE_SIZE, str_hex_bytes, SBOX_MAT, HAMMING_WEIGHTS
+from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 from sca.file.convention1.loader import TraceLoader1 as FileConvention1
 from sca.file.convention2.loader import TraceLoader2 as FileConvention2
 
@@ -30,9 +30,9 @@ class KeyDiscriminator(MachineLearningTask):
         self.generator_path = generator_path
         generator_params = load_json(os.path.join(generator_path, 'params.json'))
         self.voltages = generator_params['voltages']
-        self.frequencies = generator_params['voltages']
+        self.frequencies = generator_params['frequencies']
         self.key_values = generator_params['key_values']
-        self.hw_len = math.ceil(math.log2(len(self.key_values))) + 1
+        self.hw_len = BYTE_HW_LEN
         self.plain_bounds = list(plain_bounds)
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
@@ -66,13 +66,16 @@ class KeyDiscriminator(MachineLearningTask):
                 curr_trace = traces[plain_idx]
 
                 for key_hyp in range(num_keys):
-                    key_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_texts[plain_idx][0] ^ key_hyp]]
+                    key_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_texts[plain_idx][0] ^ key_hyp]] # sbox hw
 
                     multi_gauss = multivariate_normal(gauss_mean[key_hw], gauss_cov[key_hw])
                     prob_hyp = multi_gauss.pdf(curr_trace)
 
-                    keys_lh[key_true, key_hyp, plain_idx:] -= np.log(prob_hyp)
+                    keys_lh[int(key_true), key_hyp, plain_idx:] -= np.log(prob_hyp)
 
+            pbar.update(1)
+
+        pbar.close()
         return keys_lh
 
     def run(self, *args):
