@@ -5,7 +5,7 @@ base:
     - attacking
     - discriminator
 
-  name: Discriminator1
+  name: Discriminator0
   id: 0
 
   description: 'fit of the discriminative distribution of key given the trace, using MLE'
@@ -27,5 +27,6 @@ core:
       name: FileConvention2
       params:
 
-    generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\Generator1\0
-    plain_bounds: [400, 500]
+    #generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\Generator1\0
+    generator_path: /data/output/Generator0/0
+    plain_bounds: [300, 500]

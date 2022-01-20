@@ -6,7 +6,7 @@ base:
     - window
     - lookup
 
-  name: WindowLookup1
+  name: WindowLookup0
   id: 0
 
   description: 'creation of window lookup data'
@@ -30,32 +30,37 @@ core:
         slicer:
           name: Random
           params:
-            window_size: 200
-            num_windows: 1
+            window_size: 500
+            num_windows: 3
+
+          #name: Strided
+          #params:
+          #  window_size: 500
+          #  stride: 10000
 
     voltages:
       - '1.00'
     frequencies:
-      #- '45.000'
-      #- '46.875'
+      - '45.000'
+      - '46.875'
       - '48.000'
-      #- '50.000'
-      #- '50.125'
+      - '50.000'
+      - '50.125'
       - '52.000'
-      #- '54.000'
-      #- '55.000'
-      #- '56.000'
+      - '54.000'
+      - '55.000'
+      - '56.000'
     key_values:
-      - '00'
-      - '01'
-    plain_bounds: [0, 400]
+      #- '00'
+      #- '01'
+    plain_bounds: [0, 300]
 
     size: #0.1
 
     partitioning:
       mapping:
         enabled: True
-        bucket_size: 50 #1000
+        bucket_size: 1000
 
       sets:
         - name: train

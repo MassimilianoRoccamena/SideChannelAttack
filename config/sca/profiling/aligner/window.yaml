@@ -7,7 +7,7 @@ base:
     - window
     - classification
 
-  name: FrequencyAligner1
+  name: FrequencyAligner0
 
   description: 'fit window to key classifier, for tracce alignment detection'
 
@@ -39,8 +39,8 @@ dataset:
       name: FileConvention2
       params:
 
-    #lookup_path: /data/output/dprocess/Test0/Mapped
-    lookup_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\WindowLookup1\0
+    #lookup_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\WindowLookup1\0
+    lookup_path: /data/output/WindowLookup0/0
     channels_first: True
 
 model:
@@ -136,18 +136,18 @@ learning:
       gamma: 0.9
 
   data_loader:
-    batch_size: 16 #64
+    batch_size: 64
     shuffle: True
     num_workers: 2
     pin_memory: True
 
   trainer:
-    gpus: 0
-    max_epochs: 5 #100
+    gpus: 1
+    max_epochs: 100
     check_val_every_n_epoch: 1
     log_every_n_steps: 100
-    #limit_train_batches: 0.244
-    #limit_val_batches: 0.244
+    limit_train_batches: 0.1
+    limit_val_batches: 0.1
     track_grad_norm: 2
 
   loggables:

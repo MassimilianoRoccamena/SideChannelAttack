@@ -5,7 +5,7 @@ base:
     - profiling
     - generator
 
-  name: Generator1
+  name: Generator0
   id: 0
 
   description: 'fit of the generative distribution of a trace given key, using pca + multivariate gaussian'
@@ -42,5 +42,5 @@ core:
     key_values:
       - '00'
       - '01'
-    plain_bounds: [0, 400]
-    reduced_dim: 2
+    plain_bounds: [0, 300]
+    reduced_dim: 10
