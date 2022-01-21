@@ -14,7 +14,7 @@ This is the platform component of the application and it is a basic small framew
   - execute computations on some data
 - ***dlearn***
   - train and/or test a deep learning model
-- ***mlearn*** *(not implemented)*
+- ***mlearn***
   - train and/or test a classical machine learning model
 
 You can define an *aidenv program* by writing an ***aidenv configuration*** *yaml* file:
@@ -49,23 +49,28 @@ sh aidenv.sh $environment_id $program_name $program_args
 
 ### SCA
 
-It's the target component of the application which realizes the goals of the thesis. It include three *aidenv program*
+It's the target component of the application which realizes the goals of the thesis. It include some *aidenv program*
 
-In order to execute the component, first launch the raw data preprocessing program to create lookup data for the training
-
-```bash
-sh launch-preprocessing.sh
-```
-
-Then you can launch the profiling program to fit a classifier for trace frequency realignment for a given device architecture
+In order to execute the component, first launch the raw data preprocessing program to create lookup data for trace windows
 
 ```bash
-sh launch-profiling.sh
+sh run/sca/preprocessing.sh
 ```
 
-The attacking program is currently not implemented (pre-fitted template attack on alligned power traces)
+Then you can launch the program to fit a window classifier for trace alignment
 
-### Testing
+```bash
+sh run/sca/aligner/window.sh
+```
+
+You can fit the template attacker by launching
+
+```bash
+sh run/sca/generator.sh
+sh run/sca/discriminator.sh
+```
+
+### Testing (OUT OF DATE)
 
 You can launch test for the main system by running
 

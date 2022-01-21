@@ -10,27 +10,33 @@ from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
 from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
-from sca.file.convention1.loader import TraceLoader1 as FileConvention1
-from sca.file.convention2.loader import TraceLoader2 as FileConvention2
 
-class KeyDiscriminator(MachineLearningTask):
+class KeyAttacker(MachineLearningTask):
     '''
     Machine learning task which compute the log likelihood of a key given some attack traces using
     a fitted reduced trace generative model.
     '''
 
-    def __init__(self, loader, generator_path, plain_bounds):
+    def __init__(self, loader, generator_path, voltages, frequencies, plain_bounds):
         '''
         Create new PCA+QDA template attacker.
         loader: trace windows loader
         generator_path: path of a trace generator
-        log_dir: log directory of the task
+        voltages: voltages of platform to attack
+        frequencies: frequencies of platform to attack
+        plain_bounds: start, end plain text indices
         '''
         self.loader = loader
         self.generator_path = generator_path
         generator_params = load_json(os.path.join(generator_path, 'params.json'))
-        self.voltages = generator_params['voltages']
-        self.frequencies = generator_params['frequencies']
+        if voltages is None:
+            self.voltages = generator_params['voltages']
+        else:
+            self.voltages = voltages
+        if frequencies is None:
+            self.frequencies = generator_params['frequencies']
+        else:
+            self.frequencies = frequencies
         self.key_values = generator_params['key_values']
         self.hw_len = BYTE_HW_LEN
         self.plain_bounds = list(plain_bounds)
@@ -43,7 +49,22 @@ class KeyDiscriminator(MachineLearningTask):
     def build_kwargs(cls, config):
         pass
 
+    def process_traces(self, voltage, frequency, key_value, traces):
+        '''
+        Process loaded traces for the computation of one iteration of key likelihoods.
+        '''
+        raise NotImplementedError
+    def target_platform(self, voltage, frequency):
+        '''
+        Select target (voltage,frequency) platform to be used to compute likelihoods.
+        '''
+        raise NotImplementedError
+
     def compute_likelihoods(self, voltage, frequency):
+        '''
+        Compute likelihoods of keys for the attack traces of the (voltage,frequency) platform.
+        '''
+        voltage, frequency = self.target_platform(voltage, frequency)
         root_path = os.path.join(self.generator_path, f'{voltage}-{frequency}')
         curr_path = os.path.join(root_path, 'pca')
         pca = load_pickle(os.path.join(curr_path, 'pca.pckl'))
@@ -60,6 +81,7 @@ class KeyDiscriminator(MachineLearningTask):
             file_path = self.loader.build_file_path(file_id)
             traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
 
+            traces = self.process_traces(voltage, frequency, key_true, traces)
             traces = pca_transform(pca, traces)
             
             for plain_idx in range(self.num_plain_texts):
@@ -70,8 +92,8 @@ class KeyDiscriminator(MachineLearningTask):
 
                     multi_gauss = multivariate_normal(gauss_mean[key_hw], gauss_cov[key_hw])
                     prob_hyp = multi_gauss.pdf(curr_trace)
-
-                    keys_lh[int(key_true), key_hyp, plain_idx:] -= np.log(prob_hyp)
+                    
+                    keys_lh[int(f'0x{key_true}', base=16), key_hyp, plain_idx:] -= np.log(prob_hyp)
 
             pbar.update(1)
 

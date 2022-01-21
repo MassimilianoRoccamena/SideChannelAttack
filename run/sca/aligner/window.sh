@@ -1,1 +1,0 @@
-sh run/main.sh dlearn sca/profiling/aligner/window

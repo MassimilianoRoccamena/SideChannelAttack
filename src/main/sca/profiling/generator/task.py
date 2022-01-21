@@ -49,6 +49,9 @@ class TraceGenerator(MachineLearningTask):
         pass
 
     def fit_pca(self, voltage, frequency):
+        '''
+        Fit a PCA dimensionality reducer of trace data given the (voltage,frequency) platform.
+        '''
         D = np.zeros(self.hw_len, dtype='int')
         sum_hw = np.zeros((self.hw_len, TRACE_SIZE), dtype='float64')
         c_hw = np.zeros((self.hw_len, TRACE_SIZE), dtype='float64')
@@ -78,6 +81,9 @@ class TraceGenerator(MachineLearningTask):
         return mean, pca, mean_reduced
 
     def fit_multi_gauss(self, voltage, frequency, pca):
+        '''
+        Fit the generative distribution of PCA reduced traces given the (voltage,frequency) platform.
+        '''
         t_HW = [[] for i in range(self.hw_len)]
         pbar = tqdm.tqdm(total=len(self.key_values))
 
