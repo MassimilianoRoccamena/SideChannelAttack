@@ -12,7 +12,7 @@ class StaticDiscriminator(KeyAttacker):
     '''
 
     def __init__(self, loader, generator_path, voltages, frequencies,
-                        plain_bounds, taget_volt, target_freq, interp_kind):
+                        plain_bounds, target_volt, target_freq, interp_kind):
         '''
         Create new template attacker on frequency aligned static traces.
         loader: trace windows loader

@@ -9,7 +9,7 @@ base:
 
   name: FrequencyAligner0
 
-  description: 'fit window to key classifier, for tracce alignment detection'
+  description: 'fit window to key classifier, for trace alignment'
 
 # ---------------------------------------------------------------
 
@@ -190,15 +190,15 @@ logging:
     enable: True
 
   neptune:
-    enable: False
+    enable: True
     
     log_model_checkpoints: False
     tags:
-      - lstm
-      - window-200
+      - datalen-1.5M
+      - window-500
       - random-slicer
-      - adam
-      #- split-on-chunks
+      - resnet
+      - sgd
       #- critical frequencies
       #- size-2x
 

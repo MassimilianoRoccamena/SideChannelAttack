@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.interpolate import interp1d
 
 class FrequencyRescaler:
@@ -17,5 +18,5 @@ class FrequencyRescaler:
         time = np.arange(0, windows_size)
         f_interp = interp1d(time, windows, kind=self.interp_kind)
         time_interp = time * self.freq_ratio
-        windows_interp = f_interp(time_interp, windows)
+        windows_interp = f_interp(time_interp)
         return windows_interp
