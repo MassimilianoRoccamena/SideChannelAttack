@@ -64,8 +64,8 @@ class KeyAttacker(MachineLearningTask):
         '''
         Compute likelihoods of keys for the attack traces of the (voltage,frequency) platform.
         '''
-        voltage, frequency = self.target_platform(voltage, frequency)
-        root_path = os.path.join(self.generator_path, f'{voltage}-{frequency}')
+        voltage_target, frequency_target = self.target_platform(voltage, frequency)
+        root_path = os.path.join(self.generator_path, f'{voltage_target}-{frequency_target}')
         curr_path = os.path.join(root_path, 'pca')
         pca = load_pickle(os.path.join(curr_path, 'pca.pckl'))
         curr_path = os.path.join(root_path, 'multi_gauss')

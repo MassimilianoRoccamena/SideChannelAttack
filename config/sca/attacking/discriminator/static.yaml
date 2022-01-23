@@ -7,7 +7,7 @@ base:
     - aligned
 
   name: StaticDiscrimination0
-  id: 1
+  id: 2
 
   description: 'fit of the discriminative distribution of key given the aligned static trace, using MLE'
 
