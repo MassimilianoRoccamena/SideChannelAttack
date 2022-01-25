@@ -14,4 +14,5 @@ def kahan_sum(sum_, c, element):
     return sum_, c
 
 def pca_transform(pca, X):
+    #return np.matmul(X-pca.mean_[:X.shape[-1]], pca.components_[:,:X.shape[-1]].T)
     return np.matmul(X-pca.mean_, pca.components_.T)

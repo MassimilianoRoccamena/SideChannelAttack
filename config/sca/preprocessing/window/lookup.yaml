@@ -7,7 +7,7 @@ base:
     - lookup
 
   name: WindowLookup0
-  id: 0
+  id: 1
 
   description: 'creation of window lookup data'
 
@@ -31,7 +31,7 @@ core:
           name: Random
           params:
             window_size: 500
-            num_windows: 3
+            num_windows: 1
 
           #name: Strided
           #params:
@@ -55,7 +55,7 @@ core:
       #- '01'
     plain_bounds: [0, 300]
 
-    size: #0.1
+    size: 0.2
 
     partitioning:
       mapping:
