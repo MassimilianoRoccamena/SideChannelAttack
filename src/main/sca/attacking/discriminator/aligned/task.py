@@ -12,7 +12,8 @@ class StaticDiscriminator(KeyAttacker):
     '''
 
     def __init__(self, loader, generator_path, voltages, frequencies,
-                        plain_bounds, target_volt, target_freq, interp_kind):
+                        plain_bounds, num_workers, workers_type,
+                        target_volt, target_freq, interp_kind):
         '''
         Create new template attacker on frequency aligned static traces.
         loader: trace windows loader
@@ -20,11 +21,14 @@ class StaticDiscriminator(KeyAttacker):
         voltages: voltages of platform to attack
         frequencies: frequencies of platform to attack
         plain_bounds: start, end plain text indices
+        num_workers: number of processes to split workload
+        workers_type: type of joblib workers
         target_freq: voltage of the aligned platform
         target_freq: frequency of the aligned platform
         interp_kind: kind of 1D trace interpolation
         '''
-        super().__init__(loader, generator_path, voltages, frequencies, plain_bounds)
+        super().__init__(loader, generator_path, voltages, frequencies,
+                            plain_bounds, num_workers, workers_type)
         self.target_volt = target_volt
         self.target_freq = target_freq
         if interp_kind is None:

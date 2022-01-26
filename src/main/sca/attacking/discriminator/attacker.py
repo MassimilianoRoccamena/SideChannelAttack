@@ -1,6 +1,7 @@
 import os
 import tqdm
-import math
+from math import ceil
+from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import multivariate_normal
 
@@ -17,7 +18,8 @@ class KeyAttacker(MachineLearningTask):
     a fitted reduced trace generative model.
     '''
 
-    def __init__(self, loader, generator_path, voltages, frequencies, plain_bounds):
+    def __init__(self, loader, generator_path, voltages, frequencies, plain_bounds,
+                    num_workers, workers_type):
         '''
         Create new PCA+QDA template attacker.
         loader: trace windows loader
@@ -25,6 +27,8 @@ class KeyAttacker(MachineLearningTask):
         voltages: voltages of platform to attack
         frequencies: frequencies of platform to attack
         plain_bounds: start, end plain text indices
+        num_workers: number of processes to split workload
+        workers_type: type of joblib workers
         '''
         self.loader = loader
         self.generator_path = generator_path
@@ -32,17 +36,19 @@ class KeyAttacker(MachineLearningTask):
         if voltages is None:
             self.voltages = generator_params['voltages']
         else:
-            self.voltages = voltages
+            self.voltages = list(voltages)
         if frequencies is None:
             self.frequencies = generator_params['frequencies']
         else:
-            self.frequencies = frequencies
+            self.frequencies = list(frequencies)
         self.key_values = generator_params['key_values']
         self.hw_len = BYTE_HW_LEN
         self.plain_bounds = list(plain_bounds)
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.reduced_dim = generator_params['reduced_dim']
+        self.num_workers = num_workers
+        self.workers_type = workers_type
 
     @classmethod
     @build_task_kwarg('loader')
@@ -60,6 +66,31 @@ class KeyAttacker(MachineLearningTask):
         '''
         raise NotImplementedError
 
+    def key_likelihoods_work(self, pca, gauss_mean, gauss_cov,
+                                    voltage, frequency, key_true, keys_lh):
+        '''
+        Work method of one process computing one true key likelihoods over all key hypothesis.
+        '''
+        num_keys = len(self.key_values)
+
+        file_id = self.loader.build_file_id(voltage, frequency, key_true)
+        file_path = self.loader.build_file_path(file_id)
+        traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
+
+        traces = self.process_traces(voltage, frequency, key_true, traces)
+        traces = pca_transform(pca, traces)
+            
+        for plain_idx in range(self.num_plain_texts):
+            curr_trace = traces[plain_idx]
+
+            for key_hyp in range(num_keys):
+                sbox_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_texts[plain_idx][0] ^ key_hyp]]
+
+                multi_gauss = multivariate_normal(gauss_mean[sbox_hw], gauss_cov[sbox_hw])
+                prob_hyp = multi_gauss.pdf(curr_trace)
+                    
+                keys_lh[int(f'0x{key_true}', base=16), key_hyp, plain_idx:] -= np.log(prob_hyp)
+
     def compute_likelihoods(self, voltage, frequency):
         '''
         Compute likelihoods of keys for the attack traces of the (voltage,frequency) platform.
@@ -74,28 +105,24 @@ class KeyAttacker(MachineLearningTask):
 
         num_keys = len(self.key_values)
         keys_lh = np.zeros((num_keys, num_keys, self.num_plain_texts))
-        pbar = tqdm.tqdm(total=num_keys)
 
-        for key_true in self.key_values:
-            file_id = self.loader.build_file_id(voltage, frequency, key_true)
-            file_path = self.loader.build_file_path(file_id)
-            traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
+        num_workers = self.num_workers
+        workers_type = self.workers_type
 
-            traces = self.process_traces(voltage, frequency, key_true, traces)
-            traces = pca_transform(pca, traces)
-            
-            for plain_idx in range(self.num_plain_texts):
-                curr_trace = traces[plain_idx]
-
-                for key_hyp in range(num_keys):
-                    key_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_texts[plain_idx][0] ^ key_hyp]] # sbox hw
-
-                    multi_gauss = multivariate_normal(gauss_mean[key_hw], gauss_cov[key_hw])
-                    prob_hyp = multi_gauss.pdf(curr_trace)
-                    
-                    keys_lh[int(f'0x{key_true}', base=16), key_hyp, plain_idx:] -= np.log(prob_hyp)
-
-            pbar.update(1)
+        if num_workers is None:
+            pbar = tqdm.tqdm(total=num_keys)                                        # vanilla
+            for key_true in self.key_values:
+                self.key_likelihoods_work(pca, gauss_mean, gauss_cov, voltage,
+                                            frequency, key_true, keys_lh)
+                pbar.update(1)
+        else:
+            n_iters = ceil(len(self.key_values) / num_workers)                      # multiprocessed
+            pbar = tqdm.tqdm(total=n_iters)
+            for i in range(n_iters):
+                keys_true = self.key_values[i : min((i+1)*num_workers, num_keys-1)]
+                Parallel(n_jobs=num_workers, prefer=workers_type) (delayed(self.key_likelihoods_work) \
+                        (pca, gauss_mean, gauss_cov, voltage, frequency, key_true, keys_lh) for key_true in keys_true)
+                pbar.update(1)
 
         pbar.close()
         return keys_lh
