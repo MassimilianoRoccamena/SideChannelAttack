@@ -204,6 +204,8 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
     def mount(self, *args, **kwargs):
         super().mount(*args, **kwargs)
         num_classes = len(kwargs['labels'])
+        self.xticklabels = self.kwargs.pop('xticklabels', 'auto')
+        self.yticklabels = self.kwargs.pop('yticklabels', 'auto')
         self.metric = ConfusionMatrix(num_classes,
                                         *self.args, **self.kwargs)
 
@@ -230,7 +232,8 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
         ax.set_title(title, fontsize=14, pad=20)
         
         df = pd.DataFrame(matrix, index=labels, columns=labels)
-        sn.heatmap(df, ax=ax, annot=True, cmap='Blues')
+        sn.heatmap(df, ax=ax, annot=True, cmap='Blues',
+                        xticklabels=self.xticklabels, yticklabels=self.yticklabels)
 
         ax.set_xlabel('Prediction', fontweight='bold', labelpad=10)
         ax.set_ylabel('Truth', fontweight='bold', labelpad=10)

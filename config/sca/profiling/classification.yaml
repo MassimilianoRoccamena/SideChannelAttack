@@ -3,13 +3,11 @@ base:
   origin:
     - sca
     - profiling
-    - aligner
-    - window
     - classification
 
-  name: FrequencyAligner0
+  name: KeyClassifier0
 
-  description: 'fit window to frequency classifier, for trace alignment'
+  description: 'fit trace to key classifier'
 
 # ---------------------------------------------------------------
 
@@ -33,14 +31,36 @@ dataset:
     train: False
     test: False
 
-  name: FrequencyClassification
+  name: HammingKeyClassification
   params:
     loader:
       name: FileConvention2
       params:
 
-    #lookup_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\WindowLookup1\0
-    lookup_path: /data/output/WindowLookup0/0
+    voltages:
+      - '1.00'
+    frequencies:
+      - '45.000'
+      - '46.875'
+      - '48.000'
+      - '50.000'
+      - '50.125'
+      - '52.000'
+      - '54.000'
+      - '55.000'
+      - '56.000'
+    key_values:
+      #- '00'
+      #- '01'
+    plain_bounds: [0, 50]
+    sets:
+      - name: train
+        size: 0.75
+      - name: valid
+        size: 0.15
+      - name: test
+        size: 0.1
+
     channels_first: True
 
 model:
@@ -51,19 +71,19 @@ model:
     encoder:
       name: ResNet
       params:
-        encoding_size: 60
-        base_filters: 45
-        kernel_size: 40
-        stride: 2
+        encoding_size: 90
+        base_filters: 18
+        kernel_size: 200
+        stride: 20
         groups: 1
-        n_block: 5
+        n_block: 8
         downsample_gap: 2
         increasefilter_gap: 4
         use_batch_norm: True
         use_inner_do: True
-        inner_do_val: 0.1
+        inner_do_val: 0.5
         use_final_do: True
-        final_do_val: 0.1
+        final_do_val: 0.5
 
       #name: LSTM1
       #params:
@@ -116,7 +136,7 @@ learning:
 
   early_stopping:
     monitor: valid/loss
-    patience: 10
+    patience: 7
     mode: min
 
   optimizer:
@@ -136,16 +156,16 @@ learning:
       gamma: 0.9
 
   data_loader:
-    batch_size: 64
+    batch_size: 32
     shuffle: True
-    num_workers: 2
+    num_workers: 4
     pin_memory: True
 
   trainer:
     gpus: 1
     max_epochs: 100
     check_val_every_n_epoch: 1
-    log_every_n_steps: 100
+    log_every_n_steps: 64
     limit_train_batches: 0.1
     limit_val_batches: 0.1
     track_grad_norm: 2
@@ -175,8 +195,8 @@ learning:
       sets:
       params:
         normalize: 'true'
-        #xticklabels:
-        #yticklabels:
+        xticklabels: 20
+        yticklabels: 20
 
     - name: Inference
       sets:
@@ -196,13 +216,9 @@ logging:
     
     log_model_checkpoints: False
     tags:
-      - datalen-1.5M
-      - window-500
-      - random-slicer
+      - plain-0-100
       - resnet
       - sgd
-      #- critical frequencies
-      #- size-2x
 
     # source_files:
     # - '*.py'

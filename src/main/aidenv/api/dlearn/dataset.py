@@ -22,6 +22,12 @@ class Classification:
     Abstract classification interface.
     '''
 
+    def current_label(self, *args):
+        '''
+        Current batch labels, by global passed batch args.
+        '''
+        raise NotImplementedError
+
     def all_labels(self):
         '''
         Labels of the classification.

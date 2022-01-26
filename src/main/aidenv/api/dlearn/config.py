@@ -272,6 +272,7 @@ def build_learning1(config, hparams, datasets, model):
     print('Loaded data loaders')
 
     learning_hparams = dict(config)
+    del learning_hparams['loggables']
     hparams.update({LEARN_KEY : learning_hparams})
     return early_stop, loss, optimizer, scheduler, loaders
 

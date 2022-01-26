@@ -11,14 +11,13 @@ class TraceReader(FileReader):
     def __init__(self, loader, voltages, frequencies, key_values, plain_indices):
         '''
         Create new raw reader of power traces.
-        loader: trace windows loader
+        loader: traces loader
         voltages: device voltages
         frequencies: device frequencies
         key_values: key values of the encryption
         plain_indices: plain texts indices of the encryption
         '''
         super().__init__(loader)
-        self.num_files = len(voltages) * len(frequencies) * len(key_values)
 
         self.voltages = voltages
         self.frequencies = frequencies
@@ -27,7 +26,8 @@ class TraceReader(FileReader):
             print('Using all key values')
         self.key_values = key_values
         self.plain_indices = plain_indices
-
+        
+        self.num_files = len(voltages) * len(frequencies) * len(key_values)
         self.num_samples = self.num_files * len(plain_indices)
 
     def translate_reader_index(self, reader_index):
