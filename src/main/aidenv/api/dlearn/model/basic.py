@@ -15,30 +15,11 @@ class DeepModel(LightningModule, CoreModel):
         self.optimizer = optimizer
         self.scheduler = scheduler
 
-    def step_batch(self, batch):
-        '''
-        Compute for a batch: prediction, target, loss.
-        '''
-        x, y = batch
-        y_hat = self(x)
-        return self.loss(y_hat, y), \
-                y.detach().cpu(), \
-                y_hat.detach().cpu()
-
     def configure_optimizers(self):
         if self.scheduler is None:
             return self.optimizer
         else:
             return [self.optimizer], [self.scheduler]
-
-    def training_step(self, batch, batch_index):
-        return self.step(batch)[-1]
-
-    def validation_step(self, batch, batch_index):
-        return self.step(batch)[-1]
-
-    def test_step(self, batch, batch_index):
-        return self.step(batch)[-1]
 
     def mount(self, *args, **kwargs):
         '''
@@ -46,6 +27,32 @@ class DeepModel(LightningModule, CoreModel):
         dataset: dataset object
         '''
         raise NotImplementedError
+
+    # step methods
+
+    def step_batch(self, batch):
+        '''
+        Compute for a batch: prediction, target, loss.
+        '''
+        x, y = batch
+        y_hat = self(x)
+        return self.loss(y_hat, y), \
+                y.detach(), \
+                y_hat.detach()
+
+    def compute_step(self, batch, prefix):
+        step_results = self.step_batch(batch)
+        outputs = {'loss':step_results[0],'target':step_results[1],'prediction':step_results[2]}
+        return outputs
+
+    def training_step(self, batch, batch_index):
+        return self.compute_step(batch, 'train')
+
+    def validation_step(self, batch, batch_index):
+        return self.compute_step(batch, 'valid')
+
+    def test_step(self, batch, batch_index):
+        return self.compute_step(batch, 'test')
 
     def forward(self, x):
         raise NotImplementedError

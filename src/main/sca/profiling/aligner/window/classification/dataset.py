@@ -1,7 +1,9 @@
 import torch
 
+from utils.math import BYTE_SIZE, BYTE_HW_LEN
 from aidenv.api.dlearn.config import build_dataset_kwarg
 from aidenv.api.dlearn.dataset import ClassificationDataset
+from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 from sca.profiling.aligner.window.loader import WindowLoader1 as FileConvention1
 from sca.profiling.aligner.window.loader import WindowLoader2 as FileConvention2
 from sca.profiling.aligner.window.reader import WindowReader
@@ -49,36 +51,17 @@ class SingleClassification(WindowClassification):
         voltage, frequency, key_value, plain_text, trace_window = self.reader[index]
         x = self.channels_reshape(trace_window)
         labels = self.all_labels()
-        label = frequency
+        label = self.current_label(voltage, frequency, key_value, plain_text)
         y = labels.index(label)
         return x, y
-
-class MultiClassification(WindowClassification):
-    '''
-    Abstract (volt,freq) classification dataset of trace windows.
-    '''
-
-    def all_labels(self):
-        return ( self.reader.voltages,
-                 self.reader.frequencies )
-
-    def current_label(self):
-        return ( self.reader.file_id.voltage,
-                 self.reader.file_id.frequency )
-
-    def __getitem__(self, index):
-        voltage, frequency, key_value, plain_text, trace_window = self.reader[index]
-        x = self.channels_reshape(trace_window)
-        labels = self.all_labels()
-        label = (voltage, frequency)
-        y0 = labels[0].index(label[0])
-        y1 = labels[1].index(label[1])
-        return x, (y0, y1)
 
 class VoltageClassification(SingleClassification):
     '''
     Dataset composed of power trace windows labelled with voltage
     '''
+
+    def current_label(self, *args):
+        return args[0]
 
     def all_labels(self):
         return self.reader.voltages
@@ -88,5 +71,75 @@ class FrequencyClassification(SingleClassification):
     Dataset composed of power trace windows labelled with frequency
     '''
 
+    def current_label(self, *args):
+        return args[1]
+
     def all_labels(self):
         return self.reader.frequencies
+
+class KeyClassification(SingleClassification):
+    '''
+    Dataset composed of power traces labelled with key value.
+    '''
+
+    def current_label(self, *args):
+        return args[2]
+
+    def all_labels(self):
+        return self.reader.key_values
+
+class HammingKeyClassification(SingleClassification):
+    '''
+    Dataset composed of power traces labelled with hamming weight
+    of key value.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        max_hw = math.ceil(math.log(len(self.reader.key_values),2))
+        self.hamming_wights = [str(i) for i in range(max_hw+1)]
+
+    def current_label(self, *args):
+        key = args[2]
+        key_idx = self.reader.key_values.index(key)
+        hw_key = HAMMING_WEIGHTS[key_idx]
+        return str(hw_key)
+
+    def all_labels(self):
+        return self.hamming_wights
+
+class HammingSboxClassification(SingleClassification):
+    '''
+    Dataset composed of power traces labelled with hamming weight
+    of sbox output.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.hamming_wights = [str(i) for i in range(BYTE_HW_LEN)]
+
+    def current_label(self, *args):
+        plain_text = args[3]
+        key = args[4]
+        hw_sbox = HAMMING_WEIGHTS[SBOX_MAT[plain_text[0] ^ key[0]]]
+        return str(hw_sbox)
+
+    def all_labels(self):
+        return self.hamming_wights
+
+class MultiClassification(WindowClassification):
+    '''
+    Abstract multiple classification dataset of trace windows.
+    '''
+
+    def __getitem__(self, index):
+        voltage, frequency, key_value, plain_text, trace_window = self.reader[index]
+        x = self.channels_reshape(trace_window)
+        labels = self.all_labels()
+        label = self.current_label(voltage, frequency, key_value, plain_text)
+
+        y = []
+        for i in range(label):
+            y.append(labels[i].index(label[i]))
+
+        return x, y

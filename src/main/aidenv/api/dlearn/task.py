@@ -79,7 +79,8 @@ class DeepClassification(DeepLearningTask):
             raise KeyError(CONFIG_NOT_FOUND_MSG(LEARN_KEY))
 
         trainer, loggables, sets = build_learning2(config, early_stop,
-                                                    loggers, log_dir)
+                                                            loggers, log_dir)
+
         model.add_loggables(loggables, sets)
         model.mount(datasets[0], log_dir)
 

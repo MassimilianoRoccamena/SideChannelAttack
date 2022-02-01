@@ -8,7 +8,6 @@ from torch.optim.lr_scheduler import StepLR
 
 from aidenv.api.dlearn.learning.logging import LoggableObject
 from aidenv.api.dlearn.learning.logging import LoggableScalar
-from aidenv.api.dlearn.learning.logging import LoggableLoss
 from aidenv.api.dlearn.learning.logging import LoggableTensor
 from aidenv.api.dlearn.learning.logging import LoggableFigure
 from aidenv.api.dlearn.learning.logging import LoggableAccuracy

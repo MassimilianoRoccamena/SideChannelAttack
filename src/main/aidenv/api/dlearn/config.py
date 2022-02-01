@@ -375,9 +375,19 @@ def build_trainer(config, callbacks, loggers, log_dir):
                                         'default_root_dir' : log_dir
                                     })
 
+#def build_metrics(config):
+#    if config is None:
+#        return None
+#    metrics = {}
+#    for c in config:
+#        cls_name = c[CLASS_NAME_KEY]
+#        log_name = lower_identifier(cls_name)
+#        metrics[log_name] = build_learning_object_expanded(c)
+#    return metrics
+
 def build_loggables(config):
     if config is None:
-        return []
+        return None
 
     loggables = {}
     sets = {}
@@ -403,6 +413,10 @@ def build_learning2(config, early_stop, loggers, log_dir):
     callbacks = [ early_stop, ckpt_callback, lr_monitor ]
     trainer = build_trainer(config, callbacks, loggers, log_dir)
     print('Loaded trainer')
+
+    #metrics = search_config_key(config, LEARN_METRICS_KEY)
+    #metrics = build_metrics(metrics)
+    #print('Loaded metrics')
 
     loggables = search_config_key(config, LEARN_LOG_KEY)
     loggables, sets = build_loggables(loggables)

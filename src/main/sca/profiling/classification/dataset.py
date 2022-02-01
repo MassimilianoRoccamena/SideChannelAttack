@@ -2,9 +2,10 @@ import math
 import numpy as np
 import torch
 
+from utils.math import BYTE_SIZE, BYTE_HW_LEN
 from aidenv.api.dlearn.config import build_dataset_kwarg
 from aidenv.api.dlearn.dataset import ClassificationDataset
-from sca.file.params import HAMMING_WEIGHTS
+from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 from sca.file.convention1.loader import TraceLoader1 as FileConvention1
 from sca.file.convention2.loader import TraceLoader2 as FileConvention2
 from sca.file.reader import TraceReader
@@ -71,7 +72,7 @@ class SingleClassification(TraceClassification):
             trace, plain_text, key = self.reader[index]
         x = self.channels_reshape(trace)
         labels = self.all_labels()
-        label = self.current_label(voltage, frequency, key_value, plain_text)
+        label = self.current_label(voltage, frequency, key_value, plain_text[0], key)
         y = labels.index(label)
         return x, y
 
@@ -106,6 +107,25 @@ class HammingKeyClassification(SingleClassification):
     def all_labels(self):
         return self.hamming_wights
 
+class HammingSboxClassification(SingleClassification):
+    '''
+    Dataset composed of power traces labelled with hamming weight
+    of sbox output.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.hamming_wights = [str(i) for i in range(BYTE_HW_LEN)]
+
+    def current_label(self, *args):
+        plain_text = args[3]
+        key = args[4]
+        hw_sbox = HAMMING_WEIGHTS[SBOX_MAT[plain_text[0] ^ key[0]]]
+        return str(hw_sbox)
+
+    def all_labels(self):
+        return self.hamming_wights
+
 class MultiClassification(TraceClassification):
     '''
     Abstract multiple classification dataset of traces.
@@ -117,6 +137,9 @@ class MultiClassification(TraceClassification):
         x = self.channels_reshape(trace)
         labels = self.all_labels()
         label = self.current_label(voltage, frequency, key_value, plain_text)
-        y0 = labels[0].index(label[0])
-        y1 = labels[1].index(label[1])
-        return x, (y0, y1)
+
+        y = []
+        for i in range(label):
+            y.append(labels[i].index(label[i]))
+
+        return x, y

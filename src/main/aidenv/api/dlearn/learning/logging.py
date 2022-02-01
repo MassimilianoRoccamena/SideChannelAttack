@@ -41,65 +41,61 @@ class LoggableObject:
 
     def __call__(self, *args, **kwargs):
         '''
-        Compute the payload of the object.
-        '''
-        raise NotImplementedError
-    
-    def log(self, outputs, log_name, *step_results):
-        '''
-        Log the payload of the object.
-        '''
-        raise NotImplementedError
-
-    def on_epoch_end(self, *args, **kwargs):
-        '''
-        Handle model training epoch end.
+        Compute the payload of the loggable object.
         '''
         raise NotImplementedError
 
 class LoggableScalar(LoggableObject):
     '''
-    Abstract loggable scalar.
+    Abstract loggable scalar value.
     '''
 
-    def log(self, outputs, log_name, *step_results):
-        loss = step_results[0]
-        target = step_results[1]
-        prediction = step_results[2]
-        payload = self(prediction, target, loss=loss)
+    def __init__(self, *args, **kwargs):
+        '''
+        '''
+        super().__init__(*args, **kwargs)
+        self.metric = None
 
-        self.model.log(log_name, payload, on_step=True, on_epoch=True,
-                        sync_dist=True, prog_bar=self.progr_bar)
-        outputs[log_name] = payload
+    def __call__(self, *args, **kwargs):
+        return self.metric(*args)
 
-    def on_epoch_end(self, *args, **kwargs):
-        pass
-
-class LoggableTensor(LoggableObject):
+class LoggableAdvanced(LoggableObject):
     '''
-    Abstract loggable tensor.
+    '''
+
+    def log(self, outputs, log_name):
+        '''
+        '''
+        raise NotImplementedError
+
+    def on_epoch_end(self, outputs, log_name):
+        '''
+        '''
+        raise NotImplementedError
+
+class LoggableTensor(LoggableAdvanced):
+    '''
+    Abstract loggable tensorial values.
     '''
 
     def __call__(self, *args, **kwargs):
         val = args[0]
         self.shape = val.shape
-        return { 'values' : torch.flatten(val) }
+        val = torch.flatten(val)
+        return { 'values' : val }
 
-    def log(self, outputs, log_name, *step_results):
-        loss = step_results[0]
-        target = step_results[1]
-        prediction = step_results[2]
-        log = self(prediction, target, loss=loss)
-        payload = {}
+    def log(self, outputs, log_name):
+        logged = self(outputs['prediction'], outputs['target'])
+        logged_dict = {}
 
-        for k,v in log.items():
+        for k,v in logged.items():
             for i,e in enumerate(v):
-                payload[f'{log_name}/{k}/{i}'] = e
+                logged_dict[f'{log_name}/{k}/{i}'] = e
 
-        self.model.log_dict(payload, on_step=True, on_epoch=True,
+        self.model.log_dict(logged_dict, on_step=True, on_epoch=True,
                                 sync_dist=True, prog_bar=self.progr_bar)
                 
-        outputs.update(payload)
+        outputs.update(logged_dict)
 
     def build_tensor(self, outputs, log_name):
         output = outputs[0]
@@ -124,7 +120,7 @@ class LoggableTensor(LoggableObject):
         tensor = tensor.view(*shape)
         return tensor
 
-class LoggableFigure(LoggableObject):
+class LoggableFigure(LoggableAdvanced):
     '''
     Abstract loggable figure.
     '''
@@ -138,63 +134,111 @@ class LoggableFigure(LoggableObject):
         '''
         raise NotImplementedError
 
-# metrics
+# utils
 
-class LoggableLoss(LoggableScalar):
+class LoggableInference(LoggableAdvanced):
     '''
-    Loggable loss.
-    '''
-
-    def __call__(self, *args, **kwargs):
-        return kwargs['loss']
-
-class LoggableAccuracy(LoggableScalar):
-    '''
-    Loggable accuracy.
+    Loggable model output (prediction, encoding) on some data.
     '''
 
     def mount(self, *args, **kwargs):
         super().mount(*args, **kwargs)
-        self.metric = Accuracy(*self.args, **self.kwargs)
+        self.log_encoding = self.kwargs['log_encoding']
+        log_dir = os.path.join(self.model.log_dir, 'inference.csv')
+        self.file = open(log_dir, 'w')
+        self.file_init = True
+        self.file_written = False
 
     def __call__(self, *args, **kwargs):
-        return self.metric(*args)
+        if self.file_written:
+            return
 
-class LoggablePrecision(LoggableScalar):
+        target = args[0]
+        prediction = args[1]
+        encoding = args[2]
+        batch_size = prediction.size(dim=0)
+        prediction_size = prediction.size(dim=1)
+        encoding_size = encoding.size(dim=1)
+
+        if self.file_init:
+            header = 'target'
+            for i in range(prediction_size):
+                header = f'{header},prediction{i}'
+            if self.log_encoding:
+                for i in range(encoding_size):
+                    header = f'{header},encoding{i}'
+            print(header, file=self.file)
+            self.file_init = False
+
+        for b in range(batch_size):
+            label = self.model.labels[target[b]]
+            sample_line = f'{label}'
+
+            for i in range(prediction_size):
+                sample_line = f'{sample_line},{prediction[b,i]}'
+            if self.log_encoding:
+                for i in range(encoding_size):
+                    sample_line = f'{sample_line},{encoding[b,i]}'
+            print(sample_line, file=self.file)
+
+    def log(self, outputs, log_name):
+        target = outputs['target']
+        prediction = outputs['prediction']
+        encoding = outputs['encoding']
+        self(target, prediction, encoding)
+
+    def on_epoch_end(self, *args, **kwargs):
+        if not self.file_written:
+            self.file.close()
+            self.file_written = True
+
+# classification
+
+class LoggableClassifScalar(LoggableScalar):
+    '''
+    Loggable classification related metric.
+    '''
+
+    def mount(self, *args, **kwargs):
+        super().mount(*args, **kwargs)
+        labels = kwargs.get('labels')
+        self.kwargs['num_classes'] = len(labels)
+        self.metric = self.build_metric()
+
+    def build_metric(self):
+        raise NotImplementedError
+
+class LoggableAccuracy(LoggableClassifScalar):
+    '''
+    Loggable accuracy.
+    '''
+
+    def build_metric(self):
+        return Accuracy(*self.args, **self.kwargs)
+
+class LoggablePrecision(LoggableClassifScalar):
     '''
     Loggable precision.
     '''
 
-    def mount(self, *args, **kwargs):
-        super().mount(*args, **kwargs)
-        self.metric = Precision(*self.args, **self.kwargs)
+    def build_metric(self):
+        return Precision(*self.args, **self.kwargs)
 
-    def __call__(self, *args, **kwargs):
-        return self.metric(*args)
-
-class LoggableRecall(LoggableScalar):
+class LoggableRecall(LoggableClassifScalar):
     '''
     Loggable recall.
     '''
 
-    def mount(self, *args, **kwargs):
-        super().mount(*args, **kwargs)
-        self.metric = Recall(*self.args, **self.kwargs)
+    def build_metric(self):
+        return Recall(*self.args, **self.kwargs)
 
-    def __call__(self, *args, **kwargs):
-        return self.metric(*args)
-
-class LoggableF1(LoggableScalar):
+class LoggableF1(LoggableClassifScalar):
     '''
     Loggable accuracy.
     '''
 
-    def mount(self, *args, **kwargs):
-        super().mount(*args, **kwargs)
-        self.metric = F1(*self.args, **self.kwargs)
-
-    def __call__(self, *args, **kwargs):
-        return self.metric(*args)
+    def build_metric(self):
+        return F1(*self.args, **self.kwargs)
 
 class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
     '''
@@ -203,14 +247,14 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
 
     def mount(self, *args, **kwargs):
         super().mount(*args, **kwargs)
-        num_classes = len(kwargs['labels'])
+        labels = kwargs.get('labels')
+        self.kwargs['num_classes'] = len(labels)
         self.xticklabels = self.kwargs.pop('xticklabels', 'auto')
         self.yticklabels = self.kwargs.pop('yticklabels', 'auto')
-        self.metric = ConfusionMatrix(num_classes,
-                                        *self.args, **self.kwargs)
+        self.model.conf_mat = ConfusionMatrix(*self.args, **self.kwargs)
 
     def __call__(self, *args, **kwargs):
-        return super().__call__(self.metric(*args))
+        return super().__call__(self.model.conf_mat(*args))
 
     def draw(self, *args, **kwargs):
         matrix = args[0]
@@ -219,6 +263,7 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
 
         # matrix = matrix / matrix.sum(axis=0)            # normalize
         matrix = np.nan_to_num(matrix, copy=True)
+        #print(matrix)
 
         labels = ['\n'.join(wrap(l, 10)) for l in labels]
 
@@ -255,58 +300,5 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
         figure = self.draw(tensor, labels, epoch=epoch)
         log_name = f'{log_name}/figures'
 
-        step = 0
         step = self.model.current_epoch
-
         super().on_epoch_end(log_name, figure, step=step)
-
-class LoggableInference(LoggableObject):
-    '''
-    Loggable model inference (on test set).
-    '''
-
-    def mount(self, *args, **kwargs):
-        super().mount(*args, **kwargs)
-        self.log_encoding = self.kwargs['log_encoding']
-        log_dir = os.path.join(self.model.log_dir, 'inference.csv')
-        self.file = open(log_dir, 'w')
-        self.file_init = True
-
-    def __call__(self, *args, **kwargs):
-        target = args[0]
-        prediction = args[1]
-        encoding = args[2]
-        batch_size = prediction.size(dim=0)
-        prediction_size = prediction.size(dim=1)
-        encoding_size = encoding.size(dim=1)
-
-        if self.file_init:
-            header = 'target'
-            for i in range(prediction_size):
-                header = f'{header},prediction{i}'
-            if self.log_encoding:
-                for i in range(encoding_size):
-                    header = f'{header},encoding{i}'
-            print(header, file=self.file)
-            self.file_init = False
-
-        for b in range(batch_size):
-            label = self.model.labels[target[b]]
-            sample_line = f'{label}'
-
-            for i in range(prediction_size):
-                sample_line = f'{sample_line},{prediction[b,i]}'
-            if self.log_encoding:
-                for i in range(encoding_size):
-                    sample_line = f'{sample_line},{encoding[b,i]}'
-            print(sample_line, file=self.file)
-
-    def log(self, outputs, log_name, *step_results):
-        loss = step_results[0]
-        target = step_results[1]
-        prediction = step_results[2]
-        encoding = step_results[3]
-        self(target, prediction, encoding)
-
-    def on_epoch_end(self, *args, **kwargs):
-        self.file.close()

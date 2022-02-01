@@ -1,6 +1,6 @@
 from aidenv.api.dlearn.config import build_model_kwarg
 from aidenv.api.dlearn.model.wrapper import WrapperModel
-from aidenv.api.dlearn.module.classifier import SingleClassifier
+from aidenv.api.dlearn.module.classifier import SingleClassifier, SingleClassifierAdvanced
 from aidenv.api.dlearn.module.classifier import MultiClassifier
 
 class ClassifierModel(WrapperModel):
@@ -39,6 +39,12 @@ class ClassifierModel(WrapperModel):
         encoding = self.module.encoder.input_encoded
         return loss, target, prediction, encoding
 
+    def compute_step(self, batch, prefix):
+        step_results = self.step_batch(batch)
+        outputs = {'loss':step_results[0],'target':step_results[1],
+                    'prediction':step_results[2],'encoding':step_results[3]}
+        return outputs
+
 class SingleClassifierModel(ClassifierModel):
     '''
     Abstract model wrapping a single classifier
@@ -46,6 +52,14 @@ class SingleClassifierModel(ClassifierModel):
 
     def __init__(self, encoder):
         super().__init__(SingleClassifier(encoder))
+
+class SingleClassifierAdvancedModel(ClassifierModel):
+    '''
+    Abstract model wrapping a single classifier
+    '''
+
+    def __init__(self, encoder, layers):
+        super().__init__(SingleClassifierAdvanced(encoder, layers))
 
 class MultiClassifierModel(ClassifierModel):
     '''

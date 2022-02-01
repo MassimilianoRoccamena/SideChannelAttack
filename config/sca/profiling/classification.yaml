@@ -5,7 +5,7 @@ base:
     - profiling
     - classification
 
-  name: KeyClassifier0
+  name: KeyClassifierTemp #KeyClassifier0
 
   description: 'fit trace to key classifier'
 
@@ -31,7 +31,7 @@ dataset:
     train: False
     test: False
 
-  name: HammingKeyClassification
+  name: HammingSboxClassification
   params:
     loader:
       name: FileConvention2
@@ -40,19 +40,19 @@ dataset:
     voltages:
       - '1.00'
     frequencies:
-      - '45.000'
-      - '46.875'
+      #- '45.000'
+      #- '46.875'
       - '48.000'
-      - '50.000'
-      - '50.125'
-      - '52.000'
-      - '54.000'
-      - '55.000'
-      - '56.000'
+      #- '50.000'
+      #- '50.125'
+      #- '52.000'
+      #- '54.000'
+      #- '55.000'
+      #- '56.000'
     key_values:
       #- '00'
       #- '01'
-    plain_bounds: [0, 50]
+    plain_bounds: [0, 100]
     sets:
       - name: train
         size: 0.75
@@ -69,32 +69,47 @@ model:
   name: SingleBasic
   params:
     encoder:
-      name: ResNet
+      name: VGG
       params:
-        encoding_size: 90
-        base_filters: 18
-        kernel_size: 200
-        stride: 20
-        groups: 1
-        n_block: 8
-        downsample_gap: 2
-        increasefilter_gap: 4
+        encoding_size: 500
+        base_filters: 64
+        conv_kernel_size: 20
+        conv_stride: 2
+        pool_kernel_size: 2
         use_batch_norm: True
-        use_inner_do: True
-        inner_do_val: 0.5
+        num_convs1: 2
+        num_convs2: 3
+        num_layers1: 2
+        num_layers2: 3
         use_final_do: True
-        final_do_val: 0.5
+        final_do_val: 0.3
+
+      #name: ResNet
+      #params:
+      #  encoding_size: 800
+      #  base_filters: 27
+      #  kernel_size: 20
+      #  stride: 2
+      #  groups: 1
+      #  n_block: 4
+      #  downsample_gap: 2
+      #  increasefilter_gap: 2
+      #  use_batch_norm: True
+      #  use_inner_do: True
+      #  inner_do_val: 0.4
+      #  use_final_do: True
+      #  final_do_val: 0.4
 
       #name: LSTM1
       #params:
       #  batch_first: True
-      #  encoding_size: 90
-      #  use_final_do: True
-      #  final_do_val: 0.1
-      #  hidden_size: 300
-      #  num_layers: 1
-      #  dropout: 0.1
-      #  bidirectional: True
+      #  encoding_size: 50
+      #  use_final_do: False
+      #  final_do_val: 0.3
+      #  hidden_size: 20
+      #  num_layers: 7
+        #dropout: 0.3
+        #bidirectional: True
 
       #name: GRU1
       #params:
@@ -117,6 +132,9 @@ model:
       #  nhead: 1
       #  dropout: 0.1
 
+    #layers: [600, 100]
+  
+
 # ---------------------------------------------------------------
 
 learning:
@@ -124,15 +142,16 @@ learning:
   loss:
     name: CrossEntropyLoss
     params:
-      #weight:
-      #  - 1.0
-      #  - 3.0
-      #  - 1.0
-      #  - 3.0
-      #  - 1.0
-      #  - 1.0
-      #  - 1.0
-      #  - 1.0
+    #  weight:
+    #    - 60.0
+    #    - 9.0
+    #    - 2.57
+    #    - 1.28
+    #    - 1.0
+    #    - 1.28
+    #    - 2.57
+    #    - 9.0
+    #    - 60.0
 
   early_stopping:
     monitor: valid/loss
@@ -147,62 +166,62 @@ learning:
       weight_decay: 1e-4
     #name: Adam
     #params:
-    #  lr: 0.00001
+    #  lr: 0.0003
 
   scheduler:
     name: StepLR
     params:
-      step_size: 2
-      gamma: 0.9
+      step_size: 1
+      gamma: 0.85
 
   data_loader:
-    batch_size: 32
+    batch_size: 32 #24
     shuffle: True
     num_workers: 4
     pin_memory: True
 
   trainer:
     gpus: 1
-    max_epochs: 100
+    max_epochs: 70
     check_val_every_n_epoch: 1
-    log_every_n_steps: 64
+    log_every_n_steps: 2
     limit_train_batches: 0.1
-    limit_val_batches: 0.1
+    limit_val_batches: 0.3
     track_grad_norm: 2
 
   loggables:
     - name: Accuracy
       sets:
       params:
-        #average: samples
+        average: weighted #macro
 
     - name: Precision
       sets:
       params:
-        #average: samples
+        average: weighted #macro
 
     - name: Recall
       sets:
       params:
-        #average: samples
+        average: weighted #macro
     
     - name: F1
       sets:
       params:
-        #average: samples
+        average: weighted #macro
 
     - name: ConfusionMatrix
       sets:
       params:
-        normalize: 'true'
-        xticklabels: 20
-        yticklabels: 20
+    #    normalize: 'true'
+    #    xticklabels: 20
+    #    yticklabels: 20
 
-    - name: Inference
-      sets:
-        - 'test'
-      params:
-        log_encoding: True
+    #- name: Inference
+    #  sets:
+    #    - 'test'
+    #  params:
+    #    log_encoding: True
 
 # ---------------------------------------------------------------
 
@@ -212,13 +231,15 @@ logging:
     enable: True
 
   neptune:
-    enable: True
+    enable: False
     
     log_model_checkpoints: False
     tags:
       - plain-0-100
-      - resnet
+      - vgg
       - sgd
+      - freq-48.000
+      - weighted-loss
 
     # source_files:
     # - '*.py'
