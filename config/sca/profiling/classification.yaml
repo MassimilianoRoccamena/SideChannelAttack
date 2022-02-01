@@ -40,9 +40,9 @@ dataset:
     voltages:
       - '1.00'
     frequencies:
-      #- '45.000'
+      - '45.000'
       #- '46.875'
-      - '48.000'
+      #- '48.000'
       #- '50.000'
       #- '50.125'
       #- '52.000'
@@ -71,7 +71,7 @@ model:
     encoder:
       name: VGG
       params:
-        encoding_size: 500
+        encoding_size: 600
         base_filters: 64
         conv_kernel_size: 20
         conv_stride: 2
@@ -82,7 +82,7 @@ model:
         num_layers1: 2
         num_layers2: 3
         use_final_do: True
-        final_do_val: 0.3
+        final_do_val: 0.4
 
       #name: ResNet
       #params:
@@ -142,16 +142,16 @@ learning:
   loss:
     name: CrossEntropyLoss
     params:
-    #  weight:
-    #    - 60.0
-    #    - 9.0
-    #    - 2.57
-    #    - 1.28
-    #    - 1.0
-    #    - 1.28
-    #    - 2.57
-    #    - 9.0
-    #    - 60.0
+      weight:
+        - 12.0
+        - 1.8
+        - 0.514
+        - 0.256
+        - 0.2
+        - 0.256
+        - 0.514
+        - 1.8
+        - 12.0
 
   early_stopping:
     monitor: valid/loss
@@ -172,7 +172,7 @@ learning:
     name: StepLR
     params:
       step_size: 1
-      gamma: 0.85
+      gamma: 0.9
 
   data_loader:
     batch_size: 32 #24
@@ -185,7 +185,7 @@ learning:
     max_epochs: 70
     check_val_every_n_epoch: 1
     log_every_n_steps: 2
-    limit_train_batches: 0.1
+    limit_train_batches: 0.2
     limit_val_batches: 0.3
     track_grad_norm: 2
 
@@ -231,15 +231,16 @@ logging:
     enable: True
 
   neptune:
-    enable: False
+    enable: TRUE
     
     log_model_checkpoints: False
     tags:
       - plain-0-100
       - vgg
       - sgd
-      - freq-48.000
+      - freq-45.000
       - weighted-loss
+      - log-fixed
 
     # source_files:
     # - '*.py'

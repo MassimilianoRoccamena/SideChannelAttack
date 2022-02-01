@@ -61,7 +61,7 @@ class LoggableModel(DeepModel):
     def loggables_adv_step_end(self, outputs, prefix):
         for log_name, loggable in self.loggables_adv[prefix].items():
             log_name = f'{prefix}/{log_name}'
-            loggable.log(outputs, log_name)
+            loggable.log(outputs, log_name, prefix)
 
     def training_step_end(self, outputs):
         #self.log('train/loss', outputs['loss'], on_step=True, on_epoch=True, sync_dist=True)

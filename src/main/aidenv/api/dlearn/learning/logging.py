@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sn
-from torchmetrics import Accuracy, Precision, Recall, F1, ConfusionMatrix
+from torchmetrics import MetricTracker, Accuracy, Precision, Recall, F1, ConfusionMatrix
 
 # basic
 
@@ -63,7 +63,7 @@ class LoggableAdvanced(LoggableObject):
     '''
     '''
 
-    def log(self, outputs, log_name):
+    def log(self, outputs, log_name, prefix):
         '''
         '''
         raise NotImplementedError
@@ -84,13 +84,13 @@ class LoggableTensor(LoggableAdvanced):
         val = torch.flatten(val)
         return { 'values' : val }
 
-    def log(self, outputs, log_name):
-        logged = self(outputs['prediction'], outputs['target'])
+    def log(self, outputs, log_name, prefix):
+        logged = self(outputs['prediction'], outputs['target'], prefix=prefix)
         logged_dict = {}
 
         for k,v in logged.items():
             for i,e in enumerate(v):
-                logged_dict[f'{log_name}/{k}/{i}'] = e
+                logged_dict[f'{log_name}/{k}/{i}'] = torch.tensor(e, dtype=torch.float32)
 
         self.model.log_dict(logged_dict, on_step=True, on_epoch=True,
                                 sync_dist=True, prog_bar=self.progr_bar)
@@ -181,7 +181,7 @@ class LoggableInference(LoggableAdvanced):
                     sample_line = f'{sample_line},{encoding[b,i]}'
             print(sample_line, file=self.file)
 
-    def log(self, outputs, log_name):
+    def log(self, outputs, log_name, prefix):
         target = outputs['target']
         prediction = outputs['prediction']
         encoding = outputs['encoding']
@@ -251,10 +251,25 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
         self.kwargs['num_classes'] = len(labels)
         self.xticklabels = self.kwargs.pop('xticklabels', 'auto')
         self.yticklabels = self.kwargs.pop('yticklabels', 'auto')
-        self.model.conf_mat = ConfusionMatrix(*self.args, **self.kwargs)
+        self.model.conf_mat_train = MetricTracker(ConfusionMatrix(*self.args, **self.kwargs))
+        self.model.conf_mat_train.increment()
+        self.model.conf_mat_valid = MetricTracker(ConfusionMatrix(*self.args, **self.kwargs))
+        self.model.conf_mat_valid.increment()
+        self.model.conf_mat_test = MetricTracker(ConfusionMatrix(*self.args, **self.kwargs))
+        self.model.conf_mat_test.increment()
 
     def __call__(self, *args, **kwargs):
-        return super().__call__(self.model.conf_mat(*args))
+        prefix = kwargs['prefix']
+        if prefix == 'train':
+            cm = self.model.conf_mat_train(*args)
+        elif prefix == 'valid':
+            cm = self.model.conf_mat_valid(*args)
+        elif prefix == 'test':
+            cm = self.model.conf_mat_test(*args)
+        else:
+            raise RuntimeError('encountered invalid prefix')
+        
+        return super().__call__(cm)
 
     def draw(self, *args, **kwargs):
         matrix = args[0]
@@ -263,11 +278,10 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
 
         # matrix = matrix / matrix.sum(axis=0)            # normalize
         matrix = np.nan_to_num(matrix, copy=True)
-        #print(matrix)
 
         labels = ['\n'.join(wrap(l, 10)) for l in labels]
 
-        fig = plt.figure(figsize=(6, 5), facecolor='w', edgecolor='k')
+        fig = plt.figure(figsize=(8, 7), facecolor='w', edgecolor='k')
         ax = fig.add_subplot(1, 1, 1)
 
         if not epoch is None:
@@ -294,10 +308,20 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
 
         tensor = self.build_tensor(outputs, log_name)
 
-        #labels = np.arange(self.shape[0])
-        #labels = [str(l) for l in labels]
+        if prefix == 'train':
+            cm = self.model.conf_mat_train.compute().cpu()
+            self.model.conf_mat_train.reset_all()
+        elif prefix == 'valid':
+            cm = self.model.conf_mat_valid.compute().cpu()
+            self.model.conf_mat_valid.reset_all()
+        elif prefix == 'test':
+            cm = self.model.conf_mat_test.compute().cpu()
+            self.model.conf_mat_test.reset_all()
+        else:
+            raise RuntimeError('encountered invalid prefix')
+
         labels = self.model.labels
-        figure = self.draw(tensor, labels, epoch=epoch)
+        figure = self.draw(cm, labels, epoch=epoch)
         log_name = f'{log_name}/figures'
 
         step = self.model.current_epoch
