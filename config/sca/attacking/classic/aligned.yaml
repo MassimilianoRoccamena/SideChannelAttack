@@ -3,7 +3,7 @@ base:
   origin:
     - sca
     - attacking
-    - discriminator
+    - classic
     - aligned
 
   name: StaticDiscrimination0

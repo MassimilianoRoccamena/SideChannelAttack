@@ -306,7 +306,7 @@ class LoggableConfusionMatrix(LoggableFigure, LoggableTensor):
         log_name = f'{prefix}/{log_name}'
         epoch = kwargs.get('epoch')
 
-        tensor = self.build_tensor(outputs, log_name)
+        #tensor = self.build_tensor(outputs, log_name)
 
         if prefix == 'train':
             cm = self.model.conf_mat_train.compute().cpu()

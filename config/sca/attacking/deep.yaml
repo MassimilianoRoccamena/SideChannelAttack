@@ -3,11 +3,10 @@ base:
   origin:
     - sca
     - attacking
-    - discriminator
-    - basic
+    - deep
 
-  name: BasicDiscrimination0
-  id: 1
+  name: DeepDiscrimination0
+  id: 0
 
   description: 'fit of the discriminative distribution of key given the trace, using MLE'
 
@@ -21,18 +20,31 @@ determinism:
 
 core:
 
-  name: BasicDiscriminator
+  name: DeepDiscriminator
   params:
 
     loader:
       name: FileConvention2
       params:
-
-    #generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\Generator1\0
-    generator_path: /data/output/Generator0/0
+    
     voltages:
       - '1.00'
     frequencies:
-      #- '45.000'
-      #- '50.000'
+      - '45.000'
+    key_values:
+      - '00'
+      - '01'
+      - '02'
+      - '03'
+      - '04'
+      - '05'
+      - '06'
+      - '07'
     plain_bounds: [300, 500]
+
+    training_path: /data/output/KeyClassifierTemp/2022-02-01_19-33-00
+    checkpoint_file: epoch=30-step=3719.ckpt
+    batch_size: 32
+
+    num_workers: #4
+    workers_type: #'threads'

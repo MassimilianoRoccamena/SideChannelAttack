@@ -3,7 +3,7 @@ base:
   origin:
     - sca
     - profiling
-    - generator
+    - basic
 
   name: Generator0
   id: 0

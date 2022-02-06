@@ -16,7 +16,7 @@ class TraceClassification(ClassificationDataset):
     '''
 
     def __init__(self, loader, voltages, frequencies, key_values, plain_bounds,
-                        sets, set_name=None, channels_first=True):
+                        sets, set_name=None, channels_first=True, trace_len=None):
         '''
         Create new trace classification dataset.
         loader: traces loader
@@ -25,6 +25,7 @@ class TraceClassification(ClassificationDataset):
         key_values: key values of the encryption
         plain_bounds: start, end plain text indices
         channels_first: shape convention of data
+        trace_len: maximum time index of a trace
         '''
         set_size = None
         for s in sets:
@@ -39,7 +40,7 @@ class TraceClassification(ClassificationDataset):
         else:
             plain_indices = np.arange(plain_bounds[0], int(num_plains*set_size))
 
-        reader = TraceReader(loader, voltages, frequencies, key_values, plain_indices)
+        reader = TraceReader(loader, voltages, frequencies, key_values, plain_indices, trace_len=trace_len)
         super().__init__(reader)
         self.channels_first = channels_first
 
