@@ -1,12 +1,13 @@
+import math
 import torch
 
 from utils.math import BYTE_SIZE, BYTE_HW_LEN
 from aidenv.api.dlearn.config import build_dataset_kwarg
 from aidenv.api.dlearn.dataset import ClassificationDataset
 from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
-from sca.profiling.aligner.window.loader import WindowLoader1 as FileConvention1
-from sca.profiling.aligner.window.loader import WindowLoader2 as FileConvention2
-from sca.profiling.aligner.window.reader import WindowReader
+from sca.profiling.classic.aligned.classification.loader import WindowLoader1 as FileConvention1
+from sca.profiling.classic.aligned.classification.loader import WindowLoader2 as FileConvention2
+from sca.profiling.classic.aligned.classification.reader import WindowReader
 
 class WindowClassification(ClassificationDataset):
     '''

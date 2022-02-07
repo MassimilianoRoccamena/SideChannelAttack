@@ -1,0 +1,21 @@
+base:
+
+  origin:
+    - sca
+    - profiling
+    - classic
+    - aligned
+    - localization
+
+  name: StaticLocalization0
+  #id: 0
+
+  description: ''
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------

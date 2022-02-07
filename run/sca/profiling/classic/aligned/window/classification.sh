@@ -1,1 +1,0 @@
-sh run/main.sh dlearn sca/profiling/classic/aligned/window/classification

@@ -1,0 +1,60 @@
+base:
+
+  origin:
+    - sca
+    - profiling
+    - classic
+    - aligned
+    - segmentation
+
+  name: StaticSegmentation0
+  #id: 0
+
+  description: 'frequency segmentation of static traces using a frequency classifier'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+
+  name: DeepDiscriminator
+  params:
+
+    loader:
+      name: FileConvention2
+      params:
+    
+    voltages:
+      - '1.00'
+    frequencies:
+      - '45.000'
+    classifier_frequencies:
+      - '45.000'
+      - '46.875'
+      - '48.000'
+      - '50.000'
+      - '50.125'
+      - '52.000'
+      - '54.000'
+      - '55.000'
+      - '56.000'
+    key_values:
+      - '00'
+      - '01'
+      - '02'
+      - '03'
+      #- '04'
+      #- '05'
+      #- '06'
+      #- '07'
+    plain_bounds: [490, 500]
+
+    training_path: /data/output/KeyClassifierTemp/2022-02-01_19-33-00
+    checkpoint_file: epoch=30-step=3719.ckpt
+    batch_size: 32
+    trace_len: 100000

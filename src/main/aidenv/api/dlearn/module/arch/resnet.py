@@ -179,7 +179,7 @@ class ResNet(EncoderModule):
                 is_first_block=is_first_block)
             self.basicblock_list.append(tmp_block)
 
-        # final prediction
+        # final
         self.final_bn = nn.BatchNorm1d(out_channels)
         self.final_relu = nn.ReLU(inplace=True)
         self.set_final_size(out_channels)    
@@ -210,6 +210,10 @@ class ResNet(EncoderModule):
         if self.use_bn:
             out = self.final_bn(out)
         out = self.final_relu(out)
+
+        out.register_hook(self.forward_grad_cam_hook)
+        out.register_hook(self.backward_grad_cam_hook)
+
         out = out.mean(-1)
         if self.verbose:
             print('average global pooling', out.shape)

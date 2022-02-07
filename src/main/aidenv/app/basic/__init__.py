@@ -46,7 +46,7 @@ def run_task(env_name, *args):
     env_name: name of the environment
     args: program arguments
     '''
-    print(' ---=== AIDENV ===--- \n')
+    #print(' ---=== AIDENV ===--- \n')
     print(f'{env_name} environment started')
 
     config = get_program_config()

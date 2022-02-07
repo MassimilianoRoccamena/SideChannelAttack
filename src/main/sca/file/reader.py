@@ -62,12 +62,12 @@ class TraceReader(FileReader):
             key_value, plain_index = self.translate_reader_index(reader_index)
 
         if self.trace_len is None:
-            trace_window, plain_text, key = self.loader.load_some_traces(file_path, [plain_index])
+            trace, plain_text, key = self.loader.load_some_traces(file_path, [plain_index])
         else:
             time_idx = np.arange(0, self.trace_len)
-            trace_window, plain_text, key = self.loader.load_some_projected_traces(file_path, [plain_index], time_idx)
+            trace, plain_text, key = self.loader.load_some_projected_traces(file_path, [plain_index], time_idx)
 
-        return voltage, frequency, key_value, plain_index, trace_window[0], plain_text, key
+        return voltage, frequency, key_value, plain_index, trace[0], plain_text, key
 
     def __len__(self):
         return self.num_samples

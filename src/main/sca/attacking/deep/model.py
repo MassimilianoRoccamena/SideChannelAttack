@@ -1,1 +1,1 @@
-from sca.profiling.deep.model import *
+from sca.model import *

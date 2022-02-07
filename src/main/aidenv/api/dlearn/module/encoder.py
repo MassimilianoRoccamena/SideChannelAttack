@@ -21,6 +21,8 @@ class EncoderModule(CoreModule):
         self.final_do_val = final_do_val
         self.final_do = nn.Dropout(p=final_do_val)
         self.set_final_size(final_size)
+        self.forward_hooks = {}
+        self.backward_hooks = {}
         
     def set_final_size(self, final_size):
         '''
@@ -33,6 +35,36 @@ class EncoderModule(CoreModule):
         else:
             self.final_size = final_size
             self.encoding = nn.Linear(final_size, self.encoding_size)
+
+    def make_forward_hook(self, name):
+        '''
+        Forward hook handlers builder.
+        name: name in the forward hooks dict
+        '''
+        def hook(model, input, output):
+            self.forward_hooks[name] = output.detach()
+        return hook
+
+    def forward_grad_cam_hook(self):
+        '''
+        Forward hook for grad cam computation.
+        '''
+        return self.make_forward_hook('grad_cam')
+
+    def make_backward_hook(self, name):
+        '''
+        Backward hook handlers builder.
+        name: name in the backward hooks dict
+        '''
+        def hook(grad):
+            self.backward_hooks[name] = grad.detach()
+        return hook
+
+    def backward_grad_cam_hook(self):
+        '''
+        Backward hook for grad cam computation.
+        '''
+        return self.make_backward_hook('grad_cam')
 
     def forward(self, x):
         if self.use_final_do:

@@ -5,7 +5,6 @@ base:
     - profiling
     - classic
     - aligned
-    - window
     - classification
 
   name: FrequencyAlignerTemp #FrequencyAligner0

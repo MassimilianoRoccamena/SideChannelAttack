@@ -7,7 +7,7 @@ from scipy.stats import multivariate_normal
 import torch
 
 from utils.persistence import save_numpy
-from utils.math import BYTE_SIZE, BYTE_HW_LEN, pca_transform
+from utils.math import BYTE_SIZE, BYTE_HW_LEN
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
@@ -27,10 +27,12 @@ class DeepDiscriminator(MachineLearningTask):
         '''
         Create new deep key attacker.
         loader: trace windows loader
-        generator_path: path of a trace generator
         voltages: voltages of platform to attack
         frequencies: frequencies of platform to attack
         plain_bounds: start, end plain text indices
+        training_path: root directory of a model training
+        checkpoint_file: file name of the model checkpoint
+        batch_size: batch size for model inference
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
         '''
@@ -104,7 +106,7 @@ class DeepDiscriminator(MachineLearningTask):
                 self.key_likelihoods_work(voltage, frequency, key_true, keys_lh)
                 pbar.update(1)
         else:
-            n_iters = ceil(len(self.key_values) / num_workers)                      # multiprocessed
+            n_iters = ceil(len(self.key_values) / num_workers)                      # multiprocessed -- WIP
             pbar = tqdm.tqdm(total=n_iters)
             for i in range(n_iters):
                 keys_true = self.key_values[i : min((i+1)*num_workers, num_keys-1)]
@@ -130,6 +132,7 @@ class DeepDiscriminator(MachineLearningTask):
         del checkpoint['loss.weight']
         model.load_state_dict(checkpoint)
         model.to(self.device)
+        model.eval()
         self.model = model
         print('Loaded model checkpoint')
 

@@ -87,7 +87,7 @@ class VGG(EncoderModule):
             in_channels = out_channels
             out_channels *= gain_filters
 
-        # final prediction
+        # final
         self.set_final_size(int(out_channels / gain_filters))
 
     def forward(self, x):
@@ -100,6 +100,9 @@ class VGG(EncoderModule):
             out = layer(out)
             if i != self.num_layers2-1:
                 out = self.poolings2[i](out)
+
+        out.register_hook(self.forward_grad_cam_hook)
+        out.register_hook(self.backward_grad_cam_hook)
 
         out = out.mean(-1)
         out = super().forward(out)
