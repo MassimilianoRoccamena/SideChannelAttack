@@ -42,7 +42,7 @@ dataset:
 
     #lookup_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\WindowLookup1\0
     lookup_path: /data/output/WindowLookup0/1 #/0
-    channels_first: False
+    channels_first: True
 
 model:
   checkpoint:
@@ -50,20 +50,20 @@ model:
   name: SingleBasic
   params:
     encoder:
-      #name: VGG
-      #params:
-      #  encoding_size: 300
-      #  base_filters: 64
-      #  conv_kernel_size: 30
-      #  conv_stride: 3
-      #  pool_kernel_size: 3
-      #  use_batch_norm: True
-      #  num_convs1: 2
-      #  num_convs2: 2
-      #  num_layers1: 3
-      #  num_layers2: 3
-      #  use_final_do: True
-      #  final_do_val: 0.4
+      name: VGG
+      params:
+        encoding_size: 180
+        base_filters: 64
+        conv_kernel_size: 20
+        conv_stride: 2
+        pool_kernel_size: 2
+        use_batch_norm: True
+        num_convs1: 2
+        num_convs2: 2
+        num_layers1: 3
+        num_layers2: 3
+        use_final_do: True
+        final_do_val: 0.4
 
       #name: ResNet
       #params:
@@ -81,14 +81,14 @@ model:
       #  use_final_do: True
       #  final_do_val: 0.5
 
-      name: LSTM1
-      params:
-        batch_first: True
-        encoding_size: 300
-        use_final_do: True
-        final_do_val: 0.4
-        hidden_size: 100
-        num_layers: 1
+      #name: LSTM1
+      #params:
+      #  batch_first: True
+      #  encoding_size: 300
+      #  use_final_do: True
+      #  final_do_val: 0.4
+      #  hidden_size: 100
+      #  num_layers: 1
       #  dropout: 0.2
       #  bidirectional: True
 

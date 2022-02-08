@@ -1,7 +1,6 @@
 import numpy as np
 
-from sca.file.convention1.loader import TraceLoader1
-from sca.file.convention2.loader import TraceLoader2
+from sca.loader import *
 
 class WindowLoader:
     '''
@@ -20,14 +19,14 @@ class WindowLoader:
         traces, plain_texts, key = self.load_some_projected_traces(file_path, [plain_index], time_idx)
         return traces[0], plain_texts[0], key
 
-class WindowLoader1(WindowLoader, TraceLoader1):
+class WindowLoader1(WindowLoader, FileConvention1):
     '''
     Loader of power trace windows using filesystem convention 1.
     '''
 
     pass
 
-class WindowLoader2(WindowLoader, TraceLoader2):
+class WindowLoader2(WindowLoader, FileConvention2):
     '''
     Loader of power trace windows using filesystem convention 2.
     '''

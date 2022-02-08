@@ -3,7 +3,6 @@ import tqdm
 from math import ceil
 from joblib import Parallel, delayed
 import numpy as np
-from scipy.stats import multivariate_normal
 import torch
 
 from utils.persistence import save_numpy
@@ -11,10 +10,10 @@ from utils.math import BYTE_SIZE, BYTE_HW_LEN
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
+from sca.config import build_model_object, OmegaConf
 from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 from sca.file.params import str_hex_bytes
 from sca.attacking.deep.loader import *
-from sca.attacking.deep.config import build_model_object, OmegaConf
 
 class DeepDiscriminator(MachineLearningTask):
     '''
@@ -123,13 +122,14 @@ class DeepDiscriminator(MachineLearningTask):
         training_path = os.path.join(self.training_path, 'program.yaml')
         training_config = OmegaConf.load(training_path)
         model = build_model_object(training_config.model)
-        print('Loaded model')
+        print('Loaded classifier model')
 
         labels = [str(i) for i in range(BYTE_HW_LEN)]
         model.module.set_labels(labels)
         checkpoint_path = os.path.join(self.training_path, 'checkpoints', self.checkpoint_file)
         checkpoint = torch.load(checkpoint_path)["state_dict"]
-        del checkpoint['loss.weight']
+        if 'loss.weight' in checkpoint.keys():
+            del checkpoint['loss.weight']
         model.load_state_dict(checkpoint)
         model.to(self.device)
         model.eval()

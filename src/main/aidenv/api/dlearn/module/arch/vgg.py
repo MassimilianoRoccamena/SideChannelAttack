@@ -90,6 +90,10 @@ class VGG(EncoderModule):
         # final
         self.set_final_size(int(out_channels / gain_filters))
 
+        # hooks
+        self.layers2[-1].register_forward_hook(self.forward_grad_cam_hook())
+        self.layers2[-1].register_backward_hook(self.backward_grad_cam_hook())
+
     def forward(self, x):
         out = x
 
@@ -100,9 +104,6 @@ class VGG(EncoderModule):
             out = layer(out)
             if i != self.num_layers2-1:
                 out = self.poolings2[i](out)
-
-        out.register_hook(self.forward_grad_cam_hook)
-        out.register_hook(self.backward_grad_cam_hook)
 
         out = out.mean(-1)
         out = super().forward(out)

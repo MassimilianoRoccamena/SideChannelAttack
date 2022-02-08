@@ -42,7 +42,7 @@ class EncoderModule(CoreModule):
         name: name in the forward hooks dict
         '''
         def hook(model, input, output):
-            self.forward_hooks[name] = output.detach()
+            self.forward_hooks[name] = output
         return hook
 
     def forward_grad_cam_hook(self):
@@ -57,7 +57,7 @@ class EncoderModule(CoreModule):
         name: name in the backward hooks dict
         '''
         def hook(grad):
-            self.backward_hooks[name] = grad.detach()
+            self.backward_hooks[name] = grad
         return hook
 
     def backward_grad_cam_hook(self):

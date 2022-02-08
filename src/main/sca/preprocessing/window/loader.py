@@ -1,8 +1,7 @@
 import numpy as np
 
 from aidenv.api.basic.config import build_task_kwarg
-from sca.file.convention1.loader import TraceLoader1
-from sca.file.convention2.loader import TraceLoader2
+from sca.loader import *
 
 class WindowLoader:
     '''

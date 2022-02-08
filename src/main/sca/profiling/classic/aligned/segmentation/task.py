@@ -3,16 +3,16 @@ import tqdm
 from math import ceil
 from joblib import Parallel, delayed
 import numpy as np
-from scipy.stats import multivariate_normal
+from scipy.interpolate import interp1d
 import torch
 
-from utils.persistence import save_numpy
+from utils.persistence import load_json, save_numpy
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
+from sca.config import build_model_object, OmegaConf
 from sca.file.params import str_hex_bytes, TRACE_SIZE
-from sca.attacking.deep.loader import *
-from sca.attacking.deep.config import build_model_object, OmegaConf
+from sca.profiling.classic.aligned.segmentation.loader import *
 
 class GradCamSegmentation(MachineLearningTask):
     '''
@@ -20,19 +20,19 @@ class GradCamSegmentation(MachineLearningTask):
     window frequenct classifier.
     '''
 
-    def __init__(self, loader, voltages, frequencies, classifier_frequencies,
-                    key_values, plain_bounds, training_path, checkpoint_file, batch_size,
+    def __init__(self, loader, voltages, frequencies, key_values,
+                    plain_bounds, training_path, checkpoint_file, batch_size, interp_kind,
                     trace_len=None, num_workers=None, workers_type=None):
         '''
         Create new deep key attacker.
         loader: trace windows loader
         voltages: voltages of platform to segment
         frequencies: frequencies of platform to segment
-        classifier_frequencies: frequencies classified by the model
         plain_bounds: start, end plain text indices
         training_path: root directory of a model training
         checkpoint_file: file name of the model checkpoint
         batch_size: batch size for model inference
+        interp_kind: interpolation kind for map upscaling
         trace_len: size of the trace to segment
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
@@ -40,8 +40,6 @@ class GradCamSegmentation(MachineLearningTask):
         self.loader = loader
         self.voltages = list(voltages)
         self.frequencies = list(frequencies)
-        self.classifier_frequencies = list(classifier_frequencies)
-        self.num_classes = len(self.classifier_frequencies)
         if key_values is None:
             key_values = str_hex_bytes()
             print('Using all key values')
@@ -54,6 +52,7 @@ class GradCamSegmentation(MachineLearningTask):
         self.model = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = batch_size
+        self.interp_kind = interp_kind
         if trace_len is None:
             self.trace_len = TRACE_SIZE
         else:
@@ -87,22 +86,44 @@ class GradCamSegmentation(MachineLearningTask):
             low_plain_idx = i*self.batch_size
             high_plain_idx = min((i+1)*self.batch_size, self.num_plain_texts-1)
             real_batch_size = high_plain_idx - low_plain_idx
+
             curr_traces = traces[low_plain_idx : high_plain_idx]
             curr_traces = curr_traces.reshape(real_batch_size, 1, traces.shape[-1])
             curr_traces = torch.from_numpy(curr_traces)
             curr_traces = curr_traces.to(self.device)
+
             y_hat = self.model(curr_traces)
-            y_hat.backward()
-            maps = self.model.forward_hooks['grad_cam'].detach()
-            grads = self.model.backward_hooks['grad_cam']
-            
-            for j in range(maps.shape[-1]):
-                maps[:, j, :, :] *= grads[j]
+            maps = self.model.module.encoder.forward_hooks['grad_cam'].detach().cpu().numpy()
+            num_maps = maps.shape[1]
+            maps_size = maps.shape[2]
 
-            cams = torch.mean(maps, dim=1).squeeze()
-            cams /= torch.max(cams)
+            for j in range(real_batch_size):
+                batch_maps = maps[j].T
+                batch_weights = np.zeros((self.num_classes, num_maps))
+                
+                # grad weighted maps
+                for k in range(self.num_classes):
+                    pred = y_hat[j, k]
+                    pred.backward(retain_graph=True)
+                    grad = self.model.module.encoder.backward_hooks['grad_cam'][0].detach().cpu().numpy()
+                    batch_weights[k] = grad
 
-            segmented_traces[low_plain_idx:high_plain_idx] = cams.cpu()
+                class_maps = np.matmul(batch_maps, batch_weights.T)
+                class_maps[class_maps<0] = 0.
+                class_max = np.max(class_maps)
+                if class_max > 0.:
+                    class_maps /= class_max
+
+                # maps upscaling
+                upscaled_maps = np.zeros((self.num_classes, self.trace_len))
+
+                for k in range(self.num_classes):
+                    x_origin = np.linspace(0, self.trace_len, maps_size)
+                    scaling_interp = interp1d(x_origin, class_maps[:,k], kind=self.interp_kind)
+                    x_scaled = np.linspace(0, self.trace_len, self.trace_len)
+                    upscaled_maps[k] = scaling_interp(x_scaled)
+
+                segmented_traces[i*self.batch_size + j] = upscaled_maps
         
         return segmented_traces
 
@@ -136,16 +157,22 @@ class GradCamSegmentation(MachineLearningTask):
 
         training_path = os.path.join(self.training_path, 'program.yaml')
         training_config = OmegaConf.load(training_path)
-        self.classifier_frequencies = list(training_config.dataset.params.frequencies)
+
+        lookup_path = os.path.join(training_config.dataset.params.lookup_path, 'params.json')
+        classif_frequencies = load_json(lookup_path)['frequencies']
+        self.classifier_frequencies = classif_frequencies
+        self.num_classes = len(classif_frequencies)
         print(f'Found {len(self.classifier_frequencies)} classified frequencies')
+
         model = build_model_object(training_config.model)
         print('Loaded classifier model')
-
         labels = self.classifier_frequencies
         model.module.set_labels(labels)
+
         checkpoint_path = os.path.join(self.training_path, 'checkpoints', self.checkpoint_file)
         checkpoint = torch.load(checkpoint_path)["state_dict"]
-        del checkpoint['loss.weight']
+        if 'loss.weight' in checkpoint.keys():
+            del checkpoint['loss.weight']
         model.load_state_dict(checkpoint)
         model.to(self.device)
         model.eval()
