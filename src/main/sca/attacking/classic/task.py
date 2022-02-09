@@ -12,7 +12,7 @@ from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
 from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 
-class KeyAttacker(MachineLearningTask):
+class KeyDiscriminator(MachineLearningTask):
     '''
     Machine learning task which compute the log likelihood of a key given some attack traces using
     a fitted reduced trace generative model.
@@ -21,8 +21,8 @@ class KeyAttacker(MachineLearningTask):
     def __init__(self, loader, generator_path, voltages, frequencies, plain_bounds,
                     num_workers, workers_type):
         '''
-        Create new PCA+QDA template attacker.
-        loader: trace windows loader
+        Create new PCA+QDA template discriminator.
+        loader: power trace loader
         generator_path: path of a trace generator
         voltages: voltages of platform to attack
         frequencies: frequencies of platform to attack

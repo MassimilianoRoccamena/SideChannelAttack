@@ -7,10 +7,10 @@ from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.dprocess.task import DataProcess
 from sca.file.params import str_hex_bytes
+from sca.slicer import StridedSlicer as Strided
+from sca.slicer import RandomSlicer as Random
 from sca.preprocessing.window.loader import WindowLoader1 as FileConvention1
 from sca.preprocessing.window.loader import WindowLoader2 as FileConvention2
-from sca.preprocessing.window.slicer import StridedSlicer as Strided
-from sca.preprocessing.window.slicer import RandomSlicer as Random
 from sca.preprocessing.window.reader import WindowReader
 
 class LookupCreation(DataProcess):

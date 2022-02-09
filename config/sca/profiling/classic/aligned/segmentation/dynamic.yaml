@@ -1,0 +1,66 @@
+base:
+
+  origin:
+    - sca
+    - profiling
+    - classic
+    - aligned
+    - segmentation
+    - dynamic
+
+  name: DynamicSegmentation0
+  id: 1
+
+  description: 'frequency segmentation of static traces using a frequency classifier'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+
+  name: DynamicSegmentation
+  params:
+
+    loader:
+      name: FileConvention2
+      params:
+    
+    voltage: '1.00'
+    frequencies:
+      - '45.000'
+      #- '46.875'
+      - '48.000'
+      #- '50.000'
+      #- '50.125'
+      - '52.000'
+      - '54.000'
+      - '55.000'
+      - '56.000'
+    key_values:
+      - '00'
+      - '01'
+      - '02'
+      - '03'
+      - '04'
+      - '05'
+      - '06'
+      - '07'
+    plain_bounds: [300, 500]
+
+    training_path: /data/output/FrequencyAlignerTemp/2022-02-01_22-33-49
+    checkpoint_file: epoch=8-step=2915.ckpt
+    batch_size: 1
+    interp_kind: quadratic
+    mu: 15000
+    sigma: 500
+    trace_len: 100000
+    min_window_len: 5000
+    max_window_len: 30000
+
+    num_workers: #4
+    workers_type: #'threads'

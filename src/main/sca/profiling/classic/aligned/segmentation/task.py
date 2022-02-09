@@ -4,6 +4,7 @@ from math import ceil
 from joblib import Parallel, delayed
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.special import softmax
 import torch
 
 from utils.persistence import load_json, save_numpy
@@ -12,22 +13,21 @@ from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
 from sca.config import build_model_object, OmegaConf
 from sca.file.params import str_hex_bytes, TRACE_SIZE
-from sca.profiling.classic.aligned.segmentation.loader import *
 
 class GradCamSegmentation(MachineLearningTask):
     '''
     Deep learning task which extract the GRAD-CAM frequency segmentation from a trace
-    window frequenct classifier.
+    window frequency classifier.
     '''
 
     def __init__(self, loader, voltages, frequencies, key_values,
-                    plain_bounds, training_path, checkpoint_file, batch_size, interp_kind,
-                    trace_len=None, num_workers=None, workers_type=None):
+                    plain_bounds, training_path, checkpoint_file, batch_size,
+                    interp_kind, trace_len, num_workers, workers_type):
         '''
-        Create new deep key attacker.
-        loader: trace windows loader
-        voltages: voltages of platform to segment
-        frequencies: frequencies of platform to segment
+        Create new GRAD-CAM frequency segmentation.
+        loader: power trace loader
+        voltages: voltages of platforms to segment
+        frequencies: frequencies of platforms to segment
         plain_bounds: start, end plain text indices
         training_path: root directory of a model training
         checkpoint_file: file name of the model checkpoint
@@ -38,6 +38,7 @@ class GradCamSegmentation(MachineLearningTask):
         workers_type: type of joblib workers
         '''
         self.loader = loader
+        self.assembler = None
         self.voltages = list(voltages)
         self.frequencies = list(frequencies)
         if key_values is None:
@@ -52,7 +53,10 @@ class GradCamSegmentation(MachineLearningTask):
         self.model = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = batch_size
-        self.interp_kind = interp_kind
+        if interp_kind is None:
+            self.interp_kind = 'linear'
+        else:
+            self.interp_kind = interp_kind
         if trace_len is None:
             self.trace_len = TRACE_SIZE
         else:
@@ -65,21 +69,13 @@ class GradCamSegmentation(MachineLearningTask):
     def build_kwargs(cls, config):
         pass
 
-    def segmentations_work(self, voltage, frequency, key_value):
+    def segmentations_work(self, *args):
         '''
         Work method of one process computing all plains segmented traces for a given key.
         '''
         segmented_traces = np.zeros((self.num_plain_texts, self.num_classes, self.trace_len))
 
-        file_id = self.loader.build_file_id(voltage, frequency, key_value)
-        file_path = self.loader.build_file_path(file_id)
-
-        if self.trace_len is None:
-            traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
-        else:
-            time_idx = np.arange(0, self.trace_len)
-            traces, plain_text, key = self.loader.load_some_projected_traces(file_path, self.plain_indices, time_idx)
-        
+        traces = self.assembler.make_traces(*args)
         n_iters = ceil(self.num_plain_texts / self.batch_size)
 
         for i in range(n_iters):
@@ -109,10 +105,10 @@ class GradCamSegmentation(MachineLearningTask):
                     batch_weights[k] = grad
 
                 class_maps = np.matmul(batch_maps, batch_weights.T)
-                class_maps[class_maps<0] = 0.
-                class_max = np.max(class_maps)
-                if class_max > 0.:
-                    class_maps /= class_max
+                #class_maps[class_maps<0.] = 0.
+                #class_max = np.max(class_maps, axis=0)
+                #class_maps = np.nan_to_num(class_maps / class_max.T)
+                class_maps = softmax(class_maps, axis=1)
 
                 # maps upscaling
                 upscaled_maps = np.zeros((self.num_classes, self.trace_len))
@@ -123,34 +119,16 @@ class GradCamSegmentation(MachineLearningTask):
                     x_scaled = np.linspace(0, self.trace_len, self.trace_len)
                     upscaled_maps[k] = scaling_interp(x_scaled)
 
+                upscaled_maps[upscaled_maps<0.] = 0.
                 segmented_traces[i*self.batch_size + j] = upscaled_maps
         
         return segmented_traces
 
-    def compute_segmentations(self, voltage, frequency, root_path):
+    def compute_segmentations(self, log_dir):
         '''
-        Compute frequency segmentation for the attack traces of the (voltage,frequency) platform.
+        Compute traces frequency segmentations
         '''
-        num_keys = len(self.key_values)
-        num_workers = self.num_workers
-        workers_type = self.workers_type
-
-        if num_workers is None:
-            pbar = tqdm.tqdm(total=num_keys)                                        # vanilla
-            for key in self.key_values:
-                segm = self.segmentations_work(voltage, frequency, key)
-                save_numpy(segm, os.path.join(root_path, f'{key}.npy'))
-                pbar.update(1)
-        else:
-            n_iters = ceil(len(self.key_values) / num_workers)                      # multiprocessed --- WIP
-            pbar = tqdm.tqdm(total=n_iters)
-            for i in range(n_iters):
-                segm = Parallel(n_jobs=num_workers, prefer=workers_type) (delayed(self.segmentations_work) \
-                                    (voltage, frequency, key) for key in self.key_values)
-                save_numpy(segm, os.path.join(root_path, f'WIP.npy'))
-                pbar.update(1)
-
-        pbar.close()
+        raise NotImplementedError
 
     def run(self, *args):
         log_dir = get_program_log_dir()
@@ -179,14 +157,4 @@ class GradCamSegmentation(MachineLearningTask):
         self.model = model
         print('Loaded model checkpoint')
 
-        # platforms
-        for voltage in self.voltages:
-            for frequency in self.frequencies:
-                print(f'\nProcessing {voltage}-{frequency} platform')
-                curr_root_path = os.path.join(log_dir, f'{voltage}-{frequency}')
-                if not os.path.exists(curr_root_path):
-                    os.mkdir(curr_root_path)
-
-                # segmentations
-                print('Segmenting traces\n')
-                self.compute_segmentations(voltage, frequency, curr_root_path)
+        self.compute_segmentations(log_dir)

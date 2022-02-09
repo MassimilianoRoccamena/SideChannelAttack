@@ -1,0 +1,1 @@
+sh run/main.sh mlearn sca/profiling/classic/aligned/segmentation/dynamic

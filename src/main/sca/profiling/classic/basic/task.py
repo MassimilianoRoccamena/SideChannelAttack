@@ -11,8 +11,7 @@ from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
 from sca.file.params import TRACE_SIZE, str_hex_bytes, SBOX_MAT, HAMMING_WEIGHTS
-from sca.file.convention1.loader import TraceLoader1 as FileConvention1
-from sca.file.convention2.loader import TraceLoader2 as FileConvention2
+from sca.loader import *
 
 class TraceGenerator(MachineLearningTask):
     '''
@@ -23,7 +22,7 @@ class TraceGenerator(MachineLearningTask):
     def __init__(self, loader, voltages, frequencies, key_values, plain_bounds, reduced_dim):
         '''
         Create new PCA+QDA template attacker.
-        loader: trace windows loader
+        loader: power trace loader
         voltages: device voltages
         frequencies: device frequencies
         key_values: key values of the encryption

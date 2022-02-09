@@ -6,9 +6,10 @@ base:
     - classic
     - aligned
     - segmentation
+    - static
 
   name: StaticSegmentation0
-  id: 1
+  id: test
 
   description: 'frequency segmentation of static traces using a frequency classifier'
 
@@ -22,7 +23,7 @@ determinism:
 
 core:
 
-  name: GradCamSegmentation
+  name: StaticSegmentation
   params:
 
     loader:

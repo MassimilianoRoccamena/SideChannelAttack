@@ -2,12 +2,12 @@ import os
 import numpy as np
 from tqdm.auto import trange
 
-from sca.attacking.discriminator.loader import *
-from sca.attacking.discriminator.attacker import KeyAttacker
+from sca.attacking.classic.loader import *
+from sca.attacking.classic.task import KeyDiscriminator
 
-class BasicDiscriminator(KeyAttacker):
+class BasicDiscriminator(KeyDiscriminator):
     '''
-    Basic trace key attacker on power traces.
+    Basic trace key discriminator on power traces.
     '''
 
     def process_traces(self, voltage, frequency, key_value, traces):
