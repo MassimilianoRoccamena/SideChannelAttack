@@ -1,6 +1,8 @@
+import os
 import numpy as np
 import pandas as pd
 
+from aidenv.api.config import get_program_log_dir
 from sca.file.params import TRACE_SIZE
 
 class TraceAssembler:
@@ -59,9 +61,12 @@ class DynamicAssembler(TraceAssembler):
             self.max_window_len = 50000
         else:
             self.max_window_len = max_window_len
+        self.log_dir = os.path.join(get_program_log_dir(), 'assembler')
+        os.mkdir(self.log_dir)
 
     def on_key_windows(self, key_value, df_windows):
-        pass
+        file_path = os.path.join(self.log_dir, f'{key_value}.csv')
+        df_windows.to_csv(file_path, index=False)
     
     def make_traces(self, *args):
         key_value = args[0]
@@ -98,7 +103,7 @@ class DynamicAssembler(TraceAssembler):
                 time_idx = np.arange(time_start, switch)
                 windows, _, _ = self.loader.load_some_projected_traces(file_path, [plain_idx], time_idx)
                 traces[plain_idx, time_start:switch] = windows[0]
-                df_windows.append({'plain_index':plain_idx,'time_start':time_start, \
+                df_windows = df_windows.append({'plain_index':plain_idx,'time_start':time_start, \
                                     'time_end':switch-1, 'frequency':self.frequencies[curr_freq]}, \
                                     ignore_index=True)
 

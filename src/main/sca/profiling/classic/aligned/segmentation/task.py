@@ -3,8 +3,10 @@ import tqdm
 from math import ceil
 from joblib import Parallel, delayed
 import numpy as np
+import pandas as pd
 from scipy.interpolate import interp1d
 from scipy.special import softmax
+from scipy.ndimage import label
 import torch
 
 from utils.persistence import load_json, save_numpy
@@ -22,7 +24,8 @@ class GradCamSegmentation(MachineLearningTask):
 
     def __init__(self, loader, voltages, frequencies, key_values,
                     plain_bounds, training_path, checkpoint_file, batch_size,
-                    interp_kind, trace_len, num_workers, workers_type):
+                    interp_kind, trace_len, log_segmentation, log_localization,
+                    num_workers, workers_type):
         '''
         Create new GRAD-CAM frequency segmentation.
         loader: power trace loader
@@ -34,6 +37,8 @@ class GradCamSegmentation(MachineLearningTask):
         batch_size: batch size for model inference
         interp_kind: interpolation kind for map upscaling
         trace_len: size of the trace to segment
+        log_segmentation: wheter to persist segmentation results
+        log_localization: wheter to persist localization results
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
         '''
@@ -61,15 +66,26 @@ class GradCamSegmentation(MachineLearningTask):
             self.trace_len = TRACE_SIZE
         else:
             self.trace_len = trace_len
+        if log_segmentation is None:
+            self.log_segmentation = False
+        else:
+            self.log_segmentation = log_segmentation
+        if log_localization is None:
+            self.log_localization = True
+        else:
+            self.log_localization = log_localization
         self.num_workers = num_workers
         self.workers_type = workers_type
+        if not self.num_workers is None:
+            raise NotImplementedError('multiprocessing WIP')
+        self.log_dir = get_program_log_dir()
 
     @classmethod
     @build_task_kwarg('loader')
     def build_kwargs(cls, config):
         pass
 
-    def segmentations_work(self, *args):
+    def segmentation_work(self, *args):
         '''
         Work method of one process computing all plains segmented traces for a given key.
         '''
@@ -124,15 +140,42 @@ class GradCamSegmentation(MachineLearningTask):
         
         return segmented_traces
 
-    def compute_segmentations(self, log_dir):
+    def localization_work(self, key_value, segmented_traces):
         '''
-        Compute traces frequency segmentations
+        Work method of one process computing all plains windows localization for a given key.
+        '''
+        df_windows = pd.DataFrame(columns=['plain_index','time_start','time_end','frequency'])
+
+        for plain_idx in range(self.num_plain_texts):
+            plain_segm = np.argmax(segmented_traces[plain_idx], axis=0)
+            time_start = 0
+
+            for freq_idx in range(self.num_classes):
+                class_segm = plain_segm==freq_idx
+                if np.count_nonzero(class_segm) == 0:
+                    continue
+
+                class_segm = class_segm.astype(int)
+                win_lclz, num_win = label(class_segm)
+
+                for win_id in range(1,num_win+1):
+                    win_idx = np.where(win_lclz==win_id)[0]
+                    time_start = win_idx[0]
+                    time_end = win_idx[-1]
+
+                    df_windows = df_windows.append({'plain_index':plain_idx,'time_start':time_start, \
+                                        'time_end':time_end, 'frequency':self.frequencies[freq_idx]}, \
+                                        ignore_index=True)
+            
+        return df_windows
+
+    def compute_work(self):
+        '''
+        Segment traces by frequencies, then localize static frequency windows.
         '''
         raise NotImplementedError
 
     def run(self, *args):
-        log_dir = get_program_log_dir()
-
         training_path = os.path.join(self.training_path, 'program.yaml')
         training_config = OmegaConf.load(training_path)
 
@@ -157,4 +200,4 @@ class GradCamSegmentation(MachineLearningTask):
         self.model = model
         print('Loaded model checkpoint')
 
-        self.compute_segmentations(log_dir)
+        self.compute_work()

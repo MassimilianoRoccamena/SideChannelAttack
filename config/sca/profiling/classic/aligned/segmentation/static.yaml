@@ -51,6 +51,8 @@ core:
     batch_size: 1
     interp_kind: quadratic
     trace_len: 100000
+    log_segmentation: #True
+    log_localization: #True
 
     num_workers: #4
     workers_type: #'threads'
