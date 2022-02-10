@@ -94,23 +94,31 @@ class DynamicAssembler(TraceAssembler):
 
             curr_freq = int(np.random.choice(all_freq_index, 1)[0])
             other_freqs = np.delete(all_freq_index, curr_freq)
+            prev_switch = 0
+            time_elapsed = 0.
             time_start = 0
 
             for switch in curr_switches:
                 # current window
+                delta_t = 1. / float(self.frequencies[curr_freq])
+                time_start = int(time_elapsed / delta_t)
+                time_end = time_start + switch-prev_switch
                 file_id = self.loader.build_file_id(self.voltage, self.frequencies[curr_freq], key_value)
                 file_path = self.loader.build_file_path(file_id)
-                time_idx = np.arange(time_start, switch)
+                if time_end > TRACE_SIZE:
+                    raise RuntimeError('encountered time end index greater than trace length')
+                time_idx = np.arange(time_start, time_end)
                 windows, _, _ = self.loader.load_some_projected_traces(file_path, [plain_idx], time_idx)
-                traces[plain_idx, time_start:switch] = windows[0]
-                df_windows = df_windows.append({'plain_index':plain_idx,'time_start':time_start, \
-                                    'time_end':switch-1, 'frequency':self.frequencies[curr_freq]}, \
+                traces[plain_idx, prev_switch:switch] = windows[0]
+                df_windows = df_windows.append({'plain_index':plain_idx,'time_start':prev_switch, \
+                                    'time_end':switch, 'frequency':self.frequencies[curr_freq]}, \
                                     ignore_index=True)
 
                 # switch next
                 curr_freq = int(np.random.choice(other_freqs, 1)[0])
                 other_freqs = np.delete(all_freq_index, curr_freq)
-                time_start = switch
+                prev_switch = switch
+                time_elapsed += delta_t * (switch-time_start)
 
         self.on_key_windows(key_value, df_windows)
         return traces

@@ -9,7 +9,7 @@ base:
     - dynamic
 
   name: DynamicSegmentation0
-  id: 0
+  id: 1
 
   description: 'frequency segmentation of static traces using a frequency classifier'
 
@@ -56,13 +56,13 @@ core:
     checkpoint_file: epoch=8-step=2915.ckpt
     batch_size: 1
     interp_kind: quadratic
-    mu: 10000
-    sigma: 2500
+    mu: 15000
+    sigma: 4000
     trace_len: 100000
     log_segmentation: True
     log_localization: True
-    min_window_len: 1000
-    max_window_len: 25000
+    min_window_len: 3000
+    max_window_len: 30000
 
     num_workers: #4
     workers_type: #'threads'

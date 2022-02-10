@@ -164,7 +164,7 @@ class GradCamSegmentation(MachineLearningTask):
                     time_end = win_idx[-1]
 
                     df_windows = df_windows.append({'plain_index':plain_idx,'time_start':time_start, \
-                                        'time_end':time_end, 'frequency':self.frequencies[freq_idx]}, \
+                                        'time_end':time_end+1, 'frequency':self.frequencies[freq_idx]}, \
                                         ignore_index=True)
             
         return df_windows
