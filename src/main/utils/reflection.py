@@ -1,6 +1,6 @@
 import importlib
 
-MODULE_NOT_FOUND_MSG = lambda mod: f'module {mod} not found'
+MODULE_NOT_FOUND_MSG = lambda mod: f'errora loading {mod}'
 
 def get_package_name(package_nodes):
     package_name = None
@@ -18,6 +18,6 @@ def get_class(module_path, class_name):
     try:
         module = importlib.import_module(module_path)
     except ModuleNotFoundError:
-        raise ModuleNotFoundError(MODULE_NOT_FOUND_MSG(module_path))
+        raise RuntimeError(MODULE_NOT_FOUND_MSG(module_path))
 
     return getattr(module, class_name)

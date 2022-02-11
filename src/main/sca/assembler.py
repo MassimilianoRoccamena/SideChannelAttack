@@ -1,8 +1,6 @@
-import os
 import numpy as np
 import pandas as pd
 
-from aidenv.api.config import get_program_log_dir
 from sca.file.params import TRACE_SIZE
 
 class TraceAssembler:
@@ -10,20 +8,20 @@ class TraceAssembler:
     Object which encapsulate a trace creation strategy.
     '''
 
-    def __init__(self, loader, plain_indices, trace_len):
+    def __init__(self, loader, plain_indices):
         self.loader = loader
         self.plain_indices = plain_indices
         self.num_plain_texts = plain_indices[-1] - plain_indices[0] + 1
-        if trace_len is None:
-            self.trace_len = TRACE_SIZE
-        else:
-            self.trace_len = trace_len
 
     def make_traces(self, *args):
+        '''
+        Load and process some traces.
+        '''
         raise NotImplementedError
 
 class StaticAssembler(TraceAssembler):
     '''
+    Static trace assembler, basically a wrapper for a trace loader.
     '''
 
     def make_traces(self, *args):
@@ -33,22 +31,30 @@ class StaticAssembler(TraceAssembler):
 
         file_id = self.loader.build_file_id(voltage, frequency, key_value)
         file_path = self.loader.build_file_path(file_id)
-
-        if self.trace_len is None:
-            traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
-        else:
-            time_idx = np.arange(0, self.trace_len)
-            traces, plain_text, key = self.loader.load_some_projected_traces(file_path, self.plain_indices, time_idx)
+        traces, plain_text, key = self.loader.fetch_traces(file_path, self.plain_indices)
 
         return traces
 
 class DynamicAssembler(TraceAssembler):
     '''
+    Dynamic trace assembler, creating DFS traces by concatenation of static
+    frequency windows.
     '''
 
     def __init__(self, loader, plain_indices, voltage, frequencies, mu, sigma,
-                    trace_len, min_window_len, max_window_len):
-        super().__init__(loader, plain_indices, trace_len)
+                    min_window_len, max_window_len, track_windows=None):
+        '''
+        Create new dynamic trace assembler.
+        loader: power trace loader
+        voltage: device voltage
+        frequencies: frequencies switched in the traces
+        mu: mean of the gaussian duration of the static windows
+        sigma: std of the gaussian duration of the static windows
+        min_window_len: min static window size
+        max_window_len: max static window size
+        track_windows: wheter to track static windows in a dataframe
+        '''
+        super().__init__(loader, plain_indices)
         self.voltage = voltage
         self.frequencies = frequencies
         self.mu = mu
@@ -61,19 +67,19 @@ class DynamicAssembler(TraceAssembler):
             self.max_window_len = 50000
         else:
             self.max_window_len = max_window_len
-        self.log_dir = os.path.join(get_program_log_dir(), 'assembler')
-        os.mkdir(self.log_dir)
-
-    def on_key_windows(self, key_value, df_windows):
-        file_path = os.path.join(self.log_dir, f'{key_value}.csv')
-        df_windows.to_csv(file_path, index=False)
+        if track_windows is None:
+            self.track_windows = False
+        else:
+            self.track_windows = True
     
     def make_traces(self, *args):
         key_value = args[0]
+        trace_len = self.loader.trace_len
 
-        traces = np.ones((self.num_plain_texts, self.trace_len), dtype='float32')
+        traces = np.ones((self.num_plain_texts, trace_len), dtype='float32')
         all_freq_index = np.arange(len(self.frequencies))
-        df_windows = pd.DataFrame(columns=['plain_index','time_start','time_end','frequency'])
+        if self.track_windows:
+            df_windows = pd.DataFrame(columns=['plain_index','time_start','time_end','frequency'])
 
         for plain_idx in self.plain_indices:
             plain_idx -= self.plain_indices[0]
@@ -85,8 +91,8 @@ class DynamicAssembler(TraceAssembler):
                 window_len = max(window_len, self.min_window_len)
                 window_len = min(window_len, self.max_window_len)
 
-                if curr_start + window_len > self.trace_len:
-                    curr_switches.append(self.trace_len)
+                if curr_start + window_len > trace_len:
+                    curr_switches.append(trace_len)
                     break
                 else:
                     curr_start += window_len
@@ -110,9 +116,11 @@ class DynamicAssembler(TraceAssembler):
                 time_idx = np.arange(time_start, time_end)
                 windows, _, _ = self.loader.load_some_projected_traces(file_path, [plain_idx], time_idx)
                 traces[plain_idx, prev_switch:switch] = windows[0]
-                df_windows = df_windows.append({'plain_index':plain_idx,'time_start':prev_switch, \
-                                    'time_end':switch, 'frequency':self.frequencies[curr_freq]}, \
-                                    ignore_index=True)
+
+                if self.track_windows:
+                    df_windows = df_windows.append({'plain_index':plain_idx,'time_start':prev_switch, \
+                                        'time_end':switch, 'frequency':self.frequencies[curr_freq]}, \
+                                        ignore_index=True)
 
                 # switch next
                 curr_freq = int(np.random.choice(other_freqs, 1)[0])
@@ -120,5 +128,6 @@ class DynamicAssembler(TraceAssembler):
                 prev_switch = switch
                 time_elapsed += delta_t * (switch-time_start)
 
-        self.on_key_windows(key_value, df_windows)
+        if self.track_windows:
+            self.df_windows = df_windows
         return traces

@@ -1,0 +1,1 @@
+sh run/main.sh dprocess sca/preprocessing/window

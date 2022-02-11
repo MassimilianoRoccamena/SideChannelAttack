@@ -29,7 +29,10 @@ core:
     loader:
       name: FileConvention2
       params:
+        trace_len: 100000
     
+    training_path: /data/output/FrequencyAlignerTemp/2022-02-01_22-33-49
+    checkpoint_file: epoch=8-step=2915.ckpt
     voltage: '1.00'
     frequencies:
       - '45.000'
@@ -51,16 +54,14 @@ core:
       #- '06'
       #- '07'
     plain_bounds: [480, 500]
-
-    training_path: /data/output/FrequencyAlignerTemp/2022-02-01_22-33-49
-    checkpoint_file: epoch=8-step=2915.ckpt
     batch_size: 1
     interp_kind: quadratic
     mu: 15000
     sigma: 4000
     trace_len: 100000
+    log_assembler: True
     log_segmentation: True
-    log_localization: True
+    log_localization: #True
     min_window_len: 3000
     max_window_len: 30000
 

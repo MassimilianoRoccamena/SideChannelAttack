@@ -214,7 +214,7 @@ class ResNet(EncoderModule):
             out = self.final_bn(out)
         out = self.final_relu(out)
         out = out.mean(-1)
-        out.register_hook(self.backward_grad_cam_hook())
+        out.register_hook(self.backward_grad_cam_hook())       # TODO: enabled for segmentation, exception for training
         if self.verbose:
             print('average global pooling', out.shape)
 

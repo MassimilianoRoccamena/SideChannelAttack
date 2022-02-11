@@ -33,14 +33,14 @@ class WindowLoader:
         traces, plain_texts, key = self.load_some_projected_traces(file_path, [plain_index], time_idx)
         return start, end, traces[0], plain_texts[0], key
 
-class WindowLoader1(WindowLoader, TraceLoader1):
+class WindowLoader1(WindowLoader, FileConvention1):
     '''
     Loader from raw file of power trace windows using filesystem convention 1.
     '''
 
     pass
 
-class WindowLoader2(WindowLoader, TraceLoader2):
+class WindowLoader2(WindowLoader, FileConvention2):
     '''
     Loader from raw file of power trace windows using filesystem convention 2.
     '''

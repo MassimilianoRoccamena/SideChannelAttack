@@ -28,19 +28,19 @@ class TraceGenerator(MachineLearningTask):
         key_values: key values of the encryption
         plain_bounds: start, end plain text indices
         reduced_dim: dimensionality reduction size
-        log_dir: log directory of the task
         '''
         self.loader = loader
         self.voltages = list(voltages)
         self.frequencies = list(frequencies)
         if key_values is None:
             key_values = str_hex_bytes()
+            print('Using all key values')
         self.key_values = list(key_values)
-        self.hw_len = BYTE_HW_LEN
         self.plain_bounds = list(plain_bounds)
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.reduced_dim = reduced_dim
+        self.log_dir = get_program_log_dir()
 
     @classmethod
     @build_task_kwarg('loader')
@@ -51,27 +51,29 @@ class TraceGenerator(MachineLearningTask):
         '''
         Fit a PCA dimensionality reducer of trace data given the (voltage,frequency) platform.
         '''
-        D = np.zeros(self.hw_len, dtype='int')
-        sum_hw = np.zeros((self.hw_len, TRACE_SIZE), dtype='float64')
-        c_hw = np.zeros((self.hw_len, TRACE_SIZE), dtype='float64')
+        trace_len = self.loader.trace_len
+        D = np.zeros(BYTE_HW_LEN, dtype='int')
+        sum_hw = np.zeros((BYTE_HW_LEN, trace_len), dtype='float64')
+        c_hw = np.zeros((BYTE_HW_LEN, trace_len), dtype='float64')
+        time_idx = np.arange(0, trace_len)
         pbar = tqdm.tqdm(total=len(self.key_values))
         
         for key_value in self.key_values:
             file_id = self.loader.build_file_id(voltage, frequency, key_value)
             file_path = self.loader.build_file_path(file_id)
-            traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
+            traces, plain_texts, key = self.loader.fetch_traces(file_path, self.plain_indices)
                 
             s = SBOX_MAT[plain_texts[:,0] ^ key[0]]
             h = HAMMING_WEIGHTS[s]
 
-            for j in range(self.hw_len):
+            for j in range(BYTE_HW_LEN):
                 sum_hw[j], c_hw[j]= kahan_sum(sum_hw[j], c_hw[j], np.sum(traces[h==j], 0))
                 D[j] += np.sum(h==j)
 
             pbar.update(1)
             
         pbar.close()
-        mean = sum_hw / D.reshape((self.hw_len,1)).repeat(TRACE_SIZE, axis=1)
+        mean = sum_hw / D.reshape((BYTE_HW_LEN,1)).repeat(trace_len, axis=1)
             
         pca = PCA(self.reduced_dim)
         mean_reduced = pca.fit_transform(mean)
@@ -83,30 +85,32 @@ class TraceGenerator(MachineLearningTask):
         '''
         Fit the generative distribution of PCA reduced traces given the (voltage,frequency) platform.
         '''
-        t_HW = [[] for i in range(self.hw_len)]
+        trace_len = self.loader.trace_len
+        t_HW = [[] for i in range(BYTE_HW_LEN)]
+        time_idx = np.arange(0, trace_len)
         pbar = tqdm.tqdm(total=len(self.key_values))
 
         for key_value in self.key_values:
             file_id = self.loader.build_file_id(voltage, frequency, key_value)
             file_path = self.loader.build_file_path(file_id)
-            traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
+            traces, plain_texts, key = self.loader.fetch_traces(file_path, self.plain_indices)
 
             traces = pca_transform(pca, traces)
             
             s = SBOX_MAT[plain_texts[:,0] ^ key[0]]
             h = HAMMING_WEIGHTS[s]
                 
-            for j in range(self.hw_len):
+            for j in range(BYTE_HW_LEN):
                 t_HW[j].extend(traces[h==j])
 
             pbar.update(1)
             
         pbar.close()
-        t_HW = [np.array(t_HW[h], dtype=traces.dtype) for h in range(self.hw_len)]
+        t_HW = [np.array(t_HW[h], dtype=traces.dtype) for h in range(BYTE_HW_LEN)]
         
-        gauss_mean  = np.zeros((self.hw_len, self.reduced_dim))
-        gauss_cov  = np.zeros((self.hw_len, self.reduced_dim, self.reduced_dim))
-        for HW in range(self.hw_len):
+        gauss_mean  = np.zeros((BYTE_HW_LEN, self.reduced_dim))
+        gauss_cov  = np.zeros((BYTE_HW_LEN, self.reduced_dim, self.reduced_dim))
+        for HW in range(BYTE_HW_LEN):
             gauss_mean[HW]= np.mean(t_HW[HW], 0)
             for i in range(self.reduced_dim):
                 for j in range(self.reduced_dim):
@@ -117,22 +121,12 @@ class TraceGenerator(MachineLearningTask):
         return gauss_mean, gauss_cov
 
     def run(self, *args):
-        log_dir = get_program_log_dir()
-
-        # init params
-        params = {'voltages':self.voltages,'frequencies':self.frequencies,
-                    'key_values':self.key_values,'plain_bounds':self.plain_bounds,
-                    'reduced_dim':self.reduced_dim}
-
-        # platforms
         for voltage in self.voltages:
             for frequency in self.frequencies:
                 print(f'\nProcessing {voltage}-{frequency} platform')
-                curr_root_path = os.path.join(log_dir, f'{voltage}-{frequency}')
-                if not os.path.exists(curr_root_path):
-                    os.mkdir(curr_root_path)
+                curr_root_path = os.path.join(self.log_dir, f'{voltage}-{frequency}')
+                os.mkdir(curr_root_path)
 
-                # pca
                 print('Reducing data dimensionality\n')
                 curr_path = os.path.join(curr_root_path, 'pca')
                 if not os.path.exists(curr_path):
@@ -143,16 +137,10 @@ class TraceGenerator(MachineLearningTask):
                 save_pickle(pca, os.path.join(curr_path, 'pca.pckl'))
                 save_numpy(mean_reduced, os.path.join(curr_path, 'mean_reduced.npy'))
 
-                # multivariate gaussian
                 print('\nEstimating generative distribution\n')
                 curr_path = os.path.join(curr_root_path, 'multi_gauss')
-                if not os.path.exists(curr_path):
-                    os.mkdir(curr_path)
+                os.mkdir(curr_path)
 
                 gauss_mean, gauss_cov = self.fit_multi_gauss(voltage, frequency, pca)
                 save_numpy(gauss_mean, os.path.join(curr_path, 'mean.npy'))
                 save_numpy(gauss_cov, os.path.join(curr_path, 'covariance.npy'))
-
-        # save params
-        params_path = os.path.join(log_dir, 'params.json')
-        save_json(params, params_path)

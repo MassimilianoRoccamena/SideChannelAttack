@@ -13,12 +13,11 @@ from sca.preprocessing.window.loader import WindowLoader1 as FileConvention1
 from sca.preprocessing.window.loader import WindowLoader2 as FileConvention2
 from sca.preprocessing.window.reader import WindowReader
 
-class LookupCreation(DataProcess):
+class WindowLookup(DataProcess):
     '''
     Data processing task which creates trace windows dataset lookup files.
     '''
 
-    INVALID_SUBSET_MSG = 'invalid dataset size type'
     DATA_HEADER = 'voltage,frequency,key_value,plain_index,plain_text,window_start,window_end'
 
     def __init__(self, loader, voltages, frequencies, key_values,
@@ -31,9 +30,8 @@ class LookupCreation(DataProcess):
         key_values: key values of the encryption
         plain_bounds: start, end plain text indices
         size: desired set size divided by full set size
-        partitioning: list of se partitions
+        partitioning: list of se partitionss
         full_info: wheter to include all data inside lookups
-        log_dir: log directory of the task
         '''
         self.loader = loader
         self.voltages = list(voltages)
@@ -50,6 +48,7 @@ class LookupCreation(DataProcess):
             self.size = size
         self.partitioning = partitioning
         self.full_info = full_info
+        self.log_dir = get_program_log_dir()
 
     @classmethod
     @build_task_kwarg('loader')
@@ -57,8 +56,6 @@ class LookupCreation(DataProcess):
         pass
 
     def run(self, *args):
-        log_dir = get_program_log_dir()
-
         # init params
         params = {'voltages':self.voltages,'frequencies':self.frequencies,
                     'key_values':self.key_values,'plain_bounds':self.plain_bounds,
@@ -112,9 +109,9 @@ class LookupCreation(DataProcess):
                 print(f'{curr_line_left},{curr_line_right}', file=f)
             
             # populate dataframe(s)
-            header_line = LookupCreation.DATA_HEADER
+            header_line = WindowLookup.DATA_HEADER
             if mapping_enabled:
-                data_path = lambda buck: os.path.join(log_dir, f'{partition_name}{buck}.csv')
+                data_path = lambda buck: os.path.join(self.log_dir, f'{partition_name}{buck}.csv')
                 bucket_idx = 0
                 f = open(data_path(bucket_idx), 'w')
                 print(header_line, file=f)
@@ -127,13 +124,13 @@ class LookupCreation(DataProcess):
                     save_row(f, ir)
                 f.close()
             else:
-                data_path = os.path.join(log_dir, f'{partition_name}.csv')
+                data_path = os.path.join(self.log_dir, f'{partition_name}.csv')
                 with open(data_path, 'w') as f:
                     print(header_line, file=f)
                     for ir in trange(num_samples):
                         save_row(f, ir)
 
         # save params
-        params_path = os.path.join(log_dir, 'params.json')
+        params_path = os.path.join(self.log_dir, 'params.json')
         save_json(params, params_path)
             

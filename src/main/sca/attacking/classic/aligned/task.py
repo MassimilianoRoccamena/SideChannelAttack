@@ -3,20 +3,19 @@ import numpy as np
 from tqdm.auto import trange
 
 from sca.rescaler import FrequencyRescaler
-from sca.attacking.classic.loader import *
-from sca.attacking.classic.task import KeyDiscriminator
+from sca.attacking.loader import *
+from sca.attacking.classic.task import StaticDiscriminator
 
-class StaticDiscriminator(KeyDiscriminator):
+class AlignedStaticDiscriminator(StaticDiscriminator):
     '''
-    Trace key discriminator on static frequency aligned traces.
+    Trace key discriminator on aligned static frequency traces.
     '''
 
-    def __init__(self, loader, generator_path, voltages, frequencies,
+    def __init__(self, generator_path, voltages, frequencies,
                         plain_bounds, num_workers, workers_type,
-                        target_volt, target_freq, interp_kind):
+                        target_volt, target_freq, interp_kind=None):
         '''
-        Create new template attacker on frequency aligned static traces.
-        loader: power trace loader
+        Create new template attacker on aligned static traces.
         generator_path: path of a trace generator
         voltages: voltages of platform to attack
         frequencies: frequencies of platform to attack
@@ -27,7 +26,7 @@ class StaticDiscriminator(KeyDiscriminator):
         target_freq: frequency of the aligned platform
         interp_kind: kind of 1D trace interpolation
         '''
-        super().__init__(loader, generator_path, voltages, frequencies,
+        super().__init__(generator_path, voltages, frequencies,
                             plain_bounds, num_workers, workers_type)
         self.target_volt = target_volt
         self.target_freq = target_freq

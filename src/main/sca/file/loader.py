@@ -2,6 +2,8 @@ import numpy as np
 
 from aidenv.api.loader import FileLoader
 
+from sca.file.params import TRACE_SIZE
+
 class TraceLoader(FileLoader):
     '''
     Abstract loader of encryption power traces (and their plain texts) from a
@@ -56,6 +58,18 @@ class OurTraceLoader(TraceLoader):
     INVALID_FILE_CHANN_TYPE = lambda f : f'file {f} has invalid channel type'
     INVALID_PLAIN_INDICES_MSG = 'invalid plain text indices'
     INVALID_TIME_INDICES_MSG = 'invalid temporal indices'
+
+    def __init__(self, trace_len=None):
+        '''
+        Create new trace loader.
+        trace_len: desired length of a trace loaded from fetch method
+        '''
+        if trace_len is None:
+            self.trace_len = TRACE_SIZE
+            self.desired_time_idx = None
+        else:
+            self.trace_len = trace_len
+            self.desired_time_idx = np.arange(0, trace_len)
 
     def read_file_base(self, file_path):
         ''''
@@ -157,3 +171,15 @@ class OurTraceLoader(TraceLoader):
                 plain_texts[i,:] = np.frombuffer(buffer=f.read(text_len* plain_texts.itemsize), dtype=plain_texts.dtype)
         
         return traces, plain_texts, key
+
+    def fetch_traces(self, file_path, plain_indices):
+        '''
+        Load some traces by prior specification of desired length.
+        file_path: path of the file
+        plain_indices: plain text indices of a file
+        '''
+        if self.desired_time_idx is None:
+            return self.load_some_traces(file_path, plain_indices)
+        else:
+            return self.load_some_projected_traces(file_path, plain_indices,
+                                                    self.desired_time_idx)

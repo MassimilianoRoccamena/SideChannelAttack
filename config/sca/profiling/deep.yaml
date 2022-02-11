@@ -36,6 +36,7 @@ dataset:
     loader:
       name: FileConvention2
       params:
+        trace_len: 100000
 
     voltages:
       - '1.00'

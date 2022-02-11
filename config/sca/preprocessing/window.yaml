@@ -4,10 +4,9 @@ base:
     - sca
     - preprocessing
     - window
-    - lookup
 
-  name: WindowLookup0
-  id: 1
+  name: A-WindowLookup
+  id: 0
 
   description: 'creation of window lookup data'
 
@@ -21,7 +20,7 @@ determinism:
 
 core:
 
-  name: LookupCreation
+  name: WindowLookup
   params:
 
     loader:
@@ -32,6 +31,7 @@ core:
           params:
             window_size: 500
             num_windows: 1
+            trace_len: 100000
 
           #name: Strided
           #params:
@@ -41,21 +41,21 @@ core:
     voltages:
       - '1.00'
     frequencies:
-      - '45.000'
-      - '46.875'
+      #- '45.000'
+      #- '46.875'
       - '48.000'
-      - '50.000'
-      - '50.125'
+      #- '50.000'
+      #- '50.125'
       - '52.000'
       - '54.000'
-      - '55.000'
+      #- '55.000'
       - '56.000'
     key_values:
       #- '00'
       #- '01'
     plain_bounds: [0, 300]
 
-    size: 0.2
+    size: 0.1
 
     partitioning:
       mapping:

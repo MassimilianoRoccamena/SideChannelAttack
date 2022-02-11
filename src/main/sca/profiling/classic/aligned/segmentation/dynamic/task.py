@@ -3,7 +3,6 @@ import tqdm
 from math import ceil
 from joblib import Parallel, delayed
 import numpy as np
-from scipy.interpolate import interp1d
 import torch
 
 from utils.persistence import save_numpy
@@ -16,34 +15,34 @@ class DynamicSegmentation(GradCamSegmentation):
     GRAD-CAM frequency segmentation from of static frequency traces.
     '''
 
-    def __init__(self, loader, voltage, frequencies, key_values,
-                    plain_bounds, training_path, checkpoint_file, batch_size, interp_kind,
-                    mu, sigma, trace_len=None, log_segmentation=None, log_localization=None,
+    def __init__(self, loader, training_path, checkpoint_file,
+                    key_values, plain_bounds, batch_size, interp_kind,
+                    mu, sigma, log_assembler=None, log_segmentation=None, log_localization=None,
                     min_window_len=None, max_window_len=None, num_workers=None, workers_type=None):
         '''
         Create new GRAD-CAM frequency segmentation of dynamic traces.
         loader: power trace loader
-        voltage: voltage of platform to segment
-        frequencies: frequencies of platform to segment
-        plain_bounds: start, end plain text indices
         training_path: root directory of a model training
         checkpoint_file: file name of the model checkpoint
+        plain_bounds: start, end plain text indices
         batch_size: batch size for model inference
         interp_kind: interpolation kind for map upscaling
-        trace_len: size of the trace to segment
+        mu: mean of the gaussian duration of the static windows
+        sigma: std of the gaussian duration of the static windows
+        log_assembler: wheter to persist assembler results
         log_segmentation: wheter to persist segmentation results
         log_localization: wheter to persist localization results
-        min_window_len: min assembled window size inside a trace
-        max_window_len: max assembled window size inside a trace
+        min_window_len: min static window size
+        max_window_len: max static window size
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
         '''
-        super().__init__(loader, [voltage], frequencies, key_values, \
-                    plain_bounds, training_path, checkpoint_file, batch_size, \
-                    interp_kind, trace_len, log_segmentation, log_localization, \
-                    num_workers, workers_type)
-        self.assembler = DynamicAssembler(loader, self.plain_indices, voltage, frequencies, \
-                                mu, sigma, self.trace_len, min_window_len, max_window_len)
+        super().__init__(loader, training_path, checkpoint_file, key_values, \
+                        plain_bounds, batch_size, interp_kind, log_assembler, \
+                        log_segmentation, log_localization, \
+                        num_workers, workers_type)
+        self.assembler = DynamicAssembler(loader, self.plain_indices, self.voltages[0], frequencies, \
+                                mu, sigma, min_window_len, max_window_len, track_windows=log_assembler)
 
     def compute_work(self):
         '''

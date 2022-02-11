@@ -8,36 +8,46 @@ import torch
 from utils.persistence import save_numpy
 from utils.math import BYTE_SIZE, BYTE_HW_LEN
 from aidenv.api.config import get_program_log_dir
-from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
-from sca.config import build_model_object, OmegaConf
+from sca.config import Omegaconf, build_task_object, build_model_object
 from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 from sca.file.params import str_hex_bytes
-from sca.attacking.deep.loader import *
+from sca.attacking.loader import *
 
-class DeepDiscriminator(MachineLearningTask):
+class DeepStaticDiscriminator(MachineLearningTask):
     '''
-    Machine learning task which compute the log likelihood of a key given some attack traces using
-    a fitted deep network for sbox hw classification.
+    Machine learning task which compute the log likelihood of a key given some static
+    frequency traces using a fitted deep classifier.
     '''
 
-    def __init__(self, loader, voltages, frequencies, key_values, plain_bounds,
-                    training_path, checkpoint_file, batch_size, num_workers=None, workers_type=None):
+    def __init__(self, training_path, checkpoint_file, voltages, frequencies, key_values,
+                        plain_bounds, batch_size, num_workers=None, workers_type=None):
         '''
         Create new deep key attacker.
-        loader: trace windows loader
-        voltages: voltages of platform to attack
-        frequencies: frequencies of platform to attack
-        plain_bounds: start, end plain text indices
         training_path: root directory of a model training
         checkpoint_file: file name of the model checkpoint
+        voltages: voltages of platforms to attack
+        frequencies: frequencies of platforms to attack
+        plain_bounds: start, end plain text indices
         batch_size: batch size for model inference
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
         '''
-        self.loader = loader
-        self.voltages = list(voltages)
-        self.frequencies = list(frequencies)
+        self.training_path = training_path
+        self.checkpoint_file = checkpoint_file
+        training_conf = OmegaConf.load(training_path)
+        self.loader = build_task_object(training_conf.dataset.params.loader)
+        self.model = None
+        if voltages is None:
+            self.voltages = training_conf.dataset.params.voltages
+            print(f'Found {len(self.voltages)} voltages')
+        else:
+            self.voltages = list(voltages)
+        if frequencies is None:
+            self.frequencies = training_conf.dataset.params.frequencies
+            print(f'Found {len(self.frequencies)} voltages')
+        else:
+            self.frequencies = list(frequencies)
         if key_values is None:
             key_values = str_hex_bytes()
             print('Using all key values')
@@ -45,24 +55,20 @@ class DeepDiscriminator(MachineLearningTask):
         self.plain_bounds = list(plain_bounds)
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
-        self.training_path = training_path
-        self.checkpoint_file = checkpoint_file
-        self.model = None
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.batch_size = batch_size
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_workers = num_workers
         self.workers_type = workers_type
+        if not self.num_workers is None:
+            raise NotImplementedError('multiprocessing WIP')
+        self.log_dir = get_program_log_dir()
 
-    @classmethod
-    @build_task_kwarg('loader')
-    def build_kwargs(cls, config):
-        pass
-
-    def key_likelihoods_work(self, voltage, frequency, key_true, keys_lh):
+    def key_likelihood_work(self, voltage, frequency, key_true):
         '''
         Work method of one process computing one true key likelihoods over all key hypothesis.
         '''
         num_keys = len(self.key_values)
+        key_lh = np.zeros((num_keys, self.num_plain_texts))
 
         file_id = self.loader.build_file_id(voltage, frequency, key_true)
         file_path = self.loader.build_file_path(file_id)
@@ -86,15 +92,15 @@ class DeepDiscriminator(MachineLearningTask):
                     plain_text = plain_texts[plain_idx][0]
                     sbox_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_text ^ key_hyp]]
                     prob_hyp = y_hat[j, sbox_hw].detach().cpu().numpy()
-                    key_true_idx = self.key_values.index(key_true)
-                    keys_lh[key_true_idx, key_hyp, plain_idx:] -= np.log(prob_hyp)
+                    key_lh[key_hyp, plain_idx:] -= np.log(prob_hyp)
 
-    def compute_likelihoods(self, voltage, frequency):
+        return key_lh
+
+    def compute_work(self, voltage, frequency):
         '''
         Compute likelihoods of keys for the attack traces of the (voltage,frequency) platform.
         '''
         num_keys = len(self.key_values)
-        keys_lh = np.zeros((num_keys, BYTE_SIZE, self.num_plain_texts))
 
         num_workers = self.num_workers
         workers_type = self.workers_type
@@ -102,23 +108,22 @@ class DeepDiscriminator(MachineLearningTask):
         if num_workers is None:
             pbar = tqdm.tqdm(total=num_keys)                                        # vanilla
             for key_true in self.key_values:
-                self.key_likelihoods_work(voltage, frequency, key_true, keys_lh)
+                key_lh = self.key_likelihood_work(voltage, frequency, key_true)
+                file_path = os.path.join(self.lh_path, f'{key_true}.npy'))
+                save_numpy(key_lh, file_path)
                 pbar.update(1)
         else:
             n_iters = ceil(len(self.key_values) / num_workers)                      # multiprocessed -- WIP
             pbar = tqdm.tqdm(total=n_iters)
             for i in range(n_iters):
                 keys_true = self.key_values[i : min((i+1)*num_workers, num_keys-1)]
-                Parallel(n_jobs=num_workers, prefer=workers_type) (delayed(self.key_likelihoods_work) \
+                Parallel(n_jobs=num_workers, prefer=workers_type) (delayed(self.key_likelihood_work) \
                         (voltage, frequency, key_true, keys_lh) for key_true in keys_true)
                 pbar.update(1)
 
         pbar.close()
-        return keys_lh
 
     def run(self, *args):
-        log_dir = get_program_log_dir()
-
         training_path = os.path.join(self.training_path, 'program.yaml')
         training_config = OmegaConf.load(training_path)
         model = build_model_object(training_config.model)
@@ -140,11 +145,11 @@ class DeepDiscriminator(MachineLearningTask):
         for voltage in self.voltages:
             for frequency in self.frequencies:
                 print(f'\nProcessing {voltage}-{frequency} platform')
-                curr_root_path = os.path.join(log_dir, f'{voltage}-{frequency}')
-                if not os.path.exists(curr_root_path):
-                    os.mkdir(curr_root_path)
+                platform_path = os.path.join(self.log_dir, f'{voltage}-{frequency}')
+                os.mkdir(self.platform_path)
+                self.lh_path = os.path.join(platform_path, 'likelihood')
+                os.mkdir(self.lh_path)
 
                 # likelihoods
                 print('Computing keys likelihood\n')
-                keys_lh = self.compute_likelihoods(voltage, frequency)
-                save_numpy(keys_lh, os.path.join(curr_root_path, 'keys_likelihoods.npy'))
+                self.compute_work(voltage, frequency)

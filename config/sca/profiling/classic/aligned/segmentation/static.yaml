@@ -8,10 +8,10 @@ base:
     - segmentation
     - static
 
-  name: StaticSegmentation0
-  id: test
+  name: A-StaticSegmentation
+  id: 0
 
-  description: 'frequency segmentation of static traces using a frequency classifier'
+  description: 'frequency segmentation of static traces using a frequency classifier, also creates synamic trace dataset lookup files'
 
 # ---------------------------------------------------------------
 
@@ -29,12 +29,10 @@ core:
     loader:
       name: FileConvention2
       params:
+        trace_len: 100000
     
-    voltages:
-      - '1.00'
-    frequencies:
-      - '45.000'
-      - '54.000'
+    training_path: /data/output/A-FrequencyAligner/0
+    checkpoint_file: epoch=3-step=1151.ckpt
     key_values:
       - '00'
       - '01'
@@ -44,13 +42,9 @@ core:
       #- '05'
       #- '06'
       #- '07'
-    plain_bounds: [480, 500]
-
-    training_path: /data/output/FrequencyAlignerTemp/2022-02-01_22-33-49
-    checkpoint_file: epoch=8-step=2915.ckpt
+    plain_bounds: [499, 500]
     batch_size: 1
     interp_kind: quadratic
-    trace_len: 100000
     log_segmentation: #True
     log_localization: #True
 

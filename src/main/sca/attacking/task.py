@@ -5,67 +5,59 @@ from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import multivariate_normal
 
-from utils.persistence import load_pickle, load_numpy, save_numpy
+from utils.persistence import load_pickle, load_json, save_json, load_numpy, save_numpy
 from utils.math import BYTE_SIZE, BYTE_HW_LEN, pca_transform
 from aidenv.api.config import get_program_log_dir
+from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
-from sca.config import Omegaconf, build_task_object
 from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 
-class StaticDiscriminator(MachineLearningTask):
+class DynamicDiscriminator(MachineLearningTask):
     '''
-    Machine learning task which compute the log likelihood of a key given some static
-    frequency traces using a fitted reduced trace generative model.
+    Machine learning task which compute the log likelihood of a key given some dynamic
+    frequency traces using a fitted reduced trace generative model with a frequency
+    aligner model.
     '''
 
-    def __init__(self, generator_path, voltages, frequencies, plain_bounds,
-                    num_workers, workers_type):
+    def __init__(self, loader, generator_path, segmentation_path, plain_bounds,
+                    log_assembler, num_workers, workers_type):
         '''
-        Create new template attacker on static traces.
+        Create new template attacker on dynamic traces.
         loader: power trace loader
         generator_path: path of a trace generator
-        voltages: voltages of platforms to attack
-        frequencies: frequencies of platform to attack
         plain_bounds: start, end plain text indices
+        log_assembler: wheter to persist assembler results
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
         '''
+        self.loader = loader
         self.generator_path = generator_path
-        generator_conf = OmegaConf.load(generator_path)
-        self.loader = build_task_object(generator_conf.core.params.loader)
         generator_params = load_json(os.path.join(generator_path, 'params.json'))
-        if voltages is None:
-            self.voltages = generator_conf.core.params.voltages
-            print(f'Found {len(self.voltages)} voltages')
-        else:
-            self.voltages = list(voltages)
-        if frequencies is None:
-            self.frequencies = generator_conf.core.params.frequencies
-            print(f'Found {len(self.frequencies)} voltages')
-        else:
-            self.frequencies = list(frequencies)
-        self.key_values = generator_conf.core.params.key_values
-        if self.key_values is None:
-            self.key_values = str_hex_bytes()
-            print('Using all key values')
+        self.voltage = generator_params['voltages'][0]
+        self.frequencies = generator_params['frequencies']
+        self.key_values = generator_params['key_values']
         self.plain_bounds = list(plain_bounds)
+        if log_assembler is None:
+            self.log_assembler = False
+        else:
+            self.log_assembler = log_assembler
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
-        self.reduced_dim = generator_conf.core.params.reduced_dim
+        self.reduced_dim = generator_params['reduced_dim']
         self.num_workers = num_workers
         self.workers_type = workers_type
         if not self.num_workers is None:
             raise NotImplementedError('multiprocessing WIP')
         self.log_dir = get_program_log_dir()
 
-    def process_traces(self, voltage, frequency, key_value, traces):
+    @classmethod
+    @build_task_kwarg('loader')
+    def build_kwargs(cls, config):
+        pass
+
+    def target_platform(self):
         '''
-        Process loaded traces for the computation of one iteration of key likelihoods.
-        '''
-        raise NotImplementedError
-    def target_platform(self, voltage, frequency):
-        '''
-        Select which templates of which target (voltage,frequency) platform.
+        Select which templates of which target (voltage,frequency) platform to be used to compute likelihoods.
         '''
         raise NotImplementedError
 
@@ -79,7 +71,7 @@ class StaticDiscriminator(MachineLearningTask):
 
         file_id = self.loader.build_file_id(voltage, frequency, key_true)
         file_path = self.loader.build_file_path(file_id)
-        traces, plain_texts, key = self.loader.fetch_traces(file_path, self.plain_indices)
+        traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
 
         traces = self.process_traces(voltage, frequency, key_true, traces)
         traces = pca_transform(pca, traces)
@@ -98,11 +90,11 @@ class StaticDiscriminator(MachineLearningTask):
 
         return key_lh
 
-    def compute_work(self, voltage, frequency):
+    def compute_work(self):
         '''
         Compute likelihoods of keys for the attack traces of the (voltage,frequency) platform.
         '''
-        voltage_target, frequency_target = self.target_platform(voltage, frequency)
+        voltage_target, frequency_target = self.target_platform()
         root_path = os.path.join(self.generator_path, f'{voltage_target}-{frequency_target}')
         curr_path = os.path.join(root_path, 'pca')
         pca = load_pickle(os.path.join(curr_path, 'pca.pckl'))
@@ -133,13 +125,8 @@ class StaticDiscriminator(MachineLearningTask):
         pbar.close()
 
     def run(self, *args):
-        for voltage in self.voltages:
-            for frequency in self.frequencies:
-                print(f'\nProcessing {voltage}-{frequency} platform')
-                platform_path = os.path.join(self.log_dir, f'{voltage}-{frequency}')
-                os.mkdir(self.platform_path)
-                self.lh_path = os.path.join(platform_path, 'likelihood')
-                os.mkdir(self.lh_path)
+        self.lh_path = os.path.join(self.log_dir, 'likelihood')
+        os.mkdir(lh_path)
 
-                print('Computing keys likelihood\n')
-                self.compute_work(voltage, frequency)
+        print('Computing keys likelihood\n')
+        self.compute_work()

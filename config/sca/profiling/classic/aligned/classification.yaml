@@ -7,8 +7,8 @@ base:
     - aligned
     - classification
 
-  name: FrequencyAligner #FrequencyAligner0
-  #id: FixTest
+  name: A-FrequencyAligner
+  id: 0
 
   description: 'fit window to frequency classifier, for trace alignment'
 
@@ -40,8 +40,7 @@ dataset:
       name: FileConvention2
       params:
 
-    #lookup_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\WindowLookup1\0
-    lookup_path: /data/output/WindowLookup0/1 #/0
+    lookup_path: /data/output/A-WindowLookup/0
     channels_first: True
 
 model:
@@ -162,8 +161,8 @@ learning:
     max_epochs: 40
     check_val_every_n_epoch: 1
     log_every_n_steps: 1
-    limit_train_batches: 0.2 #0.1
-    limit_val_batches: 0.3 #0.1
+    limit_train_batches: 0.8
+    limit_val_batches: 1.0
     track_grad_norm: 2
 
   loggables:
@@ -212,7 +211,8 @@ logging:
     
     log_model_checkpoints: False
     tags:
-      - window1
+      - window-A
+      - trace-len-100
       - window-500
       - random-slicer
       - resnet

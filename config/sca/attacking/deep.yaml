@@ -20,13 +20,11 @@ determinism:
 
 core:
 
-  name: DeepDiscriminator
+  name: DeepStaticDiscriminator
   params:
 
-    loader:
-      name: FileConvention2
-      params:
-    
+    training_path: /data/output/KeyClassifierTemp/2022-02-01_19-33-00
+    checkpoint_file: epoch=30-step=3719.ckpt
     voltages:
       - '1.00'
     frequencies:
@@ -41,9 +39,6 @@ core:
       - '06'
       - '07'
     plain_bounds: [300, 500]
-
-    training_path: /data/output/KeyClassifierTemp/2022-02-01_19-33-00
-    checkpoint_file: epoch=30-step=3719.ckpt
     batch_size: 32
 
     num_workers: #4

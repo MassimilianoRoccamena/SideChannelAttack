@@ -23,12 +23,7 @@ core:
 
   name: BasicDiscriminator
   params:
-
-    loader:
-      name: FileConvention2
-      params:
-
-    #generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\Generator1\0
+  
     generator_path: /data/output/Generator0/0
     voltages:
       - '1.00'

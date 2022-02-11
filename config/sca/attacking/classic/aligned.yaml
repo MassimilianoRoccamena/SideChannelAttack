@@ -21,14 +21,9 @@ determinism:
 
 core:
 
-  name: StaticDiscriminator
+  name: AlignedStaticDiscriminator
   params:
 
-    loader:
-      name: FileConvention2
-      params:
-
-    #generator_path: C:\Users\rocca\Documents\Projects\SideChannelAttack\.output\Generator1\0
     generator_path: /data/output/Generator0/0
     voltages:
       - '1.00'
@@ -43,10 +38,9 @@ core:
       - '55.000'
       - '56.000'
     plain_bounds: [300, 500]
-
-    num_workers: #4
-    workers_type: #'threads'
-
     target_volt: '1.00'
     target_freq: '46.875'
-    interp_kind:
+    interp_kind: #linear
+
+    num_workers: #4
+    workers_type: #threads

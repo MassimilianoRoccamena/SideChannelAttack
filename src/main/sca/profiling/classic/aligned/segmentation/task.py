@@ -9,12 +9,12 @@ from scipy.special import softmax
 from scipy.ndimage import label
 import torch
 
-from utils.persistence import load_json, save_numpy
+from utils.persistence import load_json, save_json, save_numpy
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
-from sca.config import build_model_object, OmegaConf
-from sca.file.params import str_hex_bytes, TRACE_SIZE
+from sca.config import OmegaConf, build_model_object
+from sca.file.params import str_hex_bytes
 
 class GradCamSegmentation(MachineLearningTask):
     '''
@@ -22,21 +22,19 @@ class GradCamSegmentation(MachineLearningTask):
     window frequency classifier.
     '''
 
-    def __init__(self, loader, voltages, frequencies, key_values,
-                    plain_bounds, training_path, checkpoint_file, batch_size,
-                    interp_kind, trace_len, log_segmentation, log_localization,
-                    num_workers, workers_type):
+    def __init__(self, loader, training_path, checkpoint_file,
+                    key_values, plain_bounds, batch_size,
+                    interp_kind, log_assembler, log_segmentation,
+                    log_localization, num_workers, workers_type):
         '''
         Create new GRAD-CAM frequency segmentation.
         loader: power trace loader
-        voltages: voltages of platforms to segment
-        frequencies: frequencies of platforms to segment
-        plain_bounds: start, end plain text indices
         training_path: root directory of a model training
         checkpoint_file: file name of the model checkpoint
+        plain_bounds: start, end plain text indices
         batch_size: batch size for model inference
         interp_kind: interpolation kind for map upscaling
-        trace_len: size of the trace to segment
+        log_assembler: wheter to persist assembler results
         log_segmentation: wheter to persist segmentation results
         log_localization: wheter to persist localization results
         num_workers: number of processes to split workload
@@ -44,28 +42,43 @@ class GradCamSegmentation(MachineLearningTask):
         '''
         self.loader = loader
         self.assembler = None
-        self.voltages = list(voltages)
-        self.frequencies = list(frequencies)
-        if key_values is None:
-            key_values = str_hex_bytes()
-            print('Using all key values')
-        self.key_values = list(key_values)
-        self.plain_bounds = list(plain_bounds)
-        self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
-        self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.training_path = training_path
+        training_path = os.path.join(training_path, 'program.yaml')
+        self.training_config = OmegaConf.load(training_path)
+        self.lookup_path = self.training_config.dataset.params.lookup_path
+        lookup_path = os.path.join(self.lookup_path, 'program.yaml')
+        self.lookup_config = OmegaConf.load(lookup_path)
         self.checkpoint_file = checkpoint_file
         self.model = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.voltages = self.lookup_config.core.params.voltages
+        self.voltages = OmegaConf.to_object(self.voltages)
+        print(f'Found {len(self.voltages)} voltages')
+        self.frequencies = self.lookup_config.core.params.frequencies
+        self.frequencies = OmegaConf.to_object(self.frequencies)
+        self.num_classes = len(self.frequencies)
+        print(f'Found {len(self.frequencies)} frequencies')
+        if key_values is None:
+            key_values = self.lookup_config.core.params.key_values
+            key_values = OmegaConf.to_object(self.key_values)
+            if key_values is None:
+                key_values = str_hex_bytes()
+                print(f'Using all key values')
+            else:
+                print(f'Found {len(self.key_values)} key values')
+        self.key_values = key_values
+        self.plain_bounds = OmegaConf.to_object(plain_bounds)
+        self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
+        self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.batch_size = batch_size
         if interp_kind is None:
             self.interp_kind = 'linear'
         else:
             self.interp_kind = interp_kind
-        if trace_len is None:
-            self.trace_len = TRACE_SIZE
+        if log_assembler is None:
+            self.log_assembler = False
         else:
-            self.trace_len = trace_len
+            self.log_assembler = log_assembler
         if log_segmentation is None:
             self.log_segmentation = False
         else:
@@ -89,9 +102,15 @@ class GradCamSegmentation(MachineLearningTask):
         '''
         Work method of one process computing all plains segmented traces for a given key.
         '''
-        segmented_traces = np.zeros((self.num_plain_texts, self.num_classes, self.trace_len))
+        key_value = args[-1]
+        trace_len = self.loader.trace_len
+        segmented_traces = np.zeros((self.num_plain_texts, self.num_classes, trace_len))
 
         traces = self.assembler.make_traces(*args)
+        if self.log_assembler:
+            file_path = os.path.join(self.log_dir, 'assembler', f'{key_value}.csv')
+            self.assembler.df_windows.to_csv(file_path, index=False)
+
         n_iters = ceil(self.num_plain_texts / self.batch_size)
 
         for i in range(n_iters):
@@ -127,12 +146,12 @@ class GradCamSegmentation(MachineLearningTask):
                 class_maps = softmax(class_maps, axis=1)
 
                 # maps upscaling
-                upscaled_maps = np.zeros((self.num_classes, self.trace_len))
+                upscaled_maps = np.zeros((self.num_classes, trace_len))
 
                 for k in range(self.num_classes):
-                    x_origin = np.linspace(0, self.trace_len, maps_size)
+                    x_origin = np.linspace(0, trace_len, maps_size)
                     scaling_interp = interp1d(x_origin, class_maps[:,k], kind=self.interp_kind)
-                    x_scaled = np.linspace(0, self.trace_len, self.trace_len)
+                    x_scaled = np.linspace(0, trace_len, trace_len)
                     upscaled_maps[k] = scaling_interp(x_scaled)
 
                 upscaled_maps[upscaled_maps<0.] = 0.
@@ -176,18 +195,14 @@ class GradCamSegmentation(MachineLearningTask):
         raise NotImplementedError
 
     def run(self, *args):
-        training_path = os.path.join(self.training_path, 'program.yaml')
-        training_config = OmegaConf.load(training_path)
+        # init params
+        params = {'voltages':self.voltages,'frequencies':self.frequencies,
+                    'key_values':self.key_values,'plain_bounds':self.plain_bounds}
 
-        lookup_path = os.path.join(training_config.dataset.params.lookup_path, 'params.json')
-        classif_frequencies = load_json(lookup_path)['frequencies']
-        self.classifier_frequencies = classif_frequencies
-        self.num_classes = len(classif_frequencies)
-        print(f'Found {len(self.classifier_frequencies)} classified frequencies')
-
-        model = build_model_object(training_config.model)
+        # work
+        model = build_model_object(self.training_config.model)
         print('Loaded classifier model')
-        labels = self.classifier_frequencies
+        labels = self.frequencies
         model.module.set_labels(labels)
 
         checkpoint_path = os.path.join(self.training_path, 'checkpoints', self.checkpoint_file)
@@ -199,5 +214,13 @@ class GradCamSegmentation(MachineLearningTask):
         model.eval()
         self.model = model
         print('Loaded model checkpoint')
+        
+        assembler_dir = os.path.join(self.log_dir, 'assembler')
+        if self.log_assembler:
+            os.mkdir(assembler_dir)
 
         self.compute_work()
+
+        # save params
+        params_path = os.path.join(self.log_dir, 'params.json')
+        save_json(params, params_path)
