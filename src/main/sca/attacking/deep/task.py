@@ -9,7 +9,7 @@ from utils.persistence import save_numpy
 from utils.math import BYTE_SIZE, BYTE_HW_LEN
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.mlearn.task import MachineLearningTask
-from sca.config import Omegaconf, build_task_object, build_model_object
+from sca.config import OmegaConf, build_task_object, build_model_object
 from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 from sca.file.params import str_hex_bytes
 from sca.attacking.loader import *
@@ -35,24 +35,25 @@ class DeepStaticDiscriminator(MachineLearningTask):
         '''
         self.training_path = training_path
         self.checkpoint_file = checkpoint_file
-        training_conf = OmegaConf.load(training_path)
-        self.loader = build_task_object(training_conf.dataset.params.loader)
+        training_path = os.path.join(training_path, 'program.yaml')
+        self.training_config = OmegaConf.to_object(OmegaConf.load(training_path))
+        self.loader = build_task_object(self.training_config['dataset']['params']['loader'])
         self.model = None
         if voltages is None:
-            self.voltages = training_conf.dataset.params.voltages
+            self.voltages = self.training_config['dataset']['params']['voltages']
             print(f'Found {len(self.voltages)} voltages')
         else:
-            self.voltages = list(voltages)
+            self.voltages = voltages
         if frequencies is None:
-            self.frequencies = training_conf.dataset.params.frequencies
+            self.frequencies = self.training_config['dataset']['params']['frequencies']
             print(f'Found {len(self.frequencies)} voltages')
         else:
-            self.frequencies = list(frequencies)
+            self.frequencies = frequencies
         if key_values is None:
             key_values = str_hex_bytes()
             print('Using all key values')
-        self.key_values = list(key_values)
-        self.plain_bounds = list(plain_bounds)
+        self.key_values = key_values
+        self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.batch_size = batch_size
@@ -109,7 +110,7 @@ class DeepStaticDiscriminator(MachineLearningTask):
             pbar = tqdm.tqdm(total=num_keys)                                        # vanilla
             for key_true in self.key_values:
                 key_lh = self.key_likelihood_work(voltage, frequency, key_true)
-                file_path = os.path.join(self.lh_path, f'{key_true}.npy'))
+                file_path = os.path.join(self.lh_path, f'{key_true}.npy')
                 save_numpy(key_lh, file_path)
                 pbar.update(1)
         else:

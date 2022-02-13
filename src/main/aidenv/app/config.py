@@ -1,6 +1,7 @@
 import os
 from omegaconf import OmegaConf
 from omegaconf.errors import ConfigKeyError
+from omegaconf.dictconfig import DictConfig
 
 from utils.string import upper_identifier
 from utils.reflection import get_package_name
@@ -122,10 +123,7 @@ class CoreObject:
         Build kwargs for a class from configuration.
         config: configuration object or dict
         '''
-        if type(config) is dict:
-            return config
-        else:
-            return dict(config)
+        return config
 
     @classmethod
     def update_kwargs(cls, config, **kwargs):
@@ -133,7 +131,6 @@ class CoreObject:
         Update kwargs for a class constructor.
         config: configuration object
         '''
-        config = dict(config)
         for k,v in kwargs.items():
             config[k] = v
         return config
@@ -210,7 +207,8 @@ def build_object_collapsed(config, module_name, class_name, args, kwargs, core_o
     params = search_config_key(config, class_name)
     if params is None:
         params = {}
-    params = dict(params)
+    elif type(params) is DictConfig:
+        params = OmegaConf.to_object(params)
     params.update(kwargs)
 
     if core_obj:
@@ -248,7 +246,8 @@ def build_object_expanded(config, module_name, args, kwargs, core_obj=False):
     params = search_config_key(config, CLASS_PARAMS_KEY)
     if params is None:
         params = {}
-    params = dict(params)
+    elif type(params) is DictConfig:
+        params = OmegaConf.to_object(params)
     params.update(kwargs)
 
     if core_obj:

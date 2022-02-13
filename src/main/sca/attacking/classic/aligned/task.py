@@ -1,10 +1,7 @@
-import os
-import numpy as np
-from tqdm.auto import trange
-
 from sca.rescaler import FrequencyRescaler
 from sca.attacking.loader import *
 from sca.attacking.classic.task import StaticDiscriminator
+from sca.attacking.task import AlignedDynamicDiscriminator
 
 class AlignedStaticDiscriminator(StaticDiscriminator):
     '''
@@ -12,8 +9,8 @@ class AlignedStaticDiscriminator(StaticDiscriminator):
     '''
 
     def __init__(self, generator_path, voltages, frequencies,
-                        plain_bounds, num_workers, workers_type,
-                        target_volt, target_freq, interp_kind=None):
+                        plain_bounds, target_volt, target_freq,
+                        interp_kind=None, num_workers=None, workers_type= None):
         '''
         Create new template attacker on aligned static traces.
         generator_path: path of a trace generator
@@ -24,7 +21,7 @@ class AlignedStaticDiscriminator(StaticDiscriminator):
         workers_type: type of joblib workers
         target_freq: voltage of the aligned platform
         target_freq: frequency of the aligned platform
-        interp_kind: kind of 1D trace interpolation
+        interp_kind: kind of 1D interpolation for trace rescaling
         '''
         super().__init__(generator_path, voltages, frequencies,
                             plain_bounds, num_workers, workers_type)

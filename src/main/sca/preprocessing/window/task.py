@@ -34,12 +34,12 @@ class WindowLookup(DataProcess):
         full_info: wheter to include all data inside lookups
         '''
         self.loader = loader
-        self.voltages = list(voltages)
-        self.frequencies = list(frequencies)
+        self.voltages = voltages
+        self.frequencies = frequencies
         if key_values is None:
             key_values = str_hex_bytes()
-        self.key_values = list(key_values)
-        self.plain_bounds = list(plain_bounds)
+        self.key_values = key_values
+        self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         if size is None:
@@ -60,8 +60,8 @@ class WindowLookup(DataProcess):
         params = {'voltages':self.voltages,'frequencies':self.frequencies,
                     'key_values':self.key_values,'plain_bounds':self.plain_bounds,
                     'size':self.size}
-        mapping_enabled = self.partitioning.mapping.enabled
-        mapping_bucket = self.partitioning.mapping.bucket_size
+        mapping_enabled = self.partitioning['mapping']['enabled']
+        mapping_bucket = self.partitioning['mapping']['bucket_size']
         mapping_params = {'enabled':mapping_enabled}
         params['mapping'] = mapping_params
         if mapping_enabled:
@@ -75,10 +75,10 @@ class WindowLookup(DataProcess):
         np.random.shuffle(root_plain_idx)
 
         # partitions
-        partitions = self.partitioning.sets
+        partitions = self.partitioning['sets']
         for ip,partition in enumerate(partitions):
-            partition_name = partition.name
-            partition_size = partition.size
+            partition_name = partition['name']
+            partition_size = partition['size']
             print('')
             print(f'Building {partition_name} partition')
 

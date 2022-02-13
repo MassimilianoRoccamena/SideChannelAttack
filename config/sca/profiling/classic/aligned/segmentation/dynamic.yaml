@@ -8,8 +8,8 @@ base:
     - segmentation
     - dynamic
 
-  name: DynamicSegmentation0
-  id: 1
+  name: A-DynamicSegmentation
+  id: 0
 
   description: 'frequency segmentation of static traces using a frequency classifier'
 
@@ -31,19 +31,10 @@ core:
       params:
         trace_len: 100000
     
-    training_path: /data/output/FrequencyAlignerTemp/2022-02-01_22-33-49
-    checkpoint_file: epoch=8-step=2915.ckpt
-    voltage: '1.00'
-    frequencies:
-      - '45.000'
-      - '46.875'
-      - '48.000'
-      - '50.000'
-      - '50.125'
-      - '52.000'
-      - '54.000'
-      - '55.000'
-      - '56.000'
+    #training_path: /data/output/FrequencyAlignerTemp/2022-02-01_22-33-49
+    #checkpoint_file: epoch=8-step=2915.ckpt
+    training_path: ./.output/A-FrequencyAligner/0
+    checkpoint_file: epoch=1-step=25.ckpt
     key_values:
       - '00'
       - '01'
@@ -53,12 +44,11 @@ core:
       #- '05'
       #- '06'
       #- '07'
-    plain_bounds: [480, 500]
+    plain_bounds: [495, 500]
     batch_size: 1
     interp_kind: quadratic
     mu: 15000
     sigma: 4000
-    trace_len: 100000
     log_assembler: True
     log_segmentation: True
     log_localization: #True

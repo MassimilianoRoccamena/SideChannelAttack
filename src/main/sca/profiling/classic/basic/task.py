@@ -1,8 +1,6 @@
 import os
 import tqdm
-import math
 import numpy as np
-from scipy.stats import multivariate_normal
 from sklearn.decomposition import PCA
 
 from utils.persistence import save_pickle, save_json, save_numpy
@@ -30,13 +28,13 @@ class TraceGenerator(MachineLearningTask):
         reduced_dim: dimensionality reduction size
         '''
         self.loader = loader
-        self.voltages = list(voltages)
-        self.frequencies = list(frequencies)
+        self.voltages = voltages
+        self.frequencies = frequencies
         if key_values is None:
             key_values = str_hex_bytes()
             print('Using all key values')
-        self.key_values = list(key_values)
-        self.plain_bounds = list(plain_bounds)
+        self.key_values = key_values
+        self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.reduced_dim = reduced_dim
@@ -121,6 +119,11 @@ class TraceGenerator(MachineLearningTask):
         return gauss_mean, gauss_cov
 
     def run(self, *args):
+        # init params
+        params = {'voltages':self.voltages,'frequencies':self.frequencies,
+                    'key_values':self.key_values,'plain_bounds':self.plain_bounds}
+        
+        # work
         for voltage in self.voltages:
             for frequency in self.frequencies:
                 print(f'\nProcessing {voltage}-{frequency} platform')
@@ -144,3 +147,7 @@ class TraceGenerator(MachineLearningTask):
                 gauss_mean, gauss_cov = self.fit_multi_gauss(voltage, frequency, pca)
                 save_numpy(gauss_mean, os.path.join(curr_path, 'mean.npy'))
                 save_numpy(gauss_cov, os.path.join(curr_path, 'covariance.npy'))
+
+        # save params
+        params_path = os.path.join(self.log_dir, 'params.json')
+        save_json(params, params_path)

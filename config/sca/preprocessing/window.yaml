@@ -49,13 +49,13 @@ core:
       - '52.000'
       - '54.000'
       #- '55.000'
-      - '56.000'
+      #- '56.000'
     key_values:
-      #- '00'
-      #- '01'
+      - '00'
+      - '01'
     plain_bounds: [0, 300]
 
-    size: 0.1
+    size: 0.8
 
     partitioning:
       mapping:

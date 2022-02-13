@@ -1,1 +1,1 @@
-sh run/main.sh mlearn sca/profiling/basic
+sh run/main.sh mlearn sca/profiling/classic/basic

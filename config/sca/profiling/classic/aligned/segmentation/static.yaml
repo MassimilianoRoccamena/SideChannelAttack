@@ -31,8 +31,10 @@ core:
       params:
         trace_len: 100000
     
-    training_path: /data/output/A-FrequencyAligner/0
-    checkpoint_file: epoch=3-step=1151.ckpt
+    #training_path: /data/output/A-FrequencyAligner/0
+    #checkpoint_file: epoch=3-step=1151.ckpt
+    training_path: ./.output/A-FrequencyAligner/0
+    checkpoint_file: epoch=1-step=25.ckpt
     key_values:
       - '00'
       - '01'
@@ -45,7 +47,7 @@ core:
     plain_bounds: [499, 500]
     batch_size: 1
     interp_kind: quadratic
-    log_segmentation: #True
+    log_segmentation: True
     log_localization: #True
 
     num_workers: #4

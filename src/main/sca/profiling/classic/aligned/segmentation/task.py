@@ -1,7 +1,5 @@
 import os
-import tqdm
 from math import ceil
-from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
@@ -9,7 +7,7 @@ from scipy.special import softmax
 from scipy.ndimage import label
 import torch
 
-from utils.persistence import load_json, save_json, save_numpy
+from utils.persistence import save_json
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.basic.config import build_task_kwarg
 from aidenv.api.mlearn.task import MachineLearningTask
@@ -44,30 +42,27 @@ class GradCamSegmentation(MachineLearningTask):
         self.assembler = None
         self.training_path = training_path
         training_path = os.path.join(training_path, 'program.yaml')
-        self.training_config = OmegaConf.load(training_path)
-        self.lookup_path = self.training_config.dataset.params.lookup_path
+        self.training_config = OmegaConf.to_object(OmegaConf.load(training_path))
+        self.lookup_path = self.training_config['dataset']['params']['lookup_path']
         lookup_path = os.path.join(self.lookup_path, 'program.yaml')
-        self.lookup_config = OmegaConf.load(lookup_path)
+        self.lookup_config = OmegaConf.to_object(OmegaConf.load(lookup_path))
         self.checkpoint_file = checkpoint_file
         self.model = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.voltages = self.lookup_config.core.params.voltages
-        self.voltages = OmegaConf.to_object(self.voltages)
+        self.voltages = self.lookup_config['core']['params']['voltages']
         print(f'Found {len(self.voltages)} voltages')
-        self.frequencies = self.lookup_config.core.params.frequencies
-        self.frequencies = OmegaConf.to_object(self.frequencies)
+        self.frequencies = self.lookup_config['core']['params']['frequencies']
         self.num_classes = len(self.frequencies)
         print(f'Found {len(self.frequencies)} frequencies')
         if key_values is None:
-            key_values = self.lookup_config.core.params.key_values
-            key_values = OmegaConf.to_object(self.key_values)
+            key_values = self.lookup_config['core']['params']['key_values']
             if key_values is None:
                 key_values = str_hex_bytes()
                 print(f'Using all key values')
             else:
                 print(f'Found {len(self.key_values)} key values')
         self.key_values = key_values
-        self.plain_bounds = OmegaConf.to_object(plain_bounds)
+        self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.batch_size = batch_size
@@ -115,7 +110,7 @@ class GradCamSegmentation(MachineLearningTask):
 
         for i in range(n_iters):
             low_plain_idx = i*self.batch_size
-            high_plain_idx = min((i+1)*self.batch_size, self.num_plain_texts-1)
+            high_plain_idx = min((i+1)*self.batch_size, self.num_plain_texts)
             real_batch_size = high_plain_idx - low_plain_idx
 
             curr_traces = traces[low_plain_idx : high_plain_idx]
@@ -200,7 +195,7 @@ class GradCamSegmentation(MachineLearningTask):
                     'key_values':self.key_values,'plain_bounds':self.plain_bounds}
 
         # work
-        model = build_model_object(self.training_config.model)
+        model = build_model_object(self.training_config['model'])
         print('Loaded classifier model')
         labels = self.frequencies
         model.module.set_labels(labels)

@@ -14,13 +14,13 @@ class WindowClassification(ClassificationDataset):
     Abstract classification dataset of trace windows.
     '''
 
-    def __init__(self, loader, lookup_path, set_name=None, channels_first=True):
+    def __init__(self, loader, window_path, set_name=None, channels_first=True):
         '''
         Create new window classification dataset.
-        lookup_path: path of the lookup data folder
+        window_path: path of windows lookup data
         channels_first: shape convention of data
         '''
-        reader = WindowReader(loader, lookup_path, set_name)
+        reader = WindowReader(loader, window_path, set_name)
         super().__init__(reader)
         self.channels_first = channels_first
 

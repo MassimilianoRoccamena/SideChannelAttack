@@ -6,10 +6,10 @@ base:
     - classic
     - aligned
 
-  name: StaticDiscrimination0
-  id: 7
+  name: A-AlignedStaticDiscrimination
+  id: 0
 
-  description: 'fit of the discriminative distribution of key given the aligned static trace, using MLE'
+  description: 'fit of the discriminative distribution of key given the aligned static traces, using MLE'
 
 # ---------------------------------------------------------------
 

@@ -131,3 +131,64 @@ class DynamicAssembler(TraceAssembler):
         if self.track_windows:
             self.df_windows = df_windows
         return traces
+
+class DynamicAssemblerLoader:
+    '''
+    Assembled dynamic traces loader.
+    '''
+
+    def __init__(self, loader, voltage, assembler_path):
+        '''
+        Create new assembled dynamic trace loader.
+        loader: power trace loader
+        voltage: device voltage
+        assembler_path: assembled traces lookup data
+        '''
+        self.loader = loader
+        self.voltage = voltage
+        self.assembler_path = assembler_path
+        self.df_key = None
+        self.curr_key = None
+    
+    def fetch_trace(self, key_value, plain_index):
+        trace_len = self.loader.trace_len
+        if self.curr_key != key_value:
+            self.df_key = pd.read_csv(f'{key_value}.csv')
+            self.curr_key = key_value
+
+        df_plain = self.df_key[self.df_key['plain_index']==plain_index]
+        time_indices = df_plain[['time_start','time_end']].to_numpy()
+        frequencies = df_plain['frequency'].to_numpy()
+        n_switches = frequencies.shape[0]
+
+        trace = np.ones(trace_len, dtype='float32')
+        prev_end = 0
+        time_elapsed = 0.
+        plain_text = None
+
+        for i in range(n_switches):
+            curr_idx = time_indices[:,i]
+            curr_start = curr_idx[0]
+            curr_end = curr_idx[1]
+            curr_freq = frequencies[i]
+
+            # current window
+            delta_t = 1. / float(curr_freq)
+            time_start = int(time_elapsed / delta_t)
+            time_end = time_start + curr_end-prev_end
+            file_id = self.loader.build_file_id(self.voltage, curr_freq, key_value)
+            file_path = self.loader.build_file_path(file_id)
+            if time_end > TRACE_SIZE:
+                raise RuntimeError('encountered time end index greater than trace length')
+            time_idx = np.arange(time_start, time_end)
+            windows, plain_texts, key = self.loader.load_some_projected_traces(file_path, plain_index, time_idx)
+            if plain_text is None:
+                plain_text = plain_texts[0]
+
+            trace[plain_index, curr_start:curr_end] = windows[0]
+
+            # switch next
+            prev_end = curr_end
+            time_elapsed += delta_t * (curr_end-time_start)
+
+        return trace, plain_text, key

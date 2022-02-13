@@ -6,8 +6,8 @@ base:
     - classic
     - basic
 
-  name: BasicDiscrimination0
-  id: 1
+  name: A-BasicDiscrimination
+  id: 0
 
   description: 'fit of the discriminative distribution of key given the trace, using MLE'
 
@@ -31,3 +31,6 @@ core:
       #- '45.000'
       #- '50.000'
     plain_bounds: [300, 500]
+
+    num_workers: #4
+    workers_type: #'threads'

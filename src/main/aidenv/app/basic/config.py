@@ -71,10 +71,6 @@ def build_base(config):
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
-    #env_dir = os.path.join(out_dir, get_environment_name())
-    #if not os.path.exists(env_dir):
-    #    os.mkdir(env_dir)
-
     name_dir = os.path.join(out_dir, name)
     if not os.path.exists(name_dir):
         os.mkdir(name_dir)

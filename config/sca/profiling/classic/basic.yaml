@@ -3,9 +3,10 @@ base:
   origin:
     - sca
     - profiling
+    - classic
     - basic
 
-  name: Generator0
+  name: A-TraceGenerator
   id: 0
 
   description: 'fit of the generative distribution of a trace given key, using pca + multivariate gaussian'
@@ -41,7 +42,7 @@ core:
       #- '55.000'
       - '56.000'
     key_values:
-      #- '00'
-      #- '01'
-    plain_bounds: [0, 300]
-    reduced_dim: 8
+      - '00'
+      - '01'
+    plain_bounds: [0, 5]
+    reduced_dim: 2

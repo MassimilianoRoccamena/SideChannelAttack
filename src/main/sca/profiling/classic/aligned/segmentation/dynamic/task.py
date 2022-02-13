@@ -41,7 +41,7 @@ class DynamicSegmentation(GradCamSegmentation):
                         plain_bounds, batch_size, interp_kind, log_assembler, \
                         log_segmentation, log_localization, \
                         num_workers, workers_type)
-        self.assembler = DynamicAssembler(loader, self.plain_indices, self.voltages[0], frequencies, \
+        self.assembler = DynamicAssembler(loader, self.plain_indices, self.voltages[0], self.frequencies, \
                                 mu, sigma, min_window_len, max_window_len, track_windows=log_assembler)
 
     def compute_work(self):

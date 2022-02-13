@@ -9,8 +9,8 @@ from utils.persistence import load_pickle, load_numpy, save_numpy
 from utils.math import BYTE_SIZE, BYTE_HW_LEN, pca_transform
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.mlearn.task import MachineLearningTask
-from sca.config import Omegaconf, build_task_object
-from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
+from sca.config import OmegaConf, build_task_object
+from sca.file.params import str_hex_bytes, SBOX_MAT, HAMMING_WEIGHTS
 
 class StaticDiscriminator(MachineLearningTask):
     '''
@@ -22,7 +22,6 @@ class StaticDiscriminator(MachineLearningTask):
                     num_workers, workers_type):
         '''
         Create new template attacker on static traces.
-        loader: power trace loader
         generator_path: path of a trace generator
         voltages: voltages of platforms to attack
         frequencies: frequencies of platform to attack
@@ -31,27 +30,27 @@ class StaticDiscriminator(MachineLearningTask):
         workers_type: type of joblib workers
         '''
         self.generator_path = generator_path
-        generator_conf = OmegaConf.load(generator_path)
-        self.loader = build_task_object(generator_conf.core.params.loader)
-        generator_params = load_json(os.path.join(generator_path, 'params.json'))
+        generator_path = os.path.join(generator_path, 'program.yaml')
+        self.generator_config = OmegaConf.to_object(OmegaConf.load(generator_path))
+        self.loader = build_task_object(self.generator_config['core']['params']['loader'])
         if voltages is None:
-            self.voltages = generator_conf.core.params.voltages
+            self.voltages = self.generator_config['core']['params']['voltages']
             print(f'Found {len(self.voltages)} voltages')
         else:
-            self.voltages = list(voltages)
+            self.voltages = voltages
         if frequencies is None:
-            self.frequencies = generator_conf.core.params.frequencies
-            print(f'Found {len(self.frequencies)} voltages')
+            self.frequencies = self.generator_config['core']['params']['frequencies']
+            print(f'Found {len(self.frequencies)} frequencies')
         else:
-            self.frequencies = list(frequencies)
-        self.key_values = generator_conf.core.params.key_values
+            self.frequencies = frequencies
+        self.key_values = self.generator_config['core']['params']['key_values']
         if self.key_values is None:
             self.key_values = str_hex_bytes()
             print('Using all key values')
-        self.plain_bounds = list(plain_bounds)
+        self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
-        self.reduced_dim = generator_conf.core.params.reduced_dim
+        self.reduced_dim = self.generator_config['core']['params']['reduced_dim']
         self.num_workers = num_workers
         self.workers_type = workers_type
         if not self.num_workers is None:
@@ -103,10 +102,10 @@ class StaticDiscriminator(MachineLearningTask):
         Compute likelihoods of keys for the attack traces of the (voltage,frequency) platform.
         '''
         voltage_target, frequency_target = self.target_platform(voltage, frequency)
-        root_path = os.path.join(self.generator_path, f'{voltage_target}-{frequency_target}')
-        curr_path = os.path.join(root_path, 'pca')
+        template_path = os.path.join(self.generator_path, f'{voltage_target}-{frequency_target}')
+        curr_path = os.path.join(template_path, 'pca')
         pca = load_pickle(os.path.join(curr_path, 'pca.pckl'))
-        curr_path = os.path.join(root_path, 'multi_gauss')
+        curr_path = os.path.join(template_path, 'multi_gauss')
         gauss_mean = load_numpy(os.path.join(curr_path, 'mean.npy'))
         gauss_cov = load_numpy(os.path.join(curr_path, 'covariance.npy'))
         num_keys = len(self.key_values)
@@ -118,7 +117,7 @@ class StaticDiscriminator(MachineLearningTask):
             pbar = tqdm.tqdm(total=num_keys)                                        # vanilla
             for key_true in self.key_values:
                 key_lh = self.key_likelihood_work(pca, gauss_mean, gauss_cov, voltage, frequency, key_true)
-                file_path = os.path.join(self.lh_path, f'{key_true}.npy'))
+                file_path = os.path.join(self.lh_path, f'{key_true}.npy')
                 save_numpy(key_lh, file_path)
                 pbar.update(1)
         else:

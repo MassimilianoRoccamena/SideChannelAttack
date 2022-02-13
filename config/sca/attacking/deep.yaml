@@ -5,7 +5,7 @@ base:
     - attacking
     - deep
 
-  name: DeepDiscrimination0
+  name: A-DeepStaticDiscrimination
   id: 0
 
   description: 'fit of the discriminative distribution of key given the trace, using MLE'
