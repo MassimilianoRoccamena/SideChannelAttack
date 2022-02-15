@@ -5,9 +5,10 @@ base:
     - profiling
     - deep
 
-  name: KeyClassifierTemp #KeyClassifier0
+  name: DeepProfiler
+  id: test1
 
-  description: 'fit trace to key classifier'
+  description: '(hW) sbox output classification of traces'
 
 # ---------------------------------------------------------------
 
@@ -49,7 +50,7 @@ dataset:
       - '52.000'
       - '54.000'
       #- '55.000'
-      - '56.000'
+      #- '56.000'
     key_values:
       #- '00'
       #- '01'
@@ -63,7 +64,6 @@ dataset:
         size: 0.1
 
     channels_first: True
-    trace_len: 100000
 
 model:
   checkpoint:
@@ -71,36 +71,36 @@ model:
   name: SingleBasic
   params:
     encoder:
-      name: VGG
-      params:
-        encoding_size: 600
-        base_filters: 64
-        conv_kernel_size: 20
-        conv_stride: 2
-        pool_kernel_size: 2
-        use_batch_norm: True
-        num_convs1: 2
-        num_convs2: 3
-        num_layers1: 2
-        num_layers2: 3
-        use_final_do: True
-        final_do_val: 0.4
-
-      #name: ResNet
+      #name: VGG
       #params:
-      #  encoding_size: 500
-      #  base_filters: 60
-      #  kernel_size: 30
-      #  stride: 3
-      #  groups: 1
-      #  n_block: 12
-      #  downsample_gap: 4
-      #  increasefilter_gap: 4
+      #  encoding_size: 90
+      #  base_filters: 64
+      #  conv_kernel_size: 20
+      #  conv_stride: 2
+      #  pool_kernel_size: 2
       #  use_batch_norm: True
-      #  use_inner_do: False
-      #  inner_do_val: 0.5
+      #  num_convs1: 2
+      #  num_convs2: 3
+      #  num_layers1: 2
+      #  num_layers2: 3
       #  use_final_do: True
       #  final_do_val: 0.4
+
+      name: ResNet
+      params:
+        encoding_size: 90
+        base_filters: 60
+        kernel_size: 30
+        stride: 3
+        groups: 1
+        n_block: 12
+        downsample_gap: 4
+        increasefilter_gap: 4
+        use_batch_norm: True
+        use_inner_do: False
+        inner_do_val: 0.5
+        use_final_do: True
+        final_do_val: 0.3
 
       #name: LSTM1
       #params:
@@ -238,14 +238,13 @@ logging:
     
     log_model_checkpoints: False
     tags:
+      - test-1
+      - trace-len-100k
+      - freq-48-52-54
       - plain-0-100
       - vgg
       - adam
-      - freq-48.000-52.000-54.000-56.000
-      - multi-freq
-      - trace-100k
-      - weighted2-loss
-      - log-fixed
+      - loss-weighted
 
     # source_files:
     # - '*.py'

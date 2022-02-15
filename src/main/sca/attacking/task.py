@@ -39,14 +39,13 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         self.dynamic_path = dynamic_path
         dynamic_path = os.path.join(dynamic_path, 'program.yaml')
         self.dynamic_config = OmegaConf.to_object(OmegaConf.load(dynamic_path))
-        loader_config = self.dynamic_config['core']['params']['loader']
-        del loader_config['trace_len']
+        loader_config = self.dynamic_config['core']['params']['loader']['params']
         loader = build_task_object(self.dynamic_config['core']['params']['loader'])
         self.training_path = self.dynamic_config['core']['params']['training_path']
         training_path = os.path.join(self.training_path, 'program.yaml')
         self.training_config = OmegaConf.to_object(OmegaConf.load(training_path))
         self.window_path = self.training_config['dataset']['params']['window_path']
-        window_path = os.path.join(window_path, 'program.yaml')
+        window_path = os.path.join(self.window_path, 'program.yaml')
         self.window_config = OmegaConf.to_object(OmegaConf.load(window_path))
         self.voltages = self.window_config['core']['params']['voltages']
         self.target_volt = self.voltages[0]
@@ -55,11 +54,14 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         self.assemb_loader = DynamicAssemblerLoader(loader, self.target_volt, dynamic_path)
         self.frequencies = self.window_config['core']['params']['frequencies']
         print(f'Found {len(self.frequencies)} frequencies')
-        self.key_values = self.window_config['core']['params']['key_values']
-        if self.key_values is None:
-            self.key_values = str_hex_bytes()
-            print('Using all key values')
+        #self.key_values = self.window_config['core']['params']['key_values']
+        #if self.key_values is None:
+        self.key_values = str_hex_bytes()
+        print('Using all key values')
         self.generator_path = generator_path
+        generator_path = os.path.join(generator_path, 'program.yaml')
+        self.generator_config = OmegaConf.to_object(OmegaConf.load(generator_path))
+        self.reduced_dim = self.generator_config['core']['params']['reduced_dim']
         self.localization_path = localization_path
         self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
@@ -68,14 +70,13 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         if interp_kind is None:
             interp_kind = 'linear'
         self.interp_kind = interp_kind
-        self.reduced_dim = self.generator_config['core']['params']['reduced_dim']
         self.num_workers = num_workers
         self.workers_type = workers_type
         if not self.num_workers is None:
             raise NotImplementedError('multiprocessing WIP')
         self.log_dir = get_program_log_dir()
 
-    def align_trace(self, trace, plain_index):
+    def align_trace(self, trace, key_true, plain_index):
         '''
         Align a trace to target frequency using localization output and frequency rescaling.
         '''
@@ -85,10 +86,13 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         n_switches = frequencies.shape[0]
 
         for i in range(n_switches):
-            curr_idx = time_indices[:,i]
+            curr_idx = time_indices[i]
             curr_start = curr_idx[0]
             curr_end = curr_idx[1]
             curr_freq = frequencies[i]
+            if curr_end - curr_start < 10:
+                print(f'encountered window with size {curr_end-curr_start} for key {key_true} and plain index {plain_index}')
+                continue
             
             freq_ratio = float(self.target_freq) / float(curr_freq)
             rescaler = FrequencyRescaler(freq_ratio, self.interp_kind)
@@ -106,12 +110,11 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
             
         for plain_idx in range(self.num_plain_texts):
             trace, plain_text, key = self.assemb_loader.fetch_trace(key_true, plain_idx)
+            self.align_trace(trace, key_true, plain_idx)
             trace = pca_transform(pca, np.array([trace]))[0]
-            self.align_trace(trace, plain_idx)
 
             for key_hyp in range(num_keys):
-                plain_text = plain_text[0]
-                sbox_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_text ^ key_hyp]]
+                sbox_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_text[0] ^ key_hyp]]
 
                 multi_gauss = multivariate_normal(gauss_mean[sbox_hw], gauss_cov[sbox_hw])
                 prob_hyp = multi_gauss.pdf(trace)

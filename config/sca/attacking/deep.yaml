@@ -5,8 +5,8 @@ base:
     - attacking
     - deep
 
-  name: A-DeepStaticDiscrimination
-  id: 0
+  name: DeepStaticDiscrimination
+  id: test2
 
   description: 'fit of the discriminative distribution of key given the trace, using MLE'
 
@@ -23,21 +23,21 @@ core:
   name: DeepStaticDiscriminator
   params:
 
-    training_path: /data/output/KeyClassifierTemp/2022-02-01_19-33-00
-    checkpoint_file: epoch=30-step=3719.ckpt
+    training_path: /data/output/DeepProfiler/test0
+    checkpoint_file: epoch=14-step=5399.ckpt
     voltages:
-      - '1.00'
+    #  - '1.00'
     frequencies:
-      - '45.000'
+    #  - '48.000'
     key_values:
-      - '00'
-      - '01'
-      - '02'
-      - '03'
-      - '04'
-      - '05'
-      - '06'
-      - '07'
+    #  - '00'
+    #  - '01'
+    #  - '02'
+    #  - '03'
+    #  - '04'
+    #  - '05'
+    #  - '06'
+    #  - '07'
     plain_bounds: [300, 500]
     batch_size: 32
 

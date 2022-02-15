@@ -7,8 +7,8 @@ base:
     - aligned
     - classification
 
-  name: A-FrequencyAligner
-  id: 0
+  name: FrequencyAligner
+  id: test0
 
   description: 'fit window to frequency classifier, for trace alignment'
 
@@ -39,9 +39,9 @@ dataset:
     loader:
       name: FileConvention2
       params:
+        trace_len: 100000
 
-    #window_path: /data/output/A-WindowLookup/0
-    window_path: ./.output/A-WindowLookup/0
+    window_path: /data/output/WindowLookup/test0
     channels_first: True
 
 model:
@@ -68,7 +68,7 @@ model:
       name: ResNet
       params:
         encoding_size: 50
-        base_filters: 18
+        base_filters: 12
         kernel_size: 20
         stride: 2
         groups: 1
@@ -132,7 +132,7 @@ learning:
 
   early_stopping:
     monitor: valid/loss
-    patience: 10
+    patience: 2
     mode: min
 
   optimizer:
@@ -208,12 +208,12 @@ logging:
     enable: True
 
   neptune:
-    enable: False
+    enable: True
     
     log_model_checkpoints: False
     tags:
-      - window-A
-      - trace-len-100
+      - test0
+      - trace-len-100k
       - window-500
       - random-slicer
       - resnet

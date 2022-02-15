@@ -46,7 +46,7 @@ class DeepStaticDiscriminator(MachineLearningTask):
             self.voltages = voltages
         if frequencies is None:
             self.frequencies = self.training_config['dataset']['params']['frequencies']
-            print(f'Found {len(self.frequencies)} voltages')
+            print(f'Found {len(self.frequencies)} frequencies')
         else:
             self.frequencies = frequencies
         if key_values is None:
@@ -75,7 +75,7 @@ class DeepStaticDiscriminator(MachineLearningTask):
         file_path = self.loader.build_file_path(file_id)
         traces, plain_texts, key = self.loader.load_some_traces(file_path, self.plain_indices)
         
-        for key_hyp in range(BYTE_SIZE):
+        for key_hyp in range(num_keys):
             n_iters = ceil(self.num_plain_texts / self.batch_size)
 
             for i in range(n_iters):
@@ -147,9 +147,10 @@ class DeepStaticDiscriminator(MachineLearningTask):
             for frequency in self.frequencies:
                 print(f'\nProcessing {voltage}-{frequency} platform')
                 platform_path = os.path.join(self.log_dir, f'{voltage}-{frequency}')
-                os.mkdir(self.platform_path)
-                self.lh_path = os.path.join(platform_path, 'likelihood')
-                os.mkdir(self.lh_path)
+                os.mkdir(platform_path)
+                self.lh_path = platform_path
+                #self.lh_path = os.path.join(platform_path, 'likelihood')
+                #os.mkdir(self.lh_path)
 
                 # likelihoods
                 print('Computing keys likelihood\n')

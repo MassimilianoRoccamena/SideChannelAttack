@@ -55,7 +55,7 @@ class DynamicSegmentation(GradCamSegmentation):
         if self.log_localization:
             os.mkdir(lclz_path)
 
-        print('Segmenting traces by frequencues\n')
+        print('Segmenting traces by frequencies\n')
         num_keys = len(self.key_values)
         num_workers = self.num_workers
         workers_type = self.workers_type

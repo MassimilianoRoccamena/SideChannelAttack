@@ -6,8 +6,8 @@ base:
     - classic
     - basic
 
-  name: A-TraceGenerator
-  id: 0
+  name: TraceGenerator
+  id: test0
 
   description: 'fit of the generative distribution of a trace given key, using pca + multivariate gaussian'
 
@@ -40,9 +40,15 @@ core:
       - '52.000'
       - '54.000'
       #- '55.000'
-      - '56.000'
+      #- '56.000'
     key_values:
-      - '00'
-      - '01'
-    plain_bounds: [0, 5]
-    reduced_dim: 2
+      #- '00'
+      #- '01'
+      #- '02'
+      #- '03'
+      #- '04'
+      #- '05'
+      #- '06'
+      #- '07'
+    plain_bounds: [0, 300]
+    reduced_dim: 8

@@ -43,24 +43,24 @@ class GradCamSegmentation(MachineLearningTask):
         self.training_path = training_path
         training_path = os.path.join(training_path, 'program.yaml')
         self.training_config = OmegaConf.to_object(OmegaConf.load(training_path))
-        self.lookup_path = self.training_config['dataset']['params']['lookup_path']
-        lookup_path = os.path.join(self.lookup_path, 'program.yaml')
-        self.lookup_config = OmegaConf.to_object(OmegaConf.load(lookup_path))
+        self.window_path = self.training_config['dataset']['params']['window_path']
+        window_path = os.path.join(self.window_path, 'program.yaml')
+        self.window_config = OmegaConf.to_object(OmegaConf.load(window_path))
         self.checkpoint_file = checkpoint_file
         self.model = None
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.voltages = self.lookup_config['core']['params']['voltages']
+        self.voltages = self.window_config['core']['params']['voltages']
         print(f'Found {len(self.voltages)} voltages')
-        self.frequencies = self.lookup_config['core']['params']['frequencies']
+        self.frequencies = self.window_config['core']['params']['frequencies']
         self.num_classes = len(self.frequencies)
         print(f'Found {len(self.frequencies)} frequencies')
         if key_values is None:
-            key_values = self.lookup_config['core']['params']['key_values']
-            if key_values is None:
-                key_values = str_hex_bytes()
-                print(f'Using all key values')
-            else:
-                print(f'Found {len(self.key_values)} key values')
+            #key_values = self.window_config['core']['params']['key_values']
+            #if key_values is None:
+            key_values = str_hex_bytes()
+            print(f'Using all key values')
+            #else:
+            #    print(f'Found {len(key_values)} key values')
         self.key_values = key_values
         self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])

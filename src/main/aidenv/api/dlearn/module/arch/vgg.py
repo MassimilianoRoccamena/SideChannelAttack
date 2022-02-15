@@ -92,7 +92,6 @@ class VGG(EncoderModule):
 
         # hooks
         self.layers2[-1].register_forward_hook(self.forward_grad_cam_hook())
-        self.layers2[-1].register_backward_hook(self.backward_grad_cam_hook())
 
     def forward(self, x):
         out = x
@@ -106,5 +105,7 @@ class VGG(EncoderModule):
                 out = self.poolings2[i](out)
 
         out = out.mean(-1)
+        #out.register_hook(self.backward_grad_cam_hook())       # TODO: enabled for segmentation, exception for training
+
         out = super().forward(out)
         return out

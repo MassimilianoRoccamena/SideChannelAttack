@@ -136,9 +136,10 @@ class StaticDiscriminator(MachineLearningTask):
             for frequency in self.frequencies:
                 print(f'\nProcessing {voltage}-{frequency} platform')
                 platform_path = os.path.join(self.log_dir, f'{voltage}-{frequency}')
-                os.mkdir(self.platform_path)
-                self.lh_path = os.path.join(platform_path, 'likelihood')
-                os.mkdir(self.lh_path)
+                os.mkdir(platform_path)
+                self.lh_path = platform_path
+                #self.lh_path = os.path.join(platform_path, 'likelihood')
+                #os.mkdir(self.lh_path)
 
                 print('Computing keys likelihood\n')
                 self.compute_work(voltage, frequency)

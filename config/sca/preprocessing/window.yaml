@@ -5,10 +5,10 @@ base:
     - preprocessing
     - window
 
-  name: A-WindowLookup
-  id: 0
+  name: WindowLookup
+  id: test1
 
-  description: 'creation of window lookup data'
+  description: 'creation of trace windows lookup data'
 
 # ---------------------------------------------------------------
 
@@ -41,21 +41,21 @@ core:
     voltages:
       - '1.00'
     frequencies:
-      #- '45.000'
-      #- '46.875'
+    #  - '45.000'
+    #  - '46.875'
       - '48.000'
-      #- '50.000'
-      #- '50.125'
+    #  - '50.000'
+    #  - '50.125'
       - '52.000'
       - '54.000'
-      #- '55.000'
-      #- '56.000'
+    #  - '55.000'
+    #  - '56.000'
     key_values:
-      - '00'
-      - '01'
+    #  - '00'
+    #  - '01'
     plain_bounds: [0, 300]
 
-    size: 0.8
+    size: 0.1
 
     partitioning:
       mapping:

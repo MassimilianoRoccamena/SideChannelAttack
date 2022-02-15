@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 
@@ -153,7 +154,8 @@ class DynamicAssemblerLoader:
     def fetch_trace(self, key_value, plain_index):
         trace_len = self.loader.trace_len
         if self.curr_key != key_value:
-            self.df_key = pd.read_csv(f'{key_value}.csv')
+            file_path = os.path.join(self.assembler_path, f'{key_value}.csv')
+            self.df_key = pd.read_csv(file_path, dtype={'frequency':str})
             self.curr_key = key_value
 
         df_plain = self.df_key[self.df_key['plain_index']==plain_index]
@@ -167,7 +169,7 @@ class DynamicAssemblerLoader:
         plain_text = None
 
         for i in range(n_switches):
-            curr_idx = time_indices[:,i]
+            curr_idx = time_indices[i]
             curr_start = curr_idx[0]
             curr_end = curr_idx[1]
             curr_freq = frequencies[i]
@@ -181,11 +183,11 @@ class DynamicAssemblerLoader:
             if time_end > TRACE_SIZE:
                 raise RuntimeError('encountered time end index greater than trace length')
             time_idx = np.arange(time_start, time_end)
-            windows, plain_texts, key = self.loader.load_some_projected_traces(file_path, plain_index, time_idx)
+            windows, plain_texts, key = self.loader.load_some_projected_traces(file_path, [plain_index], time_idx)
             if plain_text is None:
                 plain_text = plain_texts[0]
 
-            trace[plain_index, curr_start:curr_end] = windows[0]
+            trace[curr_start:curr_end] = windows[0]
 
             # switch next
             prev_end = curr_end
