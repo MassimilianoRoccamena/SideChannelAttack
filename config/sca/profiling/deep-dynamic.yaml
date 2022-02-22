@@ -5,10 +5,10 @@ base:
     - profiling
     - deep
 
-  name: DeepProfiler
-  id: test1
+  name: DeepDynamicProfiler
+  #id: test0
 
-  description: '(hW) sbox output classification of traces'
+  description: 'sbox output HW classification of dynamic traces'
 
 # ---------------------------------------------------------------
 
@@ -32,7 +32,7 @@ dataset:
     train: False
     test: False
 
-  name: HammingSboxClassification
+  name: HammingSboxDynamic
   params:
     loader:
       name: FileConvention2
@@ -55,6 +55,11 @@ dataset:
       #- '00'
       #- '01'
     plain_bounds: [0, 100]
+    num_dynamics: 1
+    mu: 10000
+    sigma: 2500
+    min_window_len: 1000
+    max_window_len: 19000
     sets:
       - name: train
         size: 0.75
@@ -63,7 +68,7 @@ dataset:
       - name: test
         size: 0.1
 
-    channels_first: True
+    channels_first: False
 
 model:
   checkpoint:
@@ -86,32 +91,32 @@ model:
       #  use_final_do: True
       #  final_do_val: 0.4
 
-      name: ResNet
-      params:
-        encoding_size: 90
-        base_filters: 60
-        kernel_size: 30
-        stride: 3
-        groups: 1
-        n_block: 12
-        downsample_gap: 4
-        increasefilter_gap: 4
-        use_batch_norm: True
-        use_inner_do: False
-        inner_do_val: 0.5
-        use_final_do: True
-        final_do_val: 0.3
-
-      #name: LSTM1
+      #name: ResNet
       #params:
-      #  batch_first: True
-      #  encoding_size: 27
-      #  use_final_do: False
+      #  encoding_size: 90
+      #  base_filters: 40
+      #  kernel_size: 20
+      #  stride: 2
+      #  groups: 1
+      #  n_block: 12
+      #  downsample_gap: 2
+      #  increasefilter_gap: 4
+      #  use_batch_norm: True
+      #  use_inner_do: False
+      #  inner_do_val: 0.5
+      #  use_final_do: True
       #  final_do_val: 0.1
-      #  hidden_size: 74
-      #  num_layers: 2
-      #  dropout: 0.2
-      #  bidirectional: True
+
+      name: LSTM1
+      params:
+        batch_first: True
+        encoding_size: 90
+        use_final_do: True
+        final_do_val: 0.1
+        hidden_size: 300
+        num_layers: 1
+        dropout: 0.0
+        bidirectional: False
 
       #name: GRU1
       #params:
@@ -168,16 +173,16 @@ learning:
     #  weight_decay: 1e-4
     name: Adam
     params:
-      lr: 0.00008
+      lr: 0.00002
 
   scheduler:
     name: StepLR
     params:
-      step_size: 1
+      step_size: 2
       gamma: 0.9
 
   data_loader:
-    batch_size: 32 #22
+    batch_size: 8
     shuffle: True
     num_workers: 4
     pin_memory: True
@@ -187,9 +192,9 @@ learning:
   #  strategy: 'ddp'
     max_epochs: 50
     check_val_every_n_epoch: 1
-    log_every_n_steps: 2
-    limit_train_batches: 0.2
-    limit_val_batches: 0.3
+    log_every_n_steps: 8
+    limit_train_batches: 0.3
+    limit_val_batches: 0.4
     track_grad_norm: 2
 
   loggables:
@@ -238,11 +243,12 @@ logging:
     
     log_model_checkpoints: False
     tags:
-      - test-1
+      - dynamic-traces
+      - test-0
       - trace-len-100k
       - freq-48-52-54
       - plain-0-100
-      - vgg
+      - lstm
       - adam
       - loss-weighted
 

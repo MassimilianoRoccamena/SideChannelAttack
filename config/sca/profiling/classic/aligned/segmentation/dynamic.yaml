@@ -9,7 +9,7 @@ base:
     - dynamic
 
   name: DynamicSegmentation
-  id: test1
+  id: test2
 
   description: 'frequency segmentation of static traces using a frequency classifier'
 
@@ -31,8 +31,9 @@ core:
       params:
         trace_len: 100000
     
-    training_path: /data/output/FrequencyAligner/test0
-    checkpoint_file: epoch=5-step=203.ckpt
+    training_path: /data/output/FrequencyAligner/test1
+    #checkpoint_file: epoch=5-step=203.ckpt
+    checkpoint_file: epoch=1-step=171.ckpt
     key_values:
       #- '00'
       #- '01'
@@ -45,13 +46,13 @@ core:
     plain_bounds: [300, 500]
     batch_size: 1
     interp_kind: quadratic
-    mu: 15000
-    sigma: 4000
+    mu: 10000
+    sigma: 25000
     log_assembler: True
-    log_segmentation: True
+    log_segmentation: #True
     log_localization: #True
-    min_window_len: 3000
-    max_window_len: 30000
+    min_window_len: 1000
+    max_window_len: 19000
 
     num_workers: #4
     workers_type: #'threads'

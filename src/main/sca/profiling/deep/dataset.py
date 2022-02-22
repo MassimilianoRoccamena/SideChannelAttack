@@ -9,21 +9,23 @@ from sca.file.params import SBOX_MAT, HAMMING_WEIGHTS
 from sca.file.convention1.loader import TraceLoader1 as FileConvention1
 from sca.file.convention2.loader import TraceLoader2 as FileConvention2
 from sca.file.reader import TraceReader
+from sca.assembler import DynamicTraceReader
 
 class TraceClassification(ClassificationDataset):
     '''
     Abstract classification dataset of traces.
     '''
 
-    def __init__(self, loader, voltages, frequencies, key_values, plain_bounds,
+    def __init__(self, voltages, frequencies, key_values, plain_bounds,
                         sets, set_name=None, channels_first=True):
         '''
         Create new trace classification dataset.
-        loader: traces loader
         voltages: device voltages
         frequencies: device frequencies
         key_values: key values of the encryption
         plain_bounds: start, end plain text indices
+        sets: partitioning over all data
+        set_name: name of the object partition
         channels_first: shape convention of data
         '''
         set_size = None
@@ -35,12 +37,10 @@ class TraceClassification(ClassificationDataset):
         self.plain_bounds = list(plain_bounds)
         num_plains = plain_bounds[1] - plain_bounds[0]
         if set_name == 'test':
-            plain_indices = np.arange(int(num_plains-num_plains*set_size), plain_bounds[1])
+            self.plain_indices = np.arange(int(num_plains-num_plains*set_size), plain_bounds[1])
         else:
-            plain_indices = np.arange(plain_bounds[0], int(num_plains*set_size))
+            self.plain_indices = np.arange(plain_bounds[0], int(num_plains*set_size))
 
-        reader = TraceReader(loader, voltages, frequencies, key_values, plain_indices)
-        super().__init__(reader)
         self.channels_first = channels_first
 
     def data_shape(self):
@@ -62,9 +62,60 @@ class TraceClassification(ClassificationDataset):
         else:
             return  x.view(*x.size(), 1)
 
-class SingleClassification(TraceClassification):
+class StaticTraceClassification(TraceClassification):
     '''
-    Abstract 1-label classification dataset of traces.
+    '''
+
+    def __init__(self, loader, voltages, frequencies, key_values, plain_bounds,
+                        sets, set_name=None, channels_first=True):
+        '''
+        Create new trace classification dataset.
+        loader: traces loader
+        voltages: device voltages
+        frequencies: device frequencies
+        key_values: key values of the encryption
+        plain_bounds: start, end plain text indices
+        sets: partitioning over all data
+        set_name: name of the object partition
+        channels_first: shape convention of data
+        '''
+        super().__init__(voltages, frequencies, key_values, plain_bounds,
+                            sets, set_name=set_name, channels_first=channels_first)
+        reader = TraceReader(loader, voltages, frequencies, key_values, self.plain_indices)
+        ClassificationDataset.__init__(self, reader)
+
+class DynamicTraceClassification(TraceClassification):
+    '''
+    '''
+
+    def __init__(self, loader, voltages, frequencies, key_values, plain_bounds,
+                        num_dynamics, mu, sigma, min_window_len, max_window_len,
+                        sets, set_name=None, channels_first=True):
+        '''
+        Create new trace classification dataset.
+        loader: traces loader
+        voltages: device voltages
+        frequencies: device frequencies
+        key_values: key values of the encryption
+        plain_bounds: start, end plain text indices
+        num_dynamics: number of dynamic traces for some given key_value, plain_text
+        mu: mean of the gaussian duration of the static windows
+        sigma: std of the gaussian duration of the static windows
+        min_window_len: min static window size
+        max_window_len: max static window size
+        sets: partitioning over all data
+        set_name: name of the object partition
+        channels_first: shape convention of data
+        '''
+        super().__init__(voltages, frequencies, key_values, plain_bounds,
+                            sets, set_name=set_name, channels_first=channels_first)
+        reader = DynamicTraceReader(loader, voltages[0], frequencies, key_values, self.plain_indices,
+                                        num_dynamics, mu, sigma, min_window_len, max_window_len)
+        ClassificationDataset.__init__(self, reader)
+
+class SingleLabel:
+    '''
+    Abstract 1-label getitem wrapper.
     '''
 
     def __getitem__(self, index):
@@ -76,9 +127,9 @@ class SingleClassification(TraceClassification):
         y = labels.index(label)
         return x, y
 
-class KeyClassification(SingleClassification):
+class KeyLabel(SingleLabel):
     '''
-    Dataset composed of power traces labelled with key value.
+    Abstract key labelling methods container.
     '''
 
     def current_label(self, *args):
@@ -87,10 +138,23 @@ class KeyClassification(SingleClassification):
     def all_labels(self):
         return self.reader.key_values
 
-class HammingKeyClassification(SingleClassification):
+class KeyStatic(KeyLabel, StaticTraceClassification):
     '''
-    Dataset composed of power traces labelled with hamming weight
-    of key value.
+    Key classification dataset of static traces.
+    '''
+
+    pass
+
+class KeyDynamic(KeyLabel, DynamicTraceClassification):
+    '''
+    Key classification dataset of dynamic traces.
+    '''
+
+    pass
+
+class HammingKeyLabel(SingleLabel):
+    '''
+    Abstract key hamming weight labelling methods container.
     '''
 
     def __init__(self, *args, **kwargs):
@@ -107,10 +171,23 @@ class HammingKeyClassification(SingleClassification):
     def all_labels(self):
         return self.hamming_wights
 
-class HammingSboxClassification(SingleClassification):
+class HammingKeyStatic(HammingKeyLabel, StaticTraceClassification):
     '''
-    Dataset composed of power traces labelled with hamming weight
-    of sbox output.
+    Key  hamming weightclassification dataset of static traces.
+    '''
+
+    pass
+
+class HammingKeyDynamic(HammingKeyLabel, DynamicTraceClassification):
+    '''
+    Key hamming weight classification dataset of static traces.
+    '''
+
+    pass
+
+class HammingSboxLabel(SingleLabel):
+    '''
+    Abstract sbox output hamming weight labelling methods container.
     '''
 
     def __init__(self, *args, **kwargs):
@@ -126,9 +203,23 @@ class HammingSboxClassification(SingleClassification):
     def all_labels(self):
         return self.hamming_wights
 
-class MultiClassification(TraceClassification):
+class HammingSboxStatic(HammingSboxLabel, StaticTraceClassification):
     '''
-    Abstract multiple classification dataset of traces.
+    Sbox output hamming weight classification dataset of static traces.
+    '''
+
+    pass
+
+class HammingSboxDynamic(HammingSboxLabel, DynamicTraceClassification):
+    '''
+    Sbox output hamming weight classification dataset of static traces.
+    '''
+
+    pass
+
+class MultiLabel:
+    '''
+    Abstract n-label getitem wrapper.
     '''
 
     def __getitem__(self, index):

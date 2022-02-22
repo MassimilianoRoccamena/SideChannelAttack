@@ -6,9 +6,9 @@ base:
     - deep
 
   name: DeepStaticDiscrimination
-  id: test2
+  id: test3
 
-  description: 'fit of the discriminative distribution of key given the trace, using MLE'
+  description: 'fit of the discriminative distribution of key given the static trace, using MLE'
 
 # ---------------------------------------------------------------
 

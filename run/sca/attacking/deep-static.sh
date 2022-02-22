@@ -1,0 +1,1 @@
+sh run/main.sh dlearn sca/attacking/deep-static

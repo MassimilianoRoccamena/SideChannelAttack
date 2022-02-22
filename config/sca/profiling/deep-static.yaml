@@ -3,14 +3,12 @@ base:
   origin:
     - sca
     - profiling
-    - classic
-    - aligned
-    - classification
+    - deep
 
-  name: FrequencyAligner
-  id: test1
+  name: DeepStaticProfiler
+  #id: test1
 
-  description: 'fit window to frequency classifier, for trace alignment'
+  description: 'sbox output HW classification of dtatic traces'
 
 # ---------------------------------------------------------------
 
@@ -32,16 +30,39 @@ core:
 dataset:
   skip:
     train: False
-    test: False #False
+    test: False
 
-  name: FrequencyClassification
+  name: HammingSboxStatic
   params:
     loader:
       name: FileConvention2
       params:
         trace_len: 100000
 
-    window_path: /data/output/WindowLookup/test1
+    voltages:
+      - '1.00'
+    frequencies:
+      #- '45.000'
+      #- '46.875'
+      - '48.000'
+      #- '50.000'
+      #- '50.125'
+      - '52.000'
+      - '54.000'
+      #- '55.000'
+      #- '56.000'
+    key_values:
+      #- '00'
+      #- '01'
+    plain_bounds: [0, 100]
+    sets:
+      - name: train
+        size: 0.75
+      - name: valid
+        size: 0.15
+      - name: test
+        size: 0.1
+
     channels_first: True
 
 model:
@@ -52,43 +73,43 @@ model:
     encoder:
       #name: VGG
       #params:
-      #  encoding_size: 180
+      #  encoding_size: 90
       #  base_filters: 64
       #  conv_kernel_size: 20
       #  conv_stride: 2
       #  pool_kernel_size: 2
       #  use_batch_norm: True
       #  num_convs1: 2
-      #  num_convs2: 2
-      #  num_layers1: 3
+      #  num_convs2: 3
+      #  num_layers1: 2
       #  num_layers2: 3
       #  use_final_do: True
       #  final_do_val: 0.4
 
       name: ResNet
       params:
-        encoding_size: 50
-        base_filters: 12
-        kernel_size: 20
-        stride: 2
+        encoding_size: 90
+        base_filters: 60
+        kernel_size: 30
+        stride: 3
         groups: 1
-        n_block: 6
-        downsample_gap: 2
-        increasefilter_gap: 2
+        n_block: 12
+        downsample_gap: 4
+        increasefilter_gap: 4
         use_batch_norm: True
         use_inner_do: False
-        inner_do_val: 0.
+        inner_do_val: 0.5
         use_final_do: True
-        final_do_val: 0.2
+        final_do_val: 0.3
 
       #name: LSTM1
       #params:
       #  batch_first: True
-      #  encoding_size: 300
-      #  use_final_do: True
-      #  final_do_val: 0.4
-      #  hidden_size: 100
-      #  num_layers: 1
+      #  encoding_size: 27
+      #  use_final_do: False
+      #  final_do_val: 0.1
+      #  hidden_size: 74
+      #  num_layers: 2
       #  dropout: 0.2
       #  bidirectional: True
 
@@ -113,6 +134,9 @@ model:
       #  nhead: 1
       #  dropout: 0.1
 
+    #layers: [600, 100]
+  
+
 # ---------------------------------------------------------------
 
 learning:
@@ -120,30 +144,31 @@ learning:
   loss:
     name: CrossEntropyLoss
     params:
-      #weight:
-      #  - 1.0
-      #  - 3.0
-      #  - 1.0
-      #  - 3.0
-      #  - 1.0
-      #  - 1.0
-      #  - 1.0
-      #  - 1.0
+      weight:
+        - 36.53606 #12.0
+        - 4.57139 #1.8
+        - 1.30605 #0.514
+        - 0.65305 #0.256
+        - 0.52244 #0.2
+        - 0.65305 #0.256
+        - 1.30605 #0.514
+        - 4.57139 #1.8
+        - 36.53606 #12.0
 
   early_stopping:
     monitor: valid/loss
-    patience: 2
+    patience: 7
     mode: min
 
   optimizer:
-    name: SGD
-    params:
-      lr: 0.01
-      momentum: 0.9
-      weight_decay: 1e-4
-    #name: Adam
+    #name: SGD
     #params:
-    #  lr: 0.001
+    #  lr: 0.005
+    #  momentum: 0.9
+    #  weight_decay: 1e-4
+    name: Adam
+    params:
+      lr: 0.0001
 
   scheduler:
     name: StepLR
@@ -152,47 +177,48 @@ learning:
       gamma: 0.9
 
   data_loader:
-    batch_size: 16
+    batch_size: 28 #22
     shuffle: True
-    num_workers: 2
+    num_workers: 4
     pin_memory: True
 
   trainer:
     gpus: 1
-    max_epochs: 40
+  #  strategy: 'ddp'
+    max_epochs: 50
     check_val_every_n_epoch: 1
     log_every_n_steps: 2
-    limit_train_batches: 0.08
-    limit_val_batches: 0.2
+    limit_train_batches: 0.2
+    limit_val_batches: 0.3
     track_grad_norm: 2
 
   loggables:
     - name: Accuracy
       sets:
       params:
-        average: macro
+        average: weighted #macro
 
     - name: Precision
       sets:
       params:
-        average: macro
+        average: weighted #macro
 
     - name: Recall
       sets:
       params:
-        average: macro
+        average: weighted #macro
     
     - name: F1
       sets:
       params:
-        average: macro
+        average: weighted #macro
 
     - name: ConfusionMatrix
       sets:
       params:
     #    normalize: 'true'
-    #    xticklabels:
-    #    yticklabels:
+    #    xticklabels: 20
+    #    yticklabels: 20
 
     - name: Inference
       sets:
@@ -212,12 +238,14 @@ logging:
     
     log_model_checkpoints: False
     tags:
-      - test1
+      - static-traces
+      - test-0
       - trace-len-100k
-      - window-500
-      - random-slicer
-      - resnet
-      - sgd
+      - freq-48-52-54
+      - plain-0-100
+      - vgg
+      - adam
+      - loss-weighted
 
     # source_files:
     # - '*.py'

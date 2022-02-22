@@ -27,7 +27,7 @@ class GradCamSegmentation(MachineLearningTask):
         '''
         Create new GRAD-CAM frequency segmentation.
         loader: power trace loader
-        training_path: root directory of a model training
+        training_path: root directory of a trained frequency classifier
         checkpoint_file: file name of the model checkpoint
         plain_bounds: start, end plain text indices
         batch_size: batch size for model inference
@@ -55,12 +55,12 @@ class GradCamSegmentation(MachineLearningTask):
         self.num_classes = len(self.frequencies)
         print(f'Found {len(self.frequencies)} frequencies')
         if key_values is None:
-            #key_values = self.window_config['core']['params']['key_values']
-            #if key_values is None:
-            key_values = str_hex_bytes()
-            print(f'Using all key values')
-            #else:
-            #    print(f'Found {len(key_values)} key values')
+            key_values = self.window_config['core']['params']['key_values']
+            if key_values is None:
+                key_values = str_hex_bytes()
+                print(f'Using all key values')
+        else:
+            print(f'Found {len(key_values)} key values')
         self.key_values = key_values
         self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])

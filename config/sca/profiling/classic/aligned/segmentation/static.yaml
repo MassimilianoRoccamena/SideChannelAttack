@@ -9,7 +9,7 @@ base:
     - static
 
   name: StaticSegmentation
-  id: test0
+  id: test1
 
   description: 'frequency segmentation of static traces using a frequency classifier, also creates synamic trace dataset lookup files'
 
@@ -31,18 +31,19 @@ core:
       params:
         trace_len: 100000
     
-    training_path: /data/output/FrequencyAligner/test0
-    checkpoint_file: epoch=5-step=203.ckpt
+    training_path: /data/output/FrequencyAligner/test1
+    #checkpoint_file: epoch=5-step=203.ckpt
+    checkpoint_file: epoch=1-step=171.ckpt
     key_values:
-      - '00'
-      - '01'
+      #- '00'
+      #- '01'
       #- '02'
       #- '03'
       #- '04'
       #- '05'
       #- '06'
       #- '07'
-    plain_bounds: [499, 500]
+    plain_bounds: [300, 500]
     batch_size: 1
     interp_kind: quadratic
     log_segmentation: True

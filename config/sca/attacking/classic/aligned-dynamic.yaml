@@ -7,7 +7,7 @@ base:
     - aligned
 
   name: AlignedDynamicDiscrimination
-  id: test2
+  id: test3
 
   description: 'fit of the discriminative distribution of key given the aligned dynamic traces, using MLE'
 
@@ -24,9 +24,9 @@ core:
   name: AlignedDynamicDiscriminator
   params:
 
-    dynamic_path: /data/output/DynamicSegmentation/test1
+    dynamic_path: /data/output/DynamicSegmentation/test2
     generator_path: /data/output/TraceGenerator/test0
-    localization_path: /data/output/DynamicSegmentation/test1/assembler
+    localization_path: /data/output/DynamicSegmentation/test2/localization
     plain_bounds: [300, 500]
     target_freq: '48.000'
     interp_kind: quadratic
