@@ -17,7 +17,10 @@ class FrequencyRescaler:
         windows_size = windows.shape[-1]
         time = np.arange(0, windows_size)
         f_interp = interp1d(time, windows, kind=self.interp_kind)
-        time_interp = time * self.freq_ratio
+        #time_interp = time * self.freq_ratio
+        step = self.freq_ratio
+        n_steps = int(windows_size / step) + 1
+        time_interp = np.linspace(0, windows_size-1, n_steps)
         windows_interp = f_interp(time_interp)
         return windows_interp
     

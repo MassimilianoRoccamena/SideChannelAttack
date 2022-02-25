@@ -93,9 +93,12 @@ class DynamicAssembler(TraceAssembler):
                 window_len = max(window_len, self.min_window_len)
                 window_len = min(window_len, self.max_window_len)
 
-                if curr_start + window_len > trace_len:
+                if curr_start + window_len > trace_len: # current too small
                     if trace_len-curr_start >= self.min_window_len:
                         curr_switches.append(trace_len)
+                    break
+                elif curr_start + window_len + self.min_window_len > trace_len: # next too small
+                    curr_switches.append(trace_len)
                     break
                 else:
                     curr_start += window_len

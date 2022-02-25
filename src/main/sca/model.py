@@ -2,9 +2,9 @@ from aidenv.api.dlearn.model import SingleClassifierModel, SingleClassifierAdvan
 from aidenv.api.dlearn.model import MultiClassifierModel
 from aidenv.api.dlearn.module.arch.vgg import VGG
 from aidenv.api.dlearn.module.arch.resnet import ResNet
-from aidenv.api.dlearn.module.arch.lstm import LSTM1
+from aidenv.api.dlearn.module.arch.lstm import LSTM1, LSTM2
 from aidenv.api.dlearn.module.arch.gru import GRU1
-from aidenv.api.dlearn.module.arch.transformer import Transformer
+#from aidenv.api.dlearn.module.arch.custom import RecurrentAttention
 
 # Basic : encoder + classifier
 

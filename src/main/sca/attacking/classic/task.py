@@ -80,7 +80,15 @@ class StaticDiscriminator(MachineLearningTask):
         file_path = self.loader.build_file_path(file_id)
         traces, plain_texts, key = self.loader.fetch_traces(file_path, self.plain_indices)
 
-        traces = self.process_traces(voltage, frequency, key_true, traces)
+        processed_traces = self.process_traces(voltage, frequency, key_true, traces)
+        original_len = traces.shape[-1]
+        processed_len = processed_traces.shape[-1]
+
+        if processed_len > original_len:
+            traces = processed_traces[:,:original_len]
+        elif processed_len < original_len:
+            traces = np.zeros(traces.shape)
+            traces[:,:processed_len] = processed_traces[:,:]
         traces = pca_transform(pca, traces)
             
         for plain_idx in range(self.num_plain_texts):
@@ -138,8 +146,6 @@ class StaticDiscriminator(MachineLearningTask):
                 platform_path = os.path.join(self.log_dir, f'{voltage}-{frequency}')
                 os.mkdir(platform_path)
                 self.lh_path = platform_path
-                #self.lh_path = os.path.join(platform_path, 'likelihood')
-                #os.mkdir(self.lh_path)
 
                 print('Computing keys likelihood\n')
                 self.compute_work(voltage, frequency)

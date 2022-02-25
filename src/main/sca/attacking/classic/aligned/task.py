@@ -12,7 +12,7 @@ from aidenv.api.config import get_program_log_dir
 from aidenv.api.mlearn.task import MachineLearningTask
 from sca.config import OmegaConf, build_task_object
 from sca.assembler import DynamicAssemblerLoader
-from sca.file.params import str_hex_bytes, SBOX_MAT, HAMMING_WEIGHTS
+from sca.file.params import TRACE_SIZE, str_hex_bytes, SBOX_MAT, HAMMING_WEIGHTS
 from sca.rescaler import FrequencyRescaler
 from sca.attacking.loader import *
 from sca.attacking.classic.task import StaticDiscriminator
@@ -61,8 +61,8 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
     '''
 
     def __init__(self, dynamic_path, generator_path, localization_path,
-                        plain_bounds, target_freq, interp_kind=None,
-                        num_workers=None, workers_type=None):
+                        plain_bounds, target_freq, skip_size_lim,
+                        interp_kind=None, num_workers=None, workers_type=None):
         '''
         Create new template attacker on aligned dynamic traces.
         dynamic_path: path of dynamic traces lookup data
@@ -70,6 +70,7 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         localization_path: path of frequency localization of traces
         plain_bounds: start, end plain text indices
         target_freq: frequency of the aligned platform
+        skip_size_lim: max size of a window to be considered valid for rescaling
         interp_kind: kind of 1D interpolation for window rescaling
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
@@ -105,6 +106,7 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.target_freq = target_freq
+        self.skip_size_lim = skip_size_lim
         if interp_kind is None:
             interp_kind = 'linear'
         self.interp_kind = interp_kind
@@ -119,23 +121,41 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         Align a trace to target frequency using localization output and frequency rescaling.
         '''
         df_plain = self.df_true[self.df_true['plain_index']==plain_index]
+        df_plain.sort_values(by='time_start', inplace=True)
         time_indices = df_plain[['time_start','time_end']].to_numpy()
         frequencies = df_plain['frequency'].to_numpy()
         n_switches = frequencies.shape[0]
+        aligned_trace = np.zeros(TRACE_SIZE)
+
+        start_idx = 0
 
         for i in range(n_switches):
             curr_idx = time_indices[i]
             curr_start = curr_idx[0]
             curr_end = curr_idx[1]
+            curr_size = curr_end - curr_start
             curr_freq = frequencies[i]
-            if curr_end - curr_start < 10:
+
+            if curr_freq == self.target_freq:
+                end_idx = start_idx + curr_size
+                aligned_trace[start_idx:end_idx] = trace[curr_start:curr_end]
+                start_idx += curr_size
+            elif curr_end - curr_start < self.skip_size_lim:
                 print(f'encountered window with size {curr_end-curr_start} for key {key_true} and plain index {plain_index}')
-                continue
-            
-            freq_ratio = float(self.target_freq) / float(curr_freq)
-            rescaler = FrequencyRescaler(freq_ratio, self.interp_kind)
-            aligned_win = rescaler.scale_windows(trace[curr_start:curr_end])
-            trace[curr_start:curr_end] = aligned_win
+                end_idx = start_idx + curr_size
+                aligned_trace[start_idx:end_idx] = trace[curr_start:curr_end]
+                start_idx += curr_size
+            else:
+                freq_ratio = float(self.target_freq) / float(curr_freq)
+                rescaler = FrequencyRescaler(freq_ratio, self.interp_kind)
+                aligned_win = rescaler.scale_windows(trace[curr_start:curr_end])
+                size_aligned = aligned_win.shape[-1]
+                end_idx = start_idx + size_aligned
+                aligned_trace[start_idx:end_idx] = aligned_win
+                start_idx += size_aligned
+
+        trace = aligned_trace[:trace.shape[-1]]
+        return trace
 
     def key_likelihood_work(self, pca, gauss_mean, gauss_cov, key_true):
         '''
@@ -148,8 +168,9 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
             
         for plain_idx in range(self.num_plain_texts):
             trace, plain_text, key = self.assemb_loader.fetch_trace(key_true, plain_idx)
-            self.align_trace(trace, key_true, plain_idx)
-            trace = pca_transform(pca, np.array([trace]))[0]
+            trace = self.align_trace(trace, key_true, plain_idx)
+            trace = np.reshape(trace, (1,*trace.shape))
+            trace = pca_transform(pca, trace)[0]
 
             for key_hyp in range(num_keys):
                 sbox_hw = HAMMING_WEIGHTS[SBOX_MAT[plain_text[0] ^ key_hyp]]

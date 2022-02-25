@@ -9,7 +9,7 @@ base:
     - dynamic
 
   name: DynamicSegmentation
-  id: test2
+  id: prod0
 
   description: 'frequency segmentation of static traces using a frequency classifier'
 
@@ -46,8 +46,8 @@ core:
     plain_bounds: [300, 500]
     batch_size: 1
     interp_kind: quadratic
-    mu: 10000
-    sigma: 25000
+    mu: 8000
+    sigma: 700
     log_assembler: True
     log_segmentation: #True
     log_localization: #True

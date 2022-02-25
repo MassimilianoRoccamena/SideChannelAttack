@@ -105,7 +105,7 @@ class VGG(EncoderModule):
                 out = self.poolings2[i](out)
 
         out = out.mean(-1)
-        #out.register_hook(self.backward_grad_cam_hook())       # TODO: enabled for segmentation, exception for training
+        out.register_hook(self.backward_grad_cam_hook())       # TODO: enabled for segmentation, exception for training
 
         out = super().forward(out)
         return out

@@ -6,7 +6,7 @@ base:
     - deep
 
   name: DeepDynamicProfiler
-  #id: test0
+  #id: temp0
 
   description: 'sbox output HW classification of dynamic traces'
 
@@ -107,16 +107,19 @@ model:
       #  use_final_do: True
       #  final_do_val: 0.1
 
-      name: LSTM1
+      name: LSTM2
       params:
         batch_first: True
-        encoding_size: 90
+        encoding_size: 70
         use_final_do: True
         final_do_val: 0.1
-        hidden_size: 300
-        num_layers: 1
+        hidden_size: 70
+        num_layers: 2
         dropout: 0.0
         bidirectional: False
+        final_size: 200
+        kernel_size: 100
+        stride: 10
 
       #name: GRU1
       #params:
@@ -173,16 +176,16 @@ learning:
     #  weight_decay: 1e-4
     name: Adam
     params:
-      lr: 0.00002
+      lr: 0.0001
 
   scheduler:
     name: StepLR
     params:
-      step_size: 2
+      step_size: 1
       gamma: 0.9
 
   data_loader:
-    batch_size: 8
+    batch_size: 16
     shuffle: True
     num_workers: 4
     pin_memory: True
@@ -192,7 +195,7 @@ learning:
   #  strategy: 'ddp'
     max_epochs: 50
     check_val_every_n_epoch: 1
-    log_every_n_steps: 8
+    log_every_n_steps: 4
     limit_train_batches: 0.3
     limit_val_batches: 0.4
     track_grad_norm: 2
