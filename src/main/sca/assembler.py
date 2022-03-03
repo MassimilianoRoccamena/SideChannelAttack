@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 
 from aidenv.api.reader import FileReader
 from sca.file.params import TRACE_SIZE, str_hex_bytes
@@ -269,6 +270,31 @@ class DynamicAssemblerLoader:
             time_elapsed += delta_t * (curr_end-time_start)
 
         return trace, plain_text, key_val
+
+class DynamicAssemblerParallelLoader(DynamicAssemblerLoader):
+    '''
+    Assembled dynamic trace loader in parallel mode.
+    '''
+
+    def __init__(self, loader, voltage, assembler_path, num_workers, workers_type):
+        '''
+        Create new assembled dynamic trace loader.
+        loader: power trace loader
+        voltage: device voltage
+        assembler_path: assembled traces lookup data
+        '''
+        super().__init__(loader, voltage, assembler_path)
+        self.num_workers = num_workers
+        self.workers_type = workers_type
+
+    def fetch_trace_parallel(self, key_value, plain_index):
+        trace, plain_text, key_val = self.fetch_trace(key_value, plain_index)
+        return plain_index, trace, plain_text, key_val
+
+    def fetch_traces(self, key_value, plain_indices):
+        data = Parallel(n_jobs=self.num_workers, prefer=self.workers_type) (delayed(self.fetch_trace_parallel) \
+                        (key_value, plain_index) for plain_index in plain_indices)
+        return data
 
 class DynamicTraceReader(FileReader):
     '''

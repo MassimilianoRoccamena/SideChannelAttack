@@ -6,7 +6,7 @@ base:
     - deep
 
   name: DeepDynamicDiscrimination
-  id: prod0
+  id: good0
 
   description: 'fit of the discriminative distribution of key given the dynamic trace, using MLE'
 
@@ -26,7 +26,7 @@ core:
     dynamic_path: /data/output/DynamicSegmentation/prod0
     training_path: /data/output/DeepDynamicProfiler/2022-02-21_08-52-38
     checkpoint_file: epoch=8-step=809.ckpt
-    key_values:
+    key_values: 150
     #  - '00'
     #  - '01'
     #  - '02'
@@ -36,7 +36,7 @@ core:
     #  - '06'
     #  - '07'
     plain_bounds: [300, 500]
-    batch_size: 8
+    batch_size: 64
 
-    num_workers: #4
-    workers_type: #'threads'
+    num_workers: 8
+    workers_type: 'processes'

@@ -7,7 +7,7 @@ base:
     - basic
 
   name: BasicDiscrimination
-  id: temp0
+  id: good1
 
   description: 'fit of the discriminative distribution of key given the trace, using MLE'
 
@@ -24,14 +24,15 @@ core:
   name: BasicDiscriminator
   params:
   
-    generator_path: /data/output/TraceGenerator/test0
+    generator_path: /data/output/TraceGenerator/temp0
     voltages:
     #  - '1.00'
     frequencies:
       - '48.000'
       - '52.000'
       - '54.000'
+    key_values: 150
     plain_bounds: [300, 500]
 
-    num_workers: #4
-    workers_type: #'threads'
+    num_workers: 8
+    workers_type: 'processes'

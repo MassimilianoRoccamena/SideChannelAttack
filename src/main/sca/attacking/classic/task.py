@@ -1,7 +1,6 @@
 import os
 import tqdm
 from math import ceil
-from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import multivariate_normal
 
@@ -11,6 +10,7 @@ from aidenv.api.config import get_program_log_dir
 from aidenv.api.mlearn.task import MachineLearningTask
 from sca.config import OmegaConf, build_task_object
 from sca.file.params import str_hex_bytes, SBOX_MAT, HAMMING_WEIGHTS
+from sca.file.loader import ParallelTraceLoader
 
 class StaticDiscriminator(MachineLearningTask):
     '''
@@ -18,13 +18,14 @@ class StaticDiscriminator(MachineLearningTask):
     frequency traces using a fitted reduced trace generative model.
     '''
 
-    def __init__(self, generator_path, voltages, frequencies, plain_bounds,
-                    num_workers, workers_type):
+    def __init__(self, generator_path, voltages, frequencies, key_values,
+                    plain_bounds, num_workers, workers_type):
         '''
         Create new template attacker on static traces.
         generator_path: path of a trace generator
         voltages: voltages of platforms to attack
         frequencies: frequencies of platform to attack
+        key_values: key values to attack
         plain_bounds: start, end plain text indices
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
@@ -32,7 +33,7 @@ class StaticDiscriminator(MachineLearningTask):
         self.generator_path = generator_path
         generator_path = os.path.join(generator_path, 'program.yaml')
         self.generator_config = OmegaConf.to_object(OmegaConf.load(generator_path))
-        self.loader = build_task_object(self.generator_config['core']['params']['loader'])
+        loader = build_task_object(self.generator_config['core']['params']['loader'])
         if voltages is None:
             self.voltages = self.generator_config['core']['params']['voltages']
             print(f'Found {len(self.voltages)} voltages')
@@ -43,18 +44,28 @@ class StaticDiscriminator(MachineLearningTask):
             print(f'Found {len(self.frequencies)} frequencies')
         else:
             self.frequencies = frequencies
-        self.key_values = self.generator_config['core']['params']['key_values']
-        if self.key_values is None:
-            self.key_values = str_hex_bytes()
-            print('Using all key values')
+        if key_values is None:
+            key_values = self.generator_config['core']['params']['key_values']
+            if key_values is None:
+                key_values = str_hex_bytes()
+                print('Using all key values')
+        elif type(key_values) is int:
+            key_values = str_hex_bytes()[:key_values]
+            print(f'Using first {len(key_values)} byte values')
+        self.key_values = key_values
         self.plain_bounds = plain_bounds
         self.plain_indices = np.arange(plain_bounds[0], plain_bounds[1])
         self.num_plain_texts = plain_bounds[1] - plain_bounds[0]
         self.reduced_dim = self.generator_config['core']['params']['reduced_dim']
         self.num_workers = num_workers
         self.workers_type = workers_type
-        if not self.num_workers is None:
-            raise NotImplementedError('multiprocessing WIP')
+        if self.num_workers is None:
+            self.loader = loader
+            self.parallel_mode = False
+        else:
+            print('Running in parallel mode')
+            self.loader = ParallelTraceLoader(loader, num_workers, workers_type)
+            self.parallel_mode = True
         self.log_dir = get_program_log_dir()
 
     def process_traces(self, voltage, frequency, key_value, traces):
@@ -76,9 +87,19 @@ class StaticDiscriminator(MachineLearningTask):
         num_keys = len(self.key_values)
         key_lh = np.zeros((num_keys, self.num_plain_texts))
 
-        file_id = self.loader.build_file_id(voltage, frequency, key_true)
-        file_path = self.loader.build_file_path(file_id)
-        traces, plain_texts, key = self.loader.fetch_traces(file_path, self.plain_indices)
+        if not self.parallel_mode:
+            file_id = self.loader.build_file_id(voltage, frequency, key_true)
+            file_path = self.loader.build_file_path(file_id)
+            traces, plain_texts, key = self.loader.fetch_traces(file_path, self.plain_indices)
+        else:
+            traces = np.zeros((self.num_plain_texts, self.loader.loader.trace_len))
+            plain_texts = np.zeros((self.num_plain_texts, 16), dtype='uint8')
+            wdata = self.loader.fetch_traces(voltage, frequency, key_true, self.plain_indices)
+            for curr_data in wdata:
+                plain_indices, ftraces, fplains, key = curr_data
+                plain_indices -= self.plain_indices[0]
+                traces[plain_indices] = ftraces
+                plain_texts[plain_indices] = fplains
 
         processed_traces = self.process_traces(voltage, frequency, key_true, traces)
         original_len = traces.shape[-1]
@@ -100,10 +121,12 @@ class StaticDiscriminator(MachineLearningTask):
 
                 multi_gauss = multivariate_normal(gauss_mean[sbox_hw], gauss_cov[sbox_hw])
                 prob_hyp = multi_gauss.pdf(curr_trace)
+                prob_hyp = np.maximum(prob_hyp, np.ones(prob_hyp.shape)*(1e-200))
                     
-                key_lh[key_hyp, plain_idx:] -= np.log(prob_hyp)
+                key_lh[key_hyp, plain_idx] -= np.log(prob_hyp)
 
-        return key_lh
+        file_path = os.path.join(self.lh_path, f'{key_true}.npy')
+        save_numpy(key_lh, file_path)
 
     def compute_work(self, voltage, frequency):
         '''
@@ -118,24 +141,10 @@ class StaticDiscriminator(MachineLearningTask):
         gauss_cov = load_numpy(os.path.join(curr_path, 'covariance.npy'))
         num_keys = len(self.key_values)
 
-        num_workers = self.num_workers
-        workers_type = self.workers_type
-
-        if num_workers is None:
-            pbar = tqdm.tqdm(total=num_keys)                                        # vanilla
-            for key_true in self.key_values:
-                key_lh = self.key_likelihood_work(pca, gauss_mean, gauss_cov, voltage, frequency, key_true)
-                file_path = os.path.join(self.lh_path, f'{key_true}.npy')
-                save_numpy(key_lh, file_path)
-                pbar.update(1)
-        else:
-            n_iters = ceil(len(self.key_values) / num_workers)                      # multiprocessed -- WIP
-            pbar = tqdm.tqdm(total=n_iters)
-            for i in range(n_iters):
-                keys_true = self.key_values[i : min((i+1)*num_workers, num_keys-1)]
-                Parallel(n_jobs=num_workers, prefer=workers_type) (delayed(self.key_likelihoods_work) \
-                        (pca, gauss_mean, gauss_cov, voltage, frequency, key_true, keys_lh) for key_true in keys_true)
-                pbar.update(1)
+        pbar = tqdm.tqdm(total=num_keys)
+        for key_true in self.key_values:
+            self.key_likelihood_work(pca, gauss_mean, gauss_cov, voltage, frequency, key_true)
+            pbar.update(1)
 
         pbar.close()
 

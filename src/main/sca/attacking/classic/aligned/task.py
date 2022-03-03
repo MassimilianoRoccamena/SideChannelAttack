@@ -1,7 +1,6 @@
 import os
 import tqdm
 from math import ceil
-from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
 from scipy.stats import multivariate_normal
@@ -11,7 +10,7 @@ from utils.math import BYTE_SIZE, BYTE_HW_LEN, pca_transform
 from aidenv.api.config import get_program_log_dir
 from aidenv.api.mlearn.task import MachineLearningTask
 from sca.config import OmegaConf, build_task_object
-from sca.assembler import DynamicAssemblerLoader
+from sca.assembler import DynamicAssemblerLoader, DynamicAssemblerParallelLoader
 from sca.file.params import TRACE_SIZE, str_hex_bytes, SBOX_MAT, HAMMING_WEIGHTS
 from sca.rescaler import FrequencyRescaler
 from sca.attacking.loader import *
@@ -22,7 +21,7 @@ class AlignedStaticDiscriminator(StaticDiscriminator):
     Trace key discriminator on aligned static frequency traces.
     '''
 
-    def __init__(self, generator_path, voltages, frequencies,
+    def __init__(self, generator_path, voltages, frequencies, key_values,
                         plain_bounds, target_volt, target_freq,
                         interp_kind=None, num_workers=None, workers_type= None):
         '''
@@ -30,6 +29,7 @@ class AlignedStaticDiscriminator(StaticDiscriminator):
         generator_path: path of a trace generator
         voltages: voltages of platform to attack
         frequencies: frequencies of platform to attack
+        key_values: key values to attack
         plain_bounds: start, end plain text indices
         num_workers: number of processes to split workload
         workers_type: type of joblib workers
@@ -37,7 +37,7 @@ class AlignedStaticDiscriminator(StaticDiscriminator):
         target_freq: frequency of the aligned platform
         interp_kind: kind of 1D interpolation for trace rescaling
         '''
-        super().__init__(generator_path, voltages, frequencies,
+        super().__init__(generator_path, voltages, frequencies, key_values,
                             plain_bounds, num_workers, workers_type)
         self.target_volt = target_volt
         self.target_freq = target_freq
@@ -61,13 +61,14 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
     '''
 
     def __init__(self, dynamic_path, generator_path, localization_path,
-                        plain_bounds, target_freq, skip_size_lim,
+                        key_values, plain_bounds, target_freq, skip_size_lim,
                         interp_kind=None, num_workers=None, workers_type=None):
         '''
         Create new template attacker on aligned dynamic traces.
         dynamic_path: path of dynamic traces lookup data
         generator_path: path of a trace generator
         localization_path: path of frequency localization of traces
+        key_values: key values to attack
         plain_bounds: start, end plain text indices
         target_freq: frequency of the aligned platform
         skip_size_lim: max size of a window to be considered valid for rescaling
@@ -90,12 +91,15 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         self.target_volt = self.voltages[0]
         print(f'Found {len(self.voltages)} voltages')
         dynamic_path = os.path.join(self.dynamic_path, 'assembler')
-        self.assemb_loader = DynamicAssemblerLoader(loader, self.target_volt, dynamic_path)
         self.frequencies = self.window_config['core']['params']['frequencies']
         print(f'Found {len(self.frequencies)} frequencies')
-        #self.key_values = self.window_config['core']['params']['key_values']
-        #if self.key_values is None:
-        self.key_values = str_hex_bytes()
+        if key_values is None:
+            key_values = str_hex_bytes()
+            print('Using all key values')
+        elif type(key_values) is int:
+            key_values = str_hex_bytes()[:key_values]
+            print(f'Using first {len(key_values)} byte values')
+        self.key_values = key_values
         print('Using all key values')
         self.generator_path = generator_path
         generator_path = os.path.join(generator_path, 'program.yaml')
@@ -112,8 +116,14 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         self.interp_kind = interp_kind
         self.num_workers = num_workers
         self.workers_type = workers_type
-        if not self.num_workers is None:
-            raise NotImplementedError('multiprocessing WIP')
+        if self.num_workers is None:
+            self.assemb_loader = DynamicAssemblerLoader(loader, self.target_volt, dynamic_path)
+            self.parallel_mode = False
+        else:
+            print('Running in parallel mode')
+            self.assemb_loader = DynamicAssemblerParallelLoader(loader, self.target_volt, dynamic_path, \
+                                                                num_workers, workers_type)
+            self.parallel_mode = True
         self.log_dir = get_program_log_dir()
 
     def align_trace(self, trace, key_true, plain_index):
@@ -163,11 +173,31 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         '''
         num_keys = len(self.key_values)
         key_lh = np.zeros((num_keys, self.num_plain_texts))
+
         lclz_path = os.path.join(self.localization_path, f'{key_true}.csv')
         self.df_true = pd.read_csv(lclz_path)
+
+        if not self.parallel_mode:
+            traces = np.zeros((self.num_plain_texts, self.assemb_loader.loader.trace_len))
+            plain_texts = np.zeros((self.num_plain_texts, 16), dtype='uint8')
+            for plain_idx in range(self.num_plain_texts):
+                trace, plain_text, key = self.assemb_loader.fetch_trace(key_true, plain_idx)
+                traces[plain_idx] = trace
+                plain_texts[plain_idx] = plain_text
+                
+        else:
+            traces = np.zeros((self.num_plain_texts, self.assemb_loader.loader.trace_len))
+            plain_texts = np.zeros((self.num_plain_texts, 16), dtype='uint8')
+            plain_indices = self.plain_indices - self.plain_indices[0]
+            wdata = self.assemb_loader.fetch_traces(key_true, plain_indices)
+            for curr_data in wdata:
+                plain_indices, ftraces, fplains, key = curr_data
+                traces[plain_indices] = ftraces
+                plain_texts[plain_indices] = fplains
             
         for plain_idx in range(self.num_plain_texts):
-            trace, plain_text, key = self.assemb_loader.fetch_trace(key_true, plain_idx)
+            trace = traces[plain_idx]
+            plain_text = plain_texts[plain_idx]
             trace = self.align_trace(trace, key_true, plain_idx)
             trace = np.reshape(trace, (1,*trace.shape))
             trace = pca_transform(pca, trace)[0]
@@ -178,9 +208,10 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
                 multi_gauss = multivariate_normal(gauss_mean[sbox_hw], gauss_cov[sbox_hw])
                 prob_hyp = multi_gauss.pdf(trace)
                     
-                key_lh[key_hyp, plain_idx:] -= np.log(prob_hyp)
+                key_lh[key_hyp, plain_idx] -= np.log(prob_hyp)
 
-        return key_lh
+        file_path = os.path.join(self.lh_path, f'{key_true}.npy')
+        save_numpy(key_lh, file_path)
 
     def compute_work(self):
         '''
@@ -194,24 +225,10 @@ class AlignedDynamicDiscriminator(MachineLearningTask):
         gauss_cov = load_numpy(os.path.join(curr_path, 'covariance.npy'))
         num_keys = len(self.key_values)
 
-        num_workers = self.num_workers
-        workers_type = self.workers_type
-
-        if num_workers is None:
-            pbar = tqdm.tqdm(total=num_keys)                                        # vanilla
-            for key_true in self.key_values:
-                key_lh = self.key_likelihood_work(pca, gauss_mean, gauss_cov, key_true)
-                file_path = os.path.join(self.lh_path, f'{key_true}.npy')
-                save_numpy(key_lh, file_path)
-                pbar.update(1)
-        else:
-            n_iters = ceil(len(self.key_values) / num_workers)                      # multiprocessed -- WIP
-            pbar = tqdm.tqdm(total=n_iters)
-            for i in range(n_iters):
-                keys_true = self.key_values[i : min((i+1)*num_workers, num_keys-1)]
-                Parallel(n_jobs=num_workers, prefer=workers_type) (delayed(self.key_likelihoods_work) \
-                        (pca, gauss_mean, gauss_cov, voltage, frequency, key_true, keys_lh) for key_true in keys_true)
-                pbar.update(1)
+        pbar = tqdm.tqdm(total=num_keys)
+        for key_true in self.key_values:
+            self.key_likelihood_work(pca, gauss_mean, gauss_cov, key_true)
+            pbar.update(1)
 
         pbar.close()
 

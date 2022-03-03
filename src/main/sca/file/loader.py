@@ -1,3 +1,5 @@
+from math import ceil
+from joblib import Parallel, delayed
 import numpy as np
 
 from aidenv.api.loader import FileLoader
@@ -191,3 +193,41 @@ class OurTraceLoader(TraceLoader):
         else:
             return self.load_some_projected_traces(file_path, plain_indices,
                                                     self.desired_time_idx)
+
+class ParallelTraceLoader:
+    '''
+    Trace loader wrapper for parallel mode.
+    '''
+
+    def __init__(self, loader, num_workers, workers_type):
+        '''
+        Create new parallel trace loader.
+        loader: power trace loader
+        '''
+        self.loader = loader
+        self.num_workers = num_workers
+        self.workers_type = workers_type
+
+    def build_file_id(self, *args):
+        return self.loader.build_file_id(*args)
+
+    def build_file_path(self, file_id):
+        return self.loader.build_file_path(file_id)
+
+    def fetch_trace_parallel(self, voltage, frequency, key_value, plain_indices):
+        file_id = self.loader.build_file_id(voltage, frequency, key_value)
+        file_path = self.loader.build_file_path(file_id)
+        traces, plain_text, key_val = self.loader.fetch_traces(file_path, plain_indices)
+        return plain_indices, traces, plain_text, key_val
+
+    def fetch_traces(self, voltage, frequency, key_value, plain_indices):
+        worker_indices = []
+        chunk_size = ceil(len(plain_indices) / self.num_workers)
+        for i in range(self.num_workers):
+            low_idx = i*chunk_size
+            high_idx = min(low_idx+chunk_size, len(plain_indices))
+            worker_indices.append(plain_indices[low_idx:high_idx])
+
+        data = Parallel(n_jobs=self.num_workers, prefer=self.workers_type) (delayed(self.fetch_trace_parallel) \
+                        (voltage, frequency, key_value, worker_chunk) for worker_chunk in worker_indices)
+        return data

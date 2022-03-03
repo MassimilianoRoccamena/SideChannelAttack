@@ -6,7 +6,7 @@ base:
     - deep
 
   name: DeepStaticDiscrimination
-  id: test3
+  id: good0
 
   description: 'fit of the discriminative distribution of key given the static trace, using MLE'
 
@@ -29,7 +29,7 @@ core:
     #  - '1.00'
     frequencies:
     #  - '48.000'
-    key_values:
+    key_values: 150
     #  - '00'
     #  - '01'
     #  - '02'
@@ -41,5 +41,5 @@ core:
     plain_bounds: [300, 500]
     batch_size: 32
 
-    num_workers: #4
-    workers_type: #'threads'
+    num_workers: 8
+    workers_type: 'processes'
