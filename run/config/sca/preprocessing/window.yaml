@@ -1,0 +1,71 @@
+base:
+
+  origin:
+    - sca
+    - preprocessing
+    - window
+
+  name: WindowLookup
+  id: test1
+
+  description: 'creation of trace windows lookup data'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+
+  name: WindowLookup
+  params:
+
+    loader:
+      name: FileConvention2
+      params:
+        slicer:
+          name: Random
+          params:
+            window_size: 500
+            num_windows: 1
+            trace_len: 100000
+
+          #name: Strided
+          #params:
+          #  window_size: 500
+          #  stride: 10000
+
+    voltages:
+      - '1.00'
+    frequencies:
+    #  - '45.000'
+    #  - '46.875'
+      - '48.000'
+    #  - '50.000'
+    #  - '50.125'
+      - '52.000'
+      - '54.000'
+    #  - '55.000'
+    #  - '56.000'
+    key_values:
+    #  - '00'
+    #  - '01'
+    plain_bounds: [0, 300]
+
+    size: 0.1
+
+    partitioning:
+      mapping:
+        enabled: True
+        bucket_size: 1000
+
+      sets:
+        - name: train
+          size: 0.75
+        - name: valid
+          size: 0.15
+        - name: test
+          size: 0.1

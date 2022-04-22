@@ -1,0 +1,37 @@
+base:
+
+  origin:
+    - sca
+    - attacking
+    - classic
+    - aligned
+
+  name: AlignedDynamicDiscrimination
+  id: good0
+
+  description: 'fit of the discriminative distribution of key given the aligned dynamic traces, using MLE'
+
+# ---------------------------------------------------------------
+
+determinism:
+
+  seed: 314159
+
+# ---------------------------------------------------------------
+
+core:
+
+  name: AlignedDynamicDiscriminator
+  params:
+
+    dynamic_path: /data/output/DynamicSegmentation/prod0
+    generator_path: /data/output/TraceGenerator/test0
+    localization_path: /data/output/DynamicSegmentation/prod0/localization
+    key_values: 150
+    plain_bounds: [300, 500]
+    target_freq: '52.000'
+    skip_size_lim: 100
+    interp_kind: linear
+
+    num_workers: 8
+    workers_type: 'processes'
