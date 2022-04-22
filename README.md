@@ -2,13 +2,11 @@
 
 Thesis work by Massimiliano Roccamena
 
-## Instructions
+In the following sections there is a description of the main components of the application and how to interact with them
 
-In the following sections are described the main coponents of application and how to interact with them
+## AIDENV
 
-### AIDENV
-
-This is the platform component of the application and it is a basic small framework for developing artifical agents. It provides to an ***aidenv program*** an execution platform called ***aidenv environment***. Currently there are the following environments:
+This is the platform component of the application and it is a basic small framework for developing artifical agents. It provides to an ***aidenv program*** an execution platform named ***aidenv environment***. Currently there are the following environments:
 
 - ***dprocess***
   - execute computations on some data
@@ -19,8 +17,7 @@ This is the platform component of the application and it is a basic small framew
 
 You can define an *aidenv program* by writing an ***aidenv configuration*** *yaml* file:
 
-- the field *base.origin* can be used to specify the core package of the *aidenv program*
-- the field *base.prompt* can be used to specify the task inside the *aidenv program* core package
+- the field *base.origin* can be used to specify the core package of the *aidenv program* task module
 - all other fields are specific configurations of each *aidenv environment*
 
 The following environmental variable are used by *aidenv*:
@@ -47,33 +44,50 @@ You can launch *aidenv* by specifying an *aidenv environment* identifier, an *ai
 sh aidenv.sh $environment_id $program_name $program_args
 ```
 
-### SCA
+## SCA
 
-It's the target component of the application which realizes the goals of the thesis. It include some *aidenv program*
-
-In order to execute the component, first launch the raw data preprocessing program to create lookup data for trace windows
+It's the target component of the application which realizes the goals of the thesis. It include some *aidenv program*. In order to launch an SCA task, just submit the following commands
 
 ```bash
-sh run/sca/preprocessing.sh
+sh run/sca/{path_to_program}.sh
 ```
 
-Then you can launch the program to fit a window classifier for trace alignment
+Inside the *preprocessing* package there is the *window* program, which basically allows to compute lookup tables for creating a dataset of fixed frequency power traces.
 
-```bash
-sh run/sca/aligner/window.sh
-```
+Inside the *profiling* package there are programs for fitting models to attack the traces. The fully deep related tasks are:
 
-You can fit the template attacker by launching
+- *deep-static*
+  - for fitting a model on static frequency traces
+- *deep-dynamic*
+  - for fitting a model on dynamic frequency traces
 
-```bash
-sh run/sca/generator.sh
-sh run/sca/discriminator.sh
-```
+Inside the *profiling.classic* package there are programs for fitting methods which include the Template Attack. Inside *profiling.classic.aligned* there are programs for fitting the deep aligned template attack. The overall tasks for classic-related attacks are:
 
-### Testing (OUT OF DATE)
+- *basic*
+  - for fitting the PCA+QDA model on static traces
+- *aligned.classification*
+  - for fitting the frequency detector by classification on static frequency trace windows
+- *aligned.segmentation.dynamic*
+  - implement the Grad-CAM on the frequency detector for dynamic traces
+- *aligned.segmentation.static*
+  - implement the Grad-CAM on the frequency detector for static traces
 
-You can launch test for the main system by running
+Inside the *attacking* package there are task for attacking traces, after previous computation of corresponding profiled tasks. The fully deep related tasks are:
 
-```bash
-sh test.sh
-```
+- *deep-static*
+  - attack device without RDFS
+- *deep-dynamic*
+  - attack device with RDFS
+
+Inside the *attacking.classic* package there are programs for attackingg methods which include the Template Attack. The overall tasks for classic-related attacks are:
+
+- *basic*
+  - attacking with PCA+QDA method the device without RDFS
+- *aligned-static*
+  - scale the whole traces without RDFS to a given frequency, then apply the corresponding PCA+QDA model
+- *aligned-dynamic*
+  - attacking with PCA+QDA method with previous Grad-CAM+interpolation frequency alignment
+
+### Testing
+
+(OUT OF DATE)
